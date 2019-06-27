@@ -1,0 +1,6 @@
+name,path,relative
+jsoup,https://github.com/jhy/jsoup,
+jackson-core,https://github.com/FasterXML/jackson-core
+twilio-java,https://github.com/twilio/twilio-java
+vectorz,https://github.com/mikera/vectorz
+java-faker,https://github.com/DiUS/java-faker

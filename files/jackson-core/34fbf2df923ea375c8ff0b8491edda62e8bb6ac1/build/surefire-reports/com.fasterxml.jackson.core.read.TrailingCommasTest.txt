@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.fasterxml.jackson.core.read.TrailingCommasTest
+-------------------------------------------------------------------------------
+Tests run: 208, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.253 s - in com.fasterxml.jackson.core.read.TrailingCommasTest
