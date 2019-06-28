@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>IndexedSeq.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang.collection</a> &gt; <span class="el_source">IndexedSeq.java</span></div><h1>IndexedSeq.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang.collection;
+
+import javaslang.Tuple2;
+import javaslang.Tuple3;
+import javaslang.control.Match;
+import javaslang.control.Option;
+
+import java.util.Comparator;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+
+/**
+ * Interface for immutable, indexed sequences.
+ * &lt;p&gt;
+ * Efficient random access is characteristic for indexed sequences.
+ *
+ * @param &lt;T&gt; component type
+ * @author Daniel Dietrich
+ * @since 2.0.0
+ */
+public interface IndexedSeq&lt;T&gt; extends Seq&lt;T&gt; {
+
+    long serialVersionUID = 1L;
+
+    // -- Adjusted return types of Seq methods
+
+    @Override
+    IndexedSeq&lt;T&gt; append(T element);
+
+    @Override
+    IndexedSeq&lt;T&gt; appendAll(Iterable&lt;? extends T&gt; elements);
+
+    @Override
+    IndexedSeq&lt;T&gt; clear();
+
+    @Override
+    IndexedSeq&lt;? extends IndexedSeq&lt;T&gt;&gt; combinations();
+
+    @Override
+    IndexedSeq&lt;? extends IndexedSeq&lt;T&gt;&gt; combinations(int k);
+
+    @Override
+    IndexedSeq&lt;Tuple2&lt;T, T&gt;&gt; crossProduct();
+
+    @Override
+    IndexedSeq&lt;? extends IndexedSeq&lt;T&gt;&gt; crossProduct(int power);
+
+    @Override
+    &lt;U&gt; IndexedSeq&lt;Tuple2&lt;T, U&gt;&gt; crossProduct(Iterable&lt;? extends U&gt; that);
+
+    @Override
+    IndexedSeq&lt;T&gt; distinct();
+
+    @Override
+    IndexedSeq&lt;T&gt; distinctBy(Comparator&lt;? super T&gt; comparator);
+
+    @Override
+    &lt;U&gt; IndexedSeq&lt;T&gt; distinctBy(Function&lt;? super T, ? extends U&gt; keyExtractor);
+
+    @Override
+    IndexedSeq&lt;T&gt; drop(int n);
+
+    @Override
+    IndexedSeq&lt;T&gt; dropRight(int n);
+
+    @Override
+    IndexedSeq&lt;T&gt; dropUntil(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    IndexedSeq&lt;T&gt; dropWhile(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    default boolean endsWith(Seq&lt;? extends T&gt; that) {
+<span class="fc" id="L83">        Objects.requireNonNull(that, &quot;that is null&quot;);</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">        if (that instanceof IndexedSeq) {</span>
+<span class="fc" id="L85">            int i = length() - 1;</span>
+<span class="fc" id="L86">            int j = that.length() - 1;</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">            if (j &gt; i) {</span>
+<span class="fc" id="L88">                return false;</span>
+            } else {
+<span class="fc bfc" id="L90" title="All 2 branches covered.">                while (j &gt;= 0) {</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">                    if (!Objects.equals(this.get(i), that.get(j))) {</span>
+<span class="fc" id="L92">                        return false;</span>
+                    }
+<span class="fc" id="L94">                    i--;</span>
+<span class="fc" id="L95">                    j--;</span>
+                }
+<span class="fc" id="L97">                return true;</span>
+            }
+        } else {
+<span class="fc" id="L100">            return Seq.super.endsWith(that);</span>
+        }
+    }
+
+    @Override
+    IndexedSeq&lt;T&gt; filter(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    IndexedSeq&lt;T&gt; filterNot(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    &lt;U&gt; IndexedSeq&lt;U&gt; flatMap(Function&lt;? super T, ? extends Iterable&lt;? extends U&gt;&gt; mapper);
+
+    @Override
+    &lt;C&gt; Map&lt;C, ? extends IndexedSeq&lt;T&gt;&gt; groupBy(Function&lt;? super T, ? extends C&gt; classifier);
+
+    @Override
+    default int indexWhere(Predicate&lt;? super T&gt; predicate, int from) {
+<span class="fc" id="L118">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L119">        int start = Math.max(from, 0);</span>
+<span class="fc" id="L120">        int n = start + segmentLength(predicate.negate(), start);</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">        return (n &gt;= length()) ? -1 : n;</span>
+    }
+
+    @Override
+    Iterator&lt;? extends IndexedSeq&lt;T&gt;&gt; grouped(int size);
+
+    @Override
+    IndexedSeq&lt;T&gt; init();
+
+    @Override
+    Option&lt;? extends IndexedSeq&lt;T&gt;&gt; initOption();
+
+    @Override
+    IndexedSeq&lt;T&gt; insert(int index, T element);
+
+    @Override
+    IndexedSeq&lt;T&gt; insertAll(int index, Iterable&lt;? extends T&gt; elements);
+
+    @Override
+    IndexedSeq&lt;T&gt; intersperse(T element);
+
+    @Override
+    default T last() {
+<span class="fc bfc" id="L144" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L145">            throw new NoSuchElementException(&quot;last of empty IndexedSeq&quot;);</span>
+        } else {
+<span class="fc" id="L147">            return get(length() - 1);</span>
+        }
+    }
+
+    @Override
+    default int lastIndexOfSlice(Iterable&lt;? extends T&gt; that, int end) {
+<span class="fc" id="L153">        return IndexedSeqModule.LastIndexOfSlice.lastIndexOfSlice(this, unit(that), end);</span>
+    }
+
+    @Override
+    default int lastIndexWhere(Predicate&lt;? super T&gt; predicate, int end) {
+<span class="fc" id="L158">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L159">        int i = Math.min(end, length() - 1);</span>
+<span class="fc bfc" id="L160" title="All 4 branches covered.">        while (i &gt;= 0 &amp;&amp; !predicate.test(this.get(i))) {</span>
+<span class="fc" id="L161">            i--;</span>
+        }
+<span class="fc" id="L163">        return i;</span>
+    }
+
+    @Override
+    &lt;U&gt; IndexedSeq&lt;U&gt; map(Function&lt;? super T, ? extends U&gt; mapper);
+
+    @Override
+    Match.MatchMonad.Of&lt;? extends IndexedSeq&lt;T&gt;&gt; match();
+
+    @Override
+    IndexedSeq&lt;T&gt; padTo(int length, T element);
+
+    @Override
+    IndexedSeq&lt;T&gt; patch(int from, Iterable&lt;? extends T&gt; that, int replaced);
+
+    @Override
+    Tuple2&lt;? extends IndexedSeq&lt;T&gt;, ? extends IndexedSeq&lt;T&gt;&gt; partition(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    IndexedSeq&lt;T&gt; peek(Consumer&lt;? super T&gt; action);
+
+    @Override
+    IndexedSeq&lt;? extends IndexedSeq&lt;T&gt;&gt; permutations();
+
+    @Override
+    IndexedSeq&lt;T&gt; prepend(T element);
+
+    @Override
+    IndexedSeq&lt;T&gt; prependAll(Iterable&lt;? extends T&gt; elements);
+
+    @Override
+    IndexedSeq&lt;T&gt; remove(T element);
+
+    @Override
+    IndexedSeq&lt;T&gt; removeFirst(Predicate&lt;T&gt; predicate);
+
+    @Override
+    IndexedSeq&lt;T&gt; removeLast(Predicate&lt;T&gt; predicate);
+
+    @Override
+    IndexedSeq&lt;T&gt; removeAt(int index);
+
+    @Override
+    IndexedSeq&lt;T&gt; removeAll(T element);
+
+    @Override
+    IndexedSeq&lt;T&gt; removeAll(Iterable&lt;? extends T&gt; elements);
+
+    @Override
+    IndexedSeq&lt;T&gt; replace(T currentElement, T newElement);
+
+    @Override
+    IndexedSeq&lt;T&gt; replaceAll(T currentElement, T newElement);
+
+    @Override
+    IndexedSeq&lt;T&gt; retainAll(Iterable&lt;? extends T&gt; elements);
+
+    @Override
+    IndexedSeq&lt;T&gt; reverse();
+
+    @Override
+    default Iterator&lt;T&gt; reverseIterator() {
+<span class="fc" id="L225">        return new AbstractIterator&lt;T&gt;() {</span>
+<span class="fc" id="L226">            private int i = IndexedSeq.this.length();</span>
+
+            @Override
+            public boolean hasNext() {
+<span class="fc bfc" id="L230" title="All 2 branches covered.">                return i &gt; 0;</span>
+            }
+
+            @Override
+            public T getNext() {
+<span class="fc" id="L235">                return IndexedSeq.this.get(--i);</span>
+            }
+        };
+    }
+
+    @Override
+    IndexedSeq&lt;T&gt; scan(T zero, BiFunction&lt;? super T, ? super T, ? extends T&gt; operation);
+
+    @Override
+    &lt;U&gt; IndexedSeq&lt;U&gt; scanLeft(U zero, BiFunction&lt;? super U, ? super T, ? extends U&gt; operation);
+
+    @Override
+    &lt;U&gt; IndexedSeq&lt;U&gt; scanRight(U zero, BiFunction&lt;? super T, ? super U, ? extends U&gt; operation);
+
+    @Override
+    default int segmentLength(Predicate&lt;? super T&gt; predicate, int from) {
+<span class="fc" id="L251">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L252">        int len = length();</span>
+<span class="fc" id="L253">        int i = from;</span>
+<span class="fc bfc" id="L254" title="All 4 branches covered.">        while (i &lt; len &amp;&amp; predicate.test(this.get(i))) {</span>
+<span class="fc" id="L255">            i++;</span>
+        }
+<span class="fc" id="L257">        return i - from;</span>
+    }
+
+    @Override
+    IndexedSeq&lt;T&gt; slice(int beginIndex, int endIndex);
+
+    @Override
+    Iterator&lt;? extends IndexedSeq&lt;T&gt;&gt; sliding(int size);
+
+    @Override
+    Iterator&lt;? extends IndexedSeq&lt;T&gt;&gt; sliding(int size, int step);
+
+    @Override
+    IndexedSeq&lt;T&gt; sort();
+
+    @Override
+    IndexedSeq&lt;T&gt; sort(Comparator&lt;? super T&gt; comparator);
+
+    @Override
+    &lt;U extends Comparable&lt;? super U&gt;&gt; IndexedSeq&lt;T&gt; sortBy(Function&lt;? super T, ? extends U&gt; mapper);
+
+    @Override
+    &lt;U&gt; IndexedSeq&lt;T&gt; sortBy(Comparator&lt;? super U&gt; comparator, Function&lt;? super T, ? extends U&gt; mapper);
+
+    @Override
+    Tuple2&lt;? extends IndexedSeq&lt;T&gt;, ? extends IndexedSeq&lt;T&gt;&gt; span(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    default boolean startsWith(Iterable&lt;? extends T&gt; that, int offset) {
+<span class="fc" id="L286">        Objects.requireNonNull(that, &quot;that is null&quot;);</span>
+<span class="fc bfc" id="L287" title="All 2 branches covered.">        if (offset &lt; 0) return false;</span>
+<span class="fc bfc" id="L288" title="All 2 branches covered.">        if (that instanceof IndexedSeq) {</span>
+<span class="fc" id="L289">            IndexedSeq&lt;? extends T&gt; dhat = (IndexedSeq&lt;? extends T&gt;) that;</span>
+<span class="fc" id="L290">            int i = offset;</span>
+<span class="fc" id="L291">            int j = 0;</span>
+<span class="fc" id="L292">            int thisLen = length();</span>
+<span class="fc" id="L293">            int thatLen = dhat.length();</span>
+<span class="fc bfc" id="L294" title="All 6 branches covered.">            while (i &lt; thisLen &amp;&amp; j &lt; thatLen &amp;&amp; Objects.equals(this.get(i), dhat.get(j))) {</span>
+<span class="fc" id="L295">                i++;</span>
+<span class="fc" id="L296">                j++;</span>
+            }
+<span class="fc bfc" id="L298" title="All 2 branches covered.">            return j == thatLen;</span>
+        } else {
+<span class="fc" id="L300">            int i = offset;</span>
+<span class="fc" id="L301">            int thisLen = length();</span>
+<span class="fc" id="L302">            java.util.Iterator&lt;? extends T&gt; thatElems = that.iterator();</span>
+<span class="fc bfc" id="L303" title="All 4 branches covered.">            while (i &lt; thisLen &amp;&amp; thatElems.hasNext()) {</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">                if (!Objects.equals(this.get(i), thatElems.next())) {</span>
+<span class="fc" id="L305">                    return false;</span>
+                }
+<span class="fc" id="L307">                i++;</span>
+            }
+<span class="fc bfc" id="L309" title="All 2 branches covered.">            return !thatElems.hasNext();</span>
+        }
+    }
+
+    @Override
+    IndexedSeq&lt;T&gt; subSequence(int beginIndex);
+
+    @Override
+    IndexedSeq&lt;T&gt; subSequence(int beginIndex, int endIndex);
+
+    @Override
+    IndexedSeq&lt;T&gt; tail();
+
+    @Override
+    Option&lt;? extends IndexedSeq&lt;T&gt;&gt; tailOption();
+
+    @Override
+    IndexedSeq&lt;T&gt; take(int n);
+
+    @Override
+    IndexedSeq&lt;T&gt; takeRight(int n);
+
+    @Override
+    IndexedSeq&lt;T&gt; takeUntil(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    IndexedSeq&lt;T&gt; takeWhile(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    &lt;U&gt; IndexedSeq&lt;U&gt; unit(Iterable&lt;? extends U&gt; iterable);
+
+    @Override
+    &lt;T1, T2&gt; Tuple2&lt;? extends IndexedSeq&lt;T1&gt;, ? extends IndexedSeq&lt;T2&gt;&gt; unzip(Function&lt;? super T, Tuple2&lt;? extends T1, ? extends T2&gt;&gt; unzipper);
+
+    @Override
+    &lt;T1, T2, T3&gt; Tuple3&lt;? extends IndexedSeq&lt;T1&gt;, ? extends IndexedSeq&lt;T2&gt;, ? extends IndexedSeq&lt;T3&gt;&gt; unzip3(Function&lt;? super T, Tuple3&lt;? extends T1, ? extends T2, ? extends T3&gt;&gt; unzipper);
+
+    @Override
+    IndexedSeq&lt;T&gt; update(int index, T element);
+
+    @Override
+    &lt;U&gt; IndexedSeq&lt;Tuple2&lt;T, U&gt;&gt; zip(Iterable&lt;U&gt; that);
+
+    @Override
+    &lt;U&gt; IndexedSeq&lt;Tuple2&lt;T, U&gt;&gt; zipAll(Iterable&lt;U&gt; that, T thisElem, U thatElem);
+
+    @Override
+    IndexedSeq&lt;Tuple2&lt;T, Integer&gt;&gt; zipWithIndex();
+
+}
+
+interface IndexedSeqModule {
+    interface LastIndexOfSlice {
+        static &lt;T&gt; int lastIndexOfSlice(IndexedSeq&lt;T&gt; t, IndexedSeq&lt;T&gt; slice, int end) {
+<span class="fc bfc" id="L363" title="All 2 branches covered.">            if (end &lt; 0) {</span>
+<span class="fc" id="L364">                return -1;</span>
+            }
+<span class="fc bfc" id="L366" title="All 2 branches covered.">            if (t.isEmpty()) {</span>
+<span class="fc bfc" id="L367" title="All 2 branches covered.">                return slice.isEmpty() ? 0 : -1;</span>
+            }
+<span class="fc bfc" id="L369" title="All 2 branches covered.">            if (slice.isEmpty()) {</span>
+<span class="fc" id="L370">                int len = t.length();</span>
+<span class="fc bfc" id="L371" title="All 2 branches covered.">                return len &lt; end ? len : end;</span>
+            }
+<span class="fc" id="L373">            int p = 0;</span>
+<span class="fc" id="L374">            int result = -1;</span>
+<span class="fc" id="L375">            final int maxPtr = t.length() - slice.length();</span>
+<span class="fc bfc" id="L376" title="All 2 branches covered.">            while (p &lt;= maxPtr) {</span>
+<span class="fc" id="L377">                int r = findSlice(t, p, maxPtr, slice);</span>
+<span class="fc bfc" id="L378" title="All 2 branches covered.">                if (r &lt; 0) {</span>
+<span class="fc" id="L379">                    return result;</span>
+                }
+<span class="fc bfc" id="L381" title="All 2 branches covered.">                if (r &lt;= end) {</span>
+<span class="fc" id="L382">                    result = r;</span>
+<span class="fc" id="L383">                    p = r + 1;</span>
+                } else {
+<span class="fc" id="L385">                    return result;</span>
+                }
+<span class="fc" id="L387">            }</span>
+<span class="fc" id="L388">            return result;</span>
+        }
+
+        static &lt;T&gt; int findSlice(IndexedSeq&lt;T&gt; t, int p, int maxPtr, IndexedSeq&lt;T&gt; slice) {
+<span class="fc bfc" id="L392" title="All 2 branches covered.">            while (p &lt;= maxPtr) {</span>
+<span class="fc bfc" id="L393" title="All 2 branches covered.">                if (t.startsWith(slice, p)) {</span>
+<span class="fc" id="L394">                    return p;</span>
+                }
+<span class="fc" id="L396">                p++;</span>
+            }
+<span class="fc" id="L398">            return -1;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

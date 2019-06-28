@@ -1,0 +1,1174 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Tree.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang.collection</a> &gt; <span class="el_source">Tree.java</span></div><h1>Tree.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang.collection;
+
+import javaslang.Lazy;
+import javaslang.Tuple;
+import javaslang.Tuple2;
+import javaslang.Tuple3;
+import javaslang.collection.List.Nil;
+import javaslang.collection.Tree.Empty;
+import javaslang.collection.Tree.Node;
+import javaslang.collection.TreeModule.*;
+import javaslang.control.Match;
+import javaslang.control.Option;
+
+import java.io.*;
+import java.util.*;
+import java.util.function.*;
+import java.util.stream.Collector;
+
+import static javaslang.collection.Tree.Order.PRE_ORDER;
+
+/**
+ * A general Tree interface.
+ *
+ * @param &lt;T&gt; component type of this Tree
+ * @author Daniel Dietrich
+ * @since 1.1.0
+ */
+public interface Tree&lt;T&gt; extends Traversable&lt;T&gt; {
+
+    /**
+     * Returns a {@link java.util.stream.Collector} which may be used in conjunction with
+     * {@link java.util.stream.Stream#collect(java.util.stream.Collector)} to obtain a {@link javaslang.collection.Tree}.
+     *
+     * @param &lt;T&gt; Component type of the Tree.
+     * @return A javaslang.collection.Tree Collector.
+     */
+    static &lt;T&gt; Collector&lt;T, ArrayList&lt;T&gt;, Tree&lt;T&gt;&gt; collector() {
+<span class="fc" id="L43">        final Supplier&lt;ArrayList&lt;T&gt;&gt; supplier = ArrayList::new;</span>
+<span class="fc" id="L44">        final BiConsumer&lt;ArrayList&lt;T&gt;, T&gt; accumulator = ArrayList::add;</span>
+<span class="fc" id="L45">        final BinaryOperator&lt;ArrayList&lt;T&gt;&gt; combiner = (left, right) -&gt; {</span>
+<span class="fc" id="L46">            left.addAll(right);</span>
+<span class="fc" id="L47">            return left;</span>
+        };
+<span class="fc" id="L49">        final Function&lt;ArrayList&lt;T&gt;, Tree&lt;T&gt;&gt; finisher = Tree::ofAll;</span>
+<span class="fc" id="L50">        return Collector.of(supplier, accumulator, combiner, finisher);</span>
+    }
+
+    /**
+     * Returns the singleton empty tree.
+     *
+     * @param &lt;T&gt; Type of tree values.
+     * @return The empty tree.
+     */
+    static &lt;T&gt; Empty&lt;T&gt; empty() {
+<span class="fc" id="L60">        return Empty.instance();</span>
+    }
+
+    /**
+     * Returns a new Node containing the given value and having no children.
+     *
+     * @param value A value
+     * @param &lt;T&gt;   Value type
+     * @return A new Node instance.
+     */
+    static &lt;T&gt; Node&lt;T&gt; of(T value) {
+<span class="fc" id="L71">        return new Node&lt;&gt;(value, List.empty());</span>
+    }
+
+    /**
+     * Returns a new Node containing the given value and having the given children.
+     *
+     * @param value    A value
+     * @param children The child nodes, possibly empty
+     * @param &lt;T&gt;      Value type
+     * @return A new Node instance.
+     */
+    @SuppressWarnings(&quot;varargs&quot;)
+    @SafeVarargs
+    static &lt;T&gt; Node&lt;T&gt; of(T value, Node&lt;T&gt;... children) {
+<span class="fc" id="L85">        Objects.requireNonNull(children, &quot;children is null&quot;);</span>
+<span class="fc" id="L86">        return new Node&lt;&gt;(value, List.of(children));</span>
+    }
+
+    /**
+     * Returns a new Node containing the given value and having the given children.
+     *
+     * @param value    A value
+     * @param children The child nodes, possibly empty
+     * @param &lt;T&gt;      Value type
+     * @return A new Node instance.
+     */
+    static &lt;T&gt; Node&lt;T&gt; of(T value, Iterable&lt;Node&lt;T&gt;&gt; children) {
+<span class="fc" id="L98">        Objects.requireNonNull(children, &quot;children is null&quot;);</span>
+<span class="fc" id="L99">        return new Node&lt;&gt;(value, List.ofAll(children));</span>
+    }
+
+    /**
+     * Creates a Tree of the given elements.
+     *
+     * @param &lt;T&gt; Component type of the List.
+     * @param values Zero or more values.
+     * @return A Tree containing the given values.
+     * @throws NullPointerException if {@code values} is null
+     */
+    @SuppressWarnings(&quot;varargs&quot;)
+    @SafeVarargs
+    static &lt;T&gt; Tree&lt;T&gt; of(T... values) {
+<span class="fc" id="L113">        Objects.requireNonNull(values, &quot;values is null&quot;);</span>
+<span class="fc" id="L114">        List&lt;T&gt; list = List.of(values);</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">        return list.isEmpty() ? Empty.instance() : new Node&lt;&gt;(list.head(), list.tail().map(Tree::of));</span>
+    }
+
+    /**
+     * Creates a Tree of the given elements.
+     * &lt;p&gt;
+     * If the given iterable is a tree, it is returned as result.
+     * if the iteration order of the elements is stable.
+     *
+     * @param &lt;T&gt;      Component type of the List.
+     * @param iterable An Iterable of elements.
+     * @return A list containing the given elements in the same order.
+     * @throws NullPointerException if {@code elements} is null
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    static &lt;T&gt; Tree&lt;T&gt; ofAll(Iterable&lt;? extends T&gt; iterable) {
+<span class="fc" id="L131">        Objects.requireNonNull(iterable, &quot;iterable is null&quot;);</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">        if (iterable instanceof Tree) {</span>
+<span class="fc" id="L133">            return (Tree&lt;T&gt;) iterable;</span>
+        } else {
+<span class="fc" id="L135">            final List&lt;T&gt; list = List.ofAll(iterable);</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">            return list.isEmpty() ? Empty.instance() : new Node&lt;&gt;(list.head(), list.tail().map(Tree::of));</span>
+        }
+    }
+
+    /**
+     * Returns a Tree containing {@code n} values of a given Function {@code f}
+     * over a range of integer values from 0 to {@code n - 1}.
+     *
+     * @param &lt;T&gt; Component type of the Tree
+     * @param n The number of elements in the Tree
+     * @param f The Function computing element values
+     * @return A Tree consisting of elements {@code f(0),f(1), ..., f(n - 1)}
+     * @throws NullPointerException if {@code f} is null
+     */
+    static &lt;T&gt; Tree&lt;T&gt; tabulate(int n, Function&lt;? super Integer, ? extends T&gt; f) {
+<span class="fc" id="L151">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="fc" id="L152">        return Collections.tabulate(n, f, Tree.empty(), Tree::of);</span>
+    }
+
+    /**
+     * Returns a Tree containing {@code n} values supplied by a given Supplier {@code s}.
+     *
+     * @param &lt;T&gt; Component type of the Tree
+     * @param n The number of elements in the Tree
+     * @param s The Supplier computing element values
+     * @return A Tree of size {@code n}, where each element contains the result supplied by {@code s}.
+     * @throws NullPointerException if {@code s} is null
+     */
+    static &lt;T&gt; Tree&lt;T&gt; fill(int n, Supplier&lt;? extends T&gt; s) {
+<span class="fc" id="L165">        Objects.requireNonNull(s, &quot;s is null&quot;);</span>
+<span class="fc" id="L166">        return Collections.fill(n, s, Tree.empty(), Tree::of);</span>
+    }
+
+    /**
+     * Gets the value of this tree.
+     *
+     * @return The value of this tree.
+     * @throws java.lang.UnsupportedOperationException if this tree is empty
+     */
+    T getValue();
+
+    /**
+     * Returns the children of this tree.
+     *
+     * @return the tree's children
+     */
+    List&lt;Node&lt;T&gt;&gt; getChildren();
+
+    /**
+     * Checks if this Tree is a leaf. A tree is a leaf if it is a Node with no children.
+     * Because the empty tree is no Node, it is not a leaf by definition.
+     *
+     * @return true if this tree is a leaf, false otherwise.
+     */
+    boolean isLeaf();
+
+    /**
+     * Checks if this Tree is a branch. A Tree is a branch if it is a Node which has children.
+     * Because the empty tree is not a Node, it is not a branch by definition.
+     *
+     * @return true if this tree is a branch, false otherwise.
+     */
+    default boolean isBranch() {
+<span class="fc bfc" id="L199" title="All 4 branches covered.">        return !(isEmpty() || isLeaf());</span>
+    }
+
+    /**
+     * Traverses this tree in a specific {@link javaslang.collection.Tree.Order}.
+     *
+     * @param order A traversal order
+     * @return A new Iterator
+     */
+    default Iterator&lt;T&gt; iterator(Order order) {
+<span class="nc" id="L209">        return traverse(order).iterator();</span>
+    }
+
+    /**
+     * Returns the number of nodes (including root and leafs).
+     *
+     * @return The size of the tree.
+     */
+    int size();
+
+    /**
+     * Transforms this {@code Tree}.
+     *
+     * @param f   A transformation
+     * @param &lt;U&gt; Type of transformation result
+     * @return An instance of type {@code U}
+     * @throws NullPointerException if {@code f} is null
+     */
+    default &lt;U&gt; U transform(Function&lt;? super Tree&lt;? super T&gt;, ? extends U&gt; f) {
+<span class="nc" id="L228">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="nc" id="L229">        return f.apply(this);</span>
+    }
+
+    /**
+     * Traverses this tree in {@link Order#PRE_ORDER}.
+     *
+     * @return A sequence of the tree values in pre-order.
+     */
+    default Seq&lt;T&gt; traverse() {
+<span class="fc" id="L238">        return traverse(PRE_ORDER);</span>
+    }
+
+    /**
+     * Traverses the Tree in a specific order.
+     *
+     * @param order the tree traversal order
+     * @return A List containing all elements of this tree, which is List if this tree is empty.
+     * @throws java.lang.NullPointerException if order is null
+     */
+    default Seq&lt;T&gt; traverse(Order order) {
+<span class="fc" id="L249">        Objects.requireNonNull(order, &quot;order is null&quot;);</span>
+<span class="fc bfc" id="L250" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L251">            return Stream.empty();</span>
+        } else {
+<span class="pc bpc" id="L253" title="1 of 5 branches missed.">            switch (order) {</span>
+                case PRE_ORDER:
+<span class="fc" id="L255">                    return Traversal.preOrder(this);</span>
+                case IN_ORDER:
+<span class="fc" id="L257">                    return Traversal.inOrder(this);</span>
+                case POST_ORDER:
+<span class="fc" id="L259">                    return Traversal.postOrder(this);</span>
+                case LEVEL_ORDER:
+<span class="fc" id="L261">                    return Traversal.levelOrder(this);</span>
+                default:
+<span class="nc" id="L263">                    throw new IllegalStateException(&quot;Unknown order: &quot; + order.name());</span>
+            }
+        }
+    }
+
+    /**
+     * Counts the number of branches of this tree. The empty tree and a leaf have no branches.
+     *
+     * @return The number of branches of this tree.
+     */
+    default int branchCount() {
+<span class="fc bfc" id="L274" title="All 4 branches covered.">        if (isEmpty() || isLeaf()) {</span>
+<span class="fc" id="L275">            return 0;</span>
+        } else {
+<span class="fc" id="L277">            return getChildren().foldLeft(1, (count, child) -&gt; count + child.branchCount());</span>
+        }
+    }
+
+    /**
+     * Counts the number of leaves of this tree. The empty tree has no leaves.
+     *
+     * @return The number of leaves of this tree.
+     */
+    default int leafCount() {
+<span class="fc bfc" id="L287" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L288">            return 0;</span>
+<span class="fc bfc" id="L289" title="All 2 branches covered.">        } else if (isLeaf()) {</span>
+<span class="fc" id="L290">            return 1;</span>
+        } else {
+<span class="fc" id="L292">            return getChildren().foldLeft(0, (count, child) -&gt; count + child.leafCount());</span>
+        }
+    }
+
+    /**
+     * Counts the number of nodes (i.e. branches and leaves) of this tree. The empty tree has no nodes.
+     *
+     * @return The number of nodes of this tree.
+     */
+    default int nodeCount() {
+<span class="fc bfc" id="L302" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L303">            return 0;</span>
+        } else {
+<span class="fc" id="L305">            return 1 + getChildren().foldLeft(0, (count, child) -&gt; count + child.nodeCount());</span>
+        }
+    }
+
+    // -- Methods inherited from Traversable
+
+    @Override
+    default Tree&lt;T&gt; clear() {
+<span class="fc" id="L313">        return Tree.empty();</span>
+    }
+
+    @Override
+    default Seq&lt;T&gt; distinct() {
+<span class="fc" id="L318">        return traverse().distinct();</span>
+    }
+
+    @Override
+    default Seq&lt;T&gt; distinctBy(Comparator&lt;? super T&gt; comparator) {
+<span class="fc" id="L323">        Objects.requireNonNull(comparator, &quot;comparator is null&quot;);</span>
+<span class="fc bfc" id="L324" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L325">            return Stream.empty();</span>
+        } else {
+<span class="fc" id="L327">            return traverse().distinctBy(comparator);</span>
+        }
+    }
+
+    @Override
+    default &lt;U&gt; Seq&lt;T&gt; distinctBy(Function&lt;? super T, ? extends U&gt; keyExtractor) {
+<span class="fc" id="L333">        Objects.requireNonNull(keyExtractor, &quot;keyExtractor is null&quot;);</span>
+<span class="fc bfc" id="L334" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L335">            return Stream.empty();</span>
+        } else {
+<span class="fc" id="L337">            return traverse().distinctBy(keyExtractor);</span>
+        }
+    }
+
+    @Override
+    default Seq&lt;T&gt; drop(int n) {
+<span class="fc bfc" id="L343" title="All 2 branches covered.">        if (n &gt;= length()) {</span>
+<span class="fc" id="L344">            return Stream.empty();</span>
+        } else {
+<span class="fc" id="L346">            return traverse().drop(n);</span>
+        }
+    }
+
+    @Override
+    default Seq&lt;T&gt; dropRight(int n) {
+<span class="fc bfc" id="L352" title="All 2 branches covered.">        if (n &gt;= length()) {</span>
+<span class="fc" id="L353">            return Stream.empty();</span>
+        } else {
+<span class="fc" id="L355">            return traverse().dropRight(n);</span>
+        }
+    }
+
+    @Override
+    default Seq&lt;T&gt; dropUntil(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L361">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L362">        return dropWhile(predicate.negate());</span>
+    }
+
+    @Override
+    default Seq&lt;T&gt; dropWhile(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L367">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc bfc" id="L368" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L369">            return Stream.empty();</span>
+        } else {
+<span class="fc" id="L371">            return traverse().dropWhile(predicate);</span>
+        }
+    }
+
+    @Override
+    default Seq&lt;T&gt; filter(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L377">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc bfc" id="L378" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L379">            return Stream.empty();</span>
+        } else {
+<span class="fc" id="L381">            return traverse().filter(predicate);</span>
+        }
+    }
+
+    @Override
+    default Seq&lt;T&gt; filterNot(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L387">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L388">        return filter(predicate.negate());</span>
+    }
+
+    @Override
+    default &lt;U&gt; Tree&lt;U&gt; flatMap(Function&lt;? super T, ? extends Iterable&lt;? extends U&gt;&gt; mapper) {
+<span class="fc" id="L393">        Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+<span class="fc bfc" id="L394" title="All 2 branches covered.">        return isEmpty() ? Empty.instance() : FlatMap.apply((Node&lt;T&gt;) this, mapper);</span>
+    }
+
+    @Override
+    default &lt;U&gt; U foldRight(U zero, BiFunction&lt;? super T, ? super U, ? extends U&gt; f) {
+<span class="fc" id="L399">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="fc bfc" id="L400" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L401">            return zero;</span>
+        } else {
+<span class="fc" id="L403">            return iterator().foldRight(zero, f);</span>
+        }
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override
+    default &lt;C&gt; Map&lt;C, Seq&lt;T&gt;&gt; groupBy(Function&lt;? super T, ? extends C&gt; classifier) {
+<span class="fc" id="L410">        Objects.requireNonNull(classifier, &quot;classifier is null&quot;);</span>
+<span class="fc bfc" id="L411" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L412">            return HashMap.empty();</span>
+        } else {
+<span class="fc" id="L414">            return (Map&lt;C, Seq&lt;T&gt;&gt;) traverse().groupBy(classifier);</span>
+        }
+    }
+
+    @Override
+    default Iterator&lt;Seq&lt;T&gt;&gt; grouped(int size) {
+<span class="fc" id="L420">        return sliding(size, size);</span>
+    }
+
+    @Override
+    default boolean hasDefiniteSize() {
+<span class="fc" id="L425">        return true;</span>
+    }
+
+    @Override
+    default T head() {
+<span class="fc bfc" id="L430" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L431">            throw new NoSuchElementException(&quot;head of empty tree&quot;);</span>
+        } else {
+<span class="fc" id="L433">            return iterator().next();</span>
+        }
+    }
+
+    @Override
+    default Option&lt;T&gt; headOption() {
+<span class="fc bfc" id="L439" title="All 2 branches covered.">        return isEmpty() ? Option.none() : Option.some(head());</span>
+    }
+
+    @Override
+    default Seq&lt;T&gt; init() {
+<span class="fc bfc" id="L444" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L445">            throw new UnsupportedOperationException(&quot;init of empty tree&quot;);</span>
+        } else {
+<span class="fc" id="L447">            return traverse().init();</span>
+        }
+    }
+
+    @Override
+    default Option&lt;Seq&lt;T&gt;&gt; initOption() {
+<span class="fc bfc" id="L453" title="All 2 branches covered.">        return isEmpty() ? Option.none() : Option.some(init());</span>
+    }
+
+    @Override
+    default boolean isTraversableAgain() {
+<span class="fc" id="L458">        return true;</span>
+    }
+
+    @Override
+    default Iterator&lt;T&gt; iterator() {
+<span class="fc" id="L463">        return traverse().iterator();</span>
+    }
+
+    @Override
+    default int length() {
+<span class="fc" id="L468">        return size();</span>
+    }
+
+    @Override
+    default &lt;U&gt; Tree&lt;U&gt; map(Function&lt;? super T, ? extends U&gt; mapper) {
+<span class="fc" id="L473">        Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+<span class="fc bfc" id="L474" title="All 2 branches covered.">        return isEmpty() ? Empty.instance() : TreeModule.Map.apply((Node&lt;T&gt;) this, mapper);</span>
+    }
+
+    @Override
+    default Match.MatchMonad.Of&lt;Tree&lt;T&gt;&gt; match() {
+<span class="fc" id="L479">        return Match.of(this);</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override
+    default Tuple2&lt;Seq&lt;T&gt;, Seq&lt;T&gt;&gt; partition(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L485">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc bfc" id="L486" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L487">            return Tuple.of(Stream.empty(), Stream.empty());</span>
+        } else {
+<span class="fc" id="L489">            return (Tuple2&lt;Seq&lt;T&gt;, Seq&lt;T&gt;&gt;) traverse().partition(predicate);</span>
+        }
+    }
+
+    @Override
+    default Tree&lt;T&gt; peek(Consumer&lt;? super T&gt; action) {
+<span class="fc" id="L495">        Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="fc bfc" id="L496" title="All 2 branches covered.">        if (!isEmpty()) {</span>
+<span class="fc" id="L497">            action.accept(head());</span>
+        }
+<span class="fc" id="L499">        return this;</span>
+    }
+
+    @Override
+    default Tree&lt;T&gt; replace(T currentElement, T newElement) {
+<span class="fc bfc" id="L504" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L505">            return Empty.instance();</span>
+        } else {
+<span class="fc" id="L507">            return Replace.apply((Node&lt;T&gt;) this, currentElement, newElement);</span>
+        }
+    }
+
+    @Override
+    default Tree&lt;T&gt; replaceAll(T currentElement, T newElement) {
+<span class="fc bfc" id="L513" title="All 2 branches covered.">        return map(t -&gt; Objects.equals(t, currentElement) ? newElement : t);</span>
+    }
+
+    @Override
+    default Seq&lt;T&gt; retainAll(Iterable&lt;? extends T&gt; elements) {
+<span class="fc" id="L518">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc" id="L519">        return traverse().retainAll(elements);</span>
+    }
+
+    @Override
+    default Seq&lt;T&gt; scan(T zero, BiFunction&lt;? super T, ? super T, ? extends T&gt; operation) {
+<span class="fc" id="L524">        return scanLeft(zero, operation);</span>
+    }
+
+    @Override
+    default &lt;U&gt; Seq&lt;U&gt; scanLeft(U zero, BiFunction&lt;? super U, ? super T, ? extends U&gt; operation) {
+<span class="fc" id="L529">        Objects.requireNonNull(operation, &quot;operation is null&quot;);</span>
+<span class="fc" id="L530">        return Collections.scanLeft(this, zero, operation, List.empty(), List::prepend, List::reverse);</span>
+    }
+
+    @Override
+    default &lt;U&gt; Seq&lt;U&gt; scanRight(U zero, BiFunction&lt;? super T, ? super U, ? extends U&gt; operation) {
+<span class="fc" id="L535">        Objects.requireNonNull(operation, &quot;operation is null&quot;);</span>
+<span class="fc" id="L536">        return Collections.scanRight(this, zero, operation, List.empty(), List::prepend, Function.identity());</span>
+    }
+
+    @Override
+    default Iterator&lt;Seq&lt;T&gt;&gt; sliding(int size) {
+<span class="fc" id="L541">        return sliding(size, 1);</span>
+    }
+
+    @Override
+    default Iterator&lt;Seq&lt;T&gt;&gt; sliding(int size, int step) {
+<span class="fc" id="L546">        return iterator().sliding(size, step);</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override
+    default Tuple2&lt;Seq&lt;T&gt;, Seq&lt;T&gt;&gt; span(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L552">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc bfc" id="L553" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L554">            return Tuple.of(Stream.empty(), Stream.empty());</span>
+        } else {
+<span class="fc" id="L556">            return (Tuple2&lt;Seq&lt;T&gt;, Seq&lt;T&gt;&gt;) traverse().span(predicate);</span>
+        }
+    }
+
+    @Override
+    default Spliterator&lt;T&gt; spliterator() {
+        // the focus of the Stream API is on random-access collections of *known size*
+<span class="fc" id="L563">        return Spliterators.spliterator(iterator(), length(), Spliterator.ORDERED | Spliterator.IMMUTABLE);</span>
+    }
+
+    @Override
+    default String stringPrefix() {
+<span class="fc" id="L568">        return &quot;Tree&quot;;</span>
+    }
+
+    @Override
+    default Seq&lt;T&gt; tail() {
+<span class="fc bfc" id="L573" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L574">            throw new UnsupportedOperationException(&quot;tail of empty tree&quot;);</span>
+        } else {
+<span class="fc" id="L576">            return traverse().tail();</span>
+        }
+    }
+
+    @Override
+    default Option&lt;Seq&lt;T&gt;&gt; tailOption() {
+<span class="fc bfc" id="L582" title="All 2 branches covered.">        return isEmpty() ? Option.none() : Option.some(tail());</span>
+    }
+
+    @Override
+    default Seq&lt;T&gt; take(int n) {
+<span class="fc bfc" id="L587" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L588">            return Stream.empty();</span>
+        } else {
+<span class="fc" id="L590">            return traverse().take(n);</span>
+        }
+    }
+
+    @Override
+    default Seq&lt;T&gt; takeRight(int n) {
+<span class="fc bfc" id="L596" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L597">            return Stream.empty();</span>
+        } else {
+<span class="fc" id="L599">            return traverse().takeRight(n);</span>
+        }
+    }
+
+    @Override
+    default Seq&lt;T&gt; takeUntil(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L605">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L606">        return traverse().takeUntil(predicate);</span>
+    }
+
+    @Override
+    default Seq&lt;T&gt; takeWhile(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L611">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L612">        return traverse().takeWhile(predicate);</span>
+    }
+    
+    @Override
+    default &lt;U&gt; Tree&lt;U&gt; unit(Iterable&lt;? extends U&gt; iterable) {
+<span class="nc" id="L617">    	return Tree.ofAll(iterable);</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override
+    default &lt;T1, T2&gt; Tuple2&lt;Tree&lt;T1&gt;, Tree&lt;T2&gt;&gt; unzip(
+            Function&lt;? super T, Tuple2&lt;? extends T1, ? extends T2&gt;&gt; unzipper) {
+<span class="fc" id="L624">        Objects.requireNonNull(unzipper, &quot;unzipper is null&quot;);</span>
+<span class="fc bfc" id="L625" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L626">            return Tuple.of(Empty.instance(), Empty.instance());</span>
+        } else {
+<span class="fc" id="L628">            return (Tuple2&lt;Tree&lt;T1&gt;, Tree&lt;T2&gt;&gt;) (Object) Unzip.apply((Node&lt;T&gt;) this, unzipper);</span>
+        }
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override
+    default &lt;T1, T2, T3&gt; Tuple3&lt;Tree&lt;T1&gt;, Tree&lt;T2&gt;, Tree&lt;T3&gt;&gt; unzip3(
+            Function&lt;? super T, Tuple3&lt;? extends T1, ? extends T2, ? extends T3&gt;&gt; unzipper) {
+<span class="fc" id="L636">        Objects.requireNonNull(unzipper, &quot;unzipper is null&quot;);</span>
+<span class="fc bfc" id="L637" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L638">            return Tuple.of(Empty.instance(), Empty.instance(), Empty.instance());</span>
+        } else {
+<span class="fc" id="L640">            return (Tuple3&lt;Tree&lt;T1&gt;, Tree&lt;T2&gt;, Tree&lt;T3&gt;&gt;) (Object) Unzip.apply3((Node&lt;T&gt;) this, unzipper);</span>
+        }
+    }
+
+    @Override
+    default &lt;U&gt; Tree&lt;Tuple2&lt;T, U&gt;&gt; zip(Iterable&lt;U&gt; that) {
+<span class="fc" id="L646">        Objects.requireNonNull(that, &quot;that is null&quot;);</span>
+<span class="fc bfc" id="L647" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L648">            return Empty.instance();</span>
+        } else {
+<span class="fc" id="L650">            return Zip.apply((Node&lt;T&gt;) this, that.iterator());</span>
+        }
+    }
+
+    @Override
+    default &lt;U&gt; Tree&lt;Tuple2&lt;T, U&gt;&gt; zipAll(Iterable&lt;U&gt; that, T thisElem, U thatElem) {
+<span class="fc" id="L656">        Objects.requireNonNull(that, &quot;that is null&quot;);</span>
+<span class="fc bfc" id="L657" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L658">            return Iterator.ofAll(that).map(elem -&gt; Tuple.of(thisElem, elem)).toTree();</span>
+        } else {
+<span class="fc" id="L660">            final java.util.Iterator&lt;U&gt; thatIter = that.iterator();</span>
+<span class="fc" id="L661">            final Tree&lt;Tuple2&lt;T, U&gt;&gt; tree = ZipAll.apply((Node&lt;T&gt;) this, thatIter, thatElem);</span>
+<span class="fc bfc" id="L662" title="All 2 branches covered.">            if (thatIter.hasNext()) {</span>
+<span class="fc" id="L663">                final Iterable&lt;Node&lt;Tuple2&lt;T, U&gt;&gt;&gt; remainder = Iterator</span>
+<span class="fc" id="L664">                        .ofAll(thatIter)</span>
+<span class="fc" id="L665">                        .map(elem -&gt; Tree.of(Tuple.of(thisElem, elem)));</span>
+<span class="fc" id="L666">                return new Node&lt;&gt;(tree.getValue(), tree.getChildren().appendAll(remainder));</span>
+            } else {
+<span class="fc" id="L668">                return tree;</span>
+            }
+        }
+    }
+
+    @Override
+    default Tree&lt;Tuple2&lt;T, Integer&gt;&gt; zipWithIndex() {
+<span class="fc" id="L675">        return zip(Iterator.from(0));</span>
+    }
+
+    @Override
+    boolean equals(Object o);
+
+    @Override
+    int hashCode();
+
+    @Override
+    String toString();
+
+    /**
+     * Creates a neat 2-dimensional drawing of a tree. Unicode characters are used to draw node junctions.
+     *
+     * @return A nice string representation of the tree.
+     */
+    String draw();
+
+    /**
+     * Represents a tree node.
+     *
+     * @param &lt;T&gt; value type
+     */
+    final class Node&lt;T&gt; implements Tree&lt;T&gt;, Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        private final T value;
+        private final List&lt;Node&lt;T&gt;&gt; children;
+        private final Lazy&lt;Integer&gt; size;
+        private final int hashCode;
+
+        /**
+         * Constructs a rose tree branch.
+         *
+         * @param value    A value.
+         * @param children A non-empty list of children.
+         * @throws NullPointerException     if children is null
+         * @throws IllegalArgumentException if children is empty
+         */
+<span class="fc" id="L716">        public Node(T value, List&lt;Node&lt;T&gt;&gt; children) {</span>
+<span class="fc" id="L717">            Objects.requireNonNull(children, &quot;children is null&quot;);</span>
+<span class="fc" id="L718">            this.value = value;</span>
+<span class="fc" id="L719">            this.children = children;</span>
+<span class="fc" id="L720">            this.size = Lazy.of(() -&gt; 1 + children.foldLeft(0, (acc, child) -&gt; acc + child.length()));</span>
+<span class="fc" id="L721">            this.hashCode = 31 * 31 + 31 * Objects.hashCode(value) + Objects.hashCode(children);</span>
+<span class="fc" id="L722">        }</span>
+
+        @Override
+        public List&lt;Node&lt;T&gt;&gt; getChildren() {
+<span class="fc" id="L726">            return children;</span>
+        }
+
+        @Override
+        public T getValue() {
+<span class="fc" id="L731">            return value;</span>
+        }
+
+        @Override
+        public boolean isEmpty() {
+<span class="fc" id="L736">            return false;</span>
+        }
+
+        @Override
+        public boolean isLeaf() {
+<span class="fc" id="L741">            return children.isEmpty();</span>
+        }
+
+        @Override
+        public int size() {
+<span class="fc" id="L746">            return size.get();</span>
+        }
+
+        @Override
+        public boolean equals(Object o) {
+<span class="fc bfc" id="L751" title="All 2 branches covered.">            if (o == this) {</span>
+<span class="fc" id="L752">                return true;</span>
+<span class="fc bfc" id="L753" title="All 2 branches covered.">            } else if (o instanceof Node) {</span>
+<span class="fc" id="L754">                final Node&lt;?&gt; that = (Node&lt;?&gt;) o;</span>
+<span class="fc bfc" id="L755" title="All 2 branches covered.">                return Objects.equals(this.getValue(), that.getValue())</span>
+<span class="fc bfc" id="L756" title="All 2 branches covered.">                        &amp;&amp; Objects.equals(this.getChildren(), that.getChildren());</span>
+            } else {
+<span class="fc" id="L758">                return false;</span>
+            }
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L764">            return hashCode;</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="pc bpc" id="L769" title="1 of 2 branches missed.">            return stringPrefix() + (isLeaf() ? &quot;(&quot; + value + &quot;)&quot; : toLispString(this));</span>
+        }
+
+        @Override
+        public String draw() {
+<span class="fc" id="L774">            StringBuilder builder = new StringBuilder();</span>
+<span class="fc" id="L775">            drawAux(&quot;&quot;, builder);</span>
+<span class="fc" id="L776">            return builder.toString();</span>
+        }
+
+        private void drawAux(String indent, StringBuilder builder) {
+<span class="fc" id="L780">            builder.append(value);</span>
+<span class="fc bfc" id="L781" title="All 2 branches covered.">            for (List&lt;Node&lt;T&gt;&gt; it = children; !it.isEmpty(); it = it.tail()) {</span>
+<span class="fc" id="L782">                final boolean isLast = it.tail().isEmpty();</span>
+<span class="fc" id="L783">                builder.append('\n')</span>
+<span class="fc bfc" id="L784" title="All 2 branches covered.">                        .append(indent)</span>
+<span class="fc" id="L785">                        .append(isLast ? &quot;└──&quot; : &quot;├──&quot;);</span>
+<span class="fc bfc" id="L786" title="All 2 branches covered.">                it.head().drawAux(indent + (isLast ? &quot;   &quot; : &quot;│  &quot;), builder);</span>
+            }
+<span class="fc" id="L788">        }</span>
+
+        private static String toLispString(Tree&lt;?&gt; tree) {
+<span class="fc" id="L791">            final String value = String.valueOf(tree.getValue());</span>
+<span class="fc bfc" id="L792" title="All 2 branches covered.">            if (tree.isLeaf()) {</span>
+<span class="fc" id="L793">                return value;</span>
+            } else {
+<span class="fc" id="L795">                return String.format(&quot;(%s %s)&quot;, value, tree.getChildren().map(Node::toLispString).mkString(&quot; &quot;));</span>
+            }
+        }
+
+        // -- Serializable implementation
+
+        /**
+         * {@code writeReplace} method for the serialization proxy pattern.
+         * &lt;p&gt;
+         * The presence of this method causes the serialization system to emit a SerializationProxy instance instead of
+         * an instance of the enclosing class.
+         *
+         * @return A SerialiationProxy for this enclosing class.
+         */
+        private Object writeReplace() {
+<span class="fc" id="L810">            return new SerializationProxy&lt;&gt;(this);</span>
+        }
+
+        /**
+         * {@code readObject} method for the serialization proxy pattern.
+         * &lt;p&gt;
+         * Guarantees that the serialization system will never generate a serialized instance of the enclosing class.
+         *
+         * @param stream An object serialization stream.
+         * @throws java.io.InvalidObjectException This method will throw with the message &quot;Proxy required&quot;.
+         */
+        private void readObject(ObjectInputStream stream) throws InvalidObjectException {
+<span class="fc" id="L822">            throw new InvalidObjectException(&quot;Proxy required&quot;);</span>
+        }
+
+        /**
+         * A serialization proxy which, in this context, is used to deserialize immutable nodes with final
+         * instance fields.
+         *
+         * @param &lt;T&gt; The component type of the underlying tree.
+         */
+        // DEV NOTE: The serialization proxy pattern is not compatible with non-final, i.e. extendable,
+        // classes. Also, it may not be compatible with circular object graphs.
+        private static final class SerializationProxy&lt;T&gt; implements Serializable {
+
+            private static final long serialVersionUID = 1L;
+
+            // the instance to be serialized/deserialized
+            private transient Node&lt;T&gt; node;
+
+            /**
+             * Constructor for the case of serialization, called by {@link Node#writeReplace()}.
+             * &lt;p/&gt;
+             * The constructor of a SerializationProxy takes an argument that concisely represents the logical state of
+             * an instance of the enclosing class.
+             *
+             * @param node a Branch
+             */
+<span class="fc" id="L848">            SerializationProxy(Node&lt;T&gt; node) {</span>
+<span class="fc" id="L849">                this.node = node;</span>
+<span class="fc" id="L850">            }</span>
+
+            /**
+             * Write an object to a serialization stream.
+             *
+             * @param s An object serialization stream.
+             * @throws java.io.IOException If an error occurs writing to the stream.
+             */
+            private void writeObject(ObjectOutputStream s) throws IOException {
+<span class="fc" id="L859">                s.defaultWriteObject();</span>
+<span class="fc" id="L860">                s.writeObject(node.value);</span>
+<span class="fc" id="L861">                s.writeObject(node.children);</span>
+<span class="fc" id="L862">            }</span>
+
+            /**
+             * Read an object from a deserialization stream.
+             *
+             * @param s An object deserialization stream.
+             * @throws ClassNotFoundException If the object's class read from the stream cannot be found.
+             * @throws IOException            If an error occurs reading from the stream.
+             */
+            @SuppressWarnings(&quot;unchecked&quot;)
+            private void readObject(ObjectInputStream s) throws ClassNotFoundException, IOException {
+<span class="fc" id="L873">                s.defaultReadObject();</span>
+<span class="fc" id="L874">                final T value = (T) s.readObject();</span>
+<span class="fc" id="L875">                final List&lt;Node&lt;T&gt;&gt; children = (List&lt;Node&lt;T&gt;&gt;) s.readObject();</span>
+<span class="fc" id="L876">                node = new Node&lt;&gt;(value, children);</span>
+<span class="fc" id="L877">            }</span>
+
+            /**
+             * {@code readResolve} method for the serialization proxy pattern.
+             * &lt;p&gt;
+             * Returns a logically equivalent instance of the enclosing class. The presence of this method causes the
+             * serialization system to translate the serialization proxy back into an instance of the enclosing class
+             * upon deserialization.
+             *
+             * @return A deserialized instance of the enclosing class.
+             */
+            private Object readResolve() {
+<span class="fc" id="L889">                return node;</span>
+            }
+        }
+    }
+
+    /**
+     * The empty tree. Use Tree.empty() to create an instance.
+     *
+     * @param &lt;T&gt; type of the tree's values
+     */
+    final class Empty&lt;T&gt; implements Tree&lt;T&gt;, Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+<span class="fc" id="L903">        private static final Empty&lt;?&gt; INSTANCE = new Empty&lt;&gt;();</span>
+
+        // hidden
+<span class="fc" id="L906">        private Empty() {</span>
+<span class="fc" id="L907">        }</span>
+
+        @SuppressWarnings(&quot;unchecked&quot;)
+        public static &lt;T&gt; Empty&lt;T&gt; instance() {
+<span class="fc" id="L911">            return (Empty&lt;T&gt;) INSTANCE;</span>
+        }
+
+        @Override
+        public List&lt;Node&lt;T&gt;&gt; getChildren() {
+<span class="fc" id="L916">            return Nil.instance();</span>
+        }
+
+        @Override
+        public T getValue() {
+<span class="fc" id="L921">            throw new UnsupportedOperationException(&quot;getValue of empty Tree&quot;);</span>
+        }
+
+        @Override
+        public boolean isEmpty() {
+<span class="fc" id="L926">            return true;</span>
+        }
+
+        @Override
+        public boolean isLeaf() {
+<span class="fc" id="L931">            return false;</span>
+        }
+
+        @Override
+        public int size() {
+<span class="fc" id="L936">            return 0;</span>
+        }
+
+        @Override
+        public boolean equals(Object o) {
+<span class="fc bfc" id="L941" title="All 2 branches covered.">            return o == this;</span>
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L946">            return 1;</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="fc" id="L951">            return stringPrefix() + &quot;()&quot;;</span>
+        }
+
+        @Override
+<span class="fc" id="L955">        public String draw() { return &quot;▣&quot;; }</span>
+
+        // -- Serializable implementation
+
+        /**
+         * Instance control for object serialization.
+         *
+         * @return The singleton instance of Nil.
+         * @see java.io.Serializable
+         */
+        private Object readResolve() {
+<span class="fc" id="L966">            return INSTANCE;</span>
+        }
+    }
+
+    /**
+     * Tree traversal order.
+     * &lt;p&gt;
+     * Example tree:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     *         1
+     *        / \
+     *       /   \
+     *      /     \
+     *     2       3
+     *    / \     /
+     *   4   5   6
+     *  /       / \
+     * 7       8   9
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * See also
+     * &lt;ul&gt;
+     * &lt;li&gt;&lt;a href=&quot;http://en.wikipedia.org/wiki/Tree_traversal&quot;&gt;Tree traversal&lt;/a&gt; (wikipedia)&lt;/li&gt;
+     * &lt;li&gt;See &lt;a href=&quot;http://rosettacode.org/wiki/Tree_traversal&quot;&gt;Tree traversal&lt;/a&gt; (rosetta code)&lt;/li&gt;
+     * &lt;/ul&gt;
+     */
+    // see http://programmers.stackexchange.com/questions/138766/in-order-traversal-of-m-way-trees
+<span class="pc" id="L995">    enum Order {</span>
+
+        /**
+         * 1 2 4 7 5 3 6 8 9 (= depth-first)
+         */
+<span class="fc" id="L1000">        PRE_ORDER,</span>
+
+        /**
+         * 7 4 2 5 1 8 6 9 3
+         */
+<span class="fc" id="L1005">        IN_ORDER,</span>
+
+        /**
+         * 7 4 5 2 8 9 6 3 1
+         */
+<span class="fc" id="L1010">        POST_ORDER,</span>
+
+        /**
+         * 1 2 3 4 5 6 7 8 9 (= breadth-first)
+         */
+<span class="fc" id="L1015">        LEVEL_ORDER</span>
+    }
+}
+
+/**
+ * Because the empty tree {@code Empty} cannot be a child of an existing tree, method implementations distinguish between the
+ * empty and non-empty case. Because the structure of trees is recursive, often we have commands in the form of module
+ * classes with one static method.
+ */
+interface TreeModule {
+
+<span class="nc" id="L1026">    final class FlatMap {</span>
+
+        @SuppressWarnings(&quot;unchecked&quot;)
+        static &lt;T, U&gt; Tree&lt;U&gt; apply(Node&lt;T&gt; node, Function&lt;? super T, ? extends Iterable&lt;? extends U&gt;&gt; mapper) {
+<span class="fc" id="L1030">            final Tree&lt;U&gt; mapped = Tree.ofAll(mapper.apply(node.getValue()));</span>
+<span class="pc bpc" id="L1031" title="1 of 2 branches missed.">            if (mapped.isEmpty()) {</span>
+<span class="nc" id="L1032">                return Tree.empty();</span>
+            } else {
+<span class="fc" id="L1034">                final List&lt;Node&lt;U&gt;&gt; children = (List&lt;Node&lt;U&gt;&gt;) (Object) node</span>
+<span class="fc" id="L1035">                        .getChildren()</span>
+<span class="fc" id="L1036">                        .map(child -&gt; FlatMap.apply(child, mapper))</span>
+<span class="fc" id="L1037">                        .filter(Tree::isDefined);</span>
+<span class="fc" id="L1038">                return Tree.of(mapped.getValue(), children.prependAll(mapped.getChildren()));</span>
+            }
+        }
+    }
+
+<span class="nc" id="L1043">    final class Map {</span>
+
+        static &lt;T, U&gt; Node&lt;U&gt; apply(Node&lt;T&gt; node, Function&lt;? super T, ? extends U&gt; mapper) {
+<span class="fc" id="L1046">            final U value = mapper.apply(node.getValue());</span>
+<span class="fc" id="L1047">            final List&lt;Node&lt;U&gt;&gt; children = node.getChildren().map(child -&gt; Map.apply(child, mapper));</span>
+<span class="fc" id="L1048">            return new Node&lt;&gt;(value, children);</span>
+        }
+    }
+
+<span class="nc" id="L1052">    final class Replace {</span>
+
+        // Idea:
+        // Traverse (depth-first) until a match is found, then stop and rebuild relevant parts of the tree.
+        // If not found, return the same tree instance.
+        static &lt;T&gt; Node&lt;T&gt; apply(Node&lt;T&gt; node, T currentElement, T newElement) {
+<span class="fc bfc" id="L1058" title="All 2 branches covered.">            if (Objects.equals(node.getValue(), currentElement)) {</span>
+<span class="fc" id="L1059">                return new Node&lt;&gt;(newElement, node.getChildren());</span>
+            } else {
+<span class="fc bfc" id="L1061" title="All 2 branches covered.">                for (Node&lt;T&gt; child : node.getChildren()) {</span>
+<span class="fc" id="L1062">                    final Node&lt;T&gt; newChild = Replace.apply(child, currentElement, newElement);</span>
+<span class="fc bfc" id="L1063" title="All 2 branches covered.">                    final boolean found = newChild != child;</span>
+<span class="fc bfc" id="L1064" title="All 2 branches covered.">                    if (found) {</span>
+<span class="fc" id="L1065">                        final List&lt;Node&lt;T&gt;&gt; newChildren = node.getChildren().replace(child, newChild);</span>
+<span class="fc" id="L1066">                        return new Node&lt;&gt;(node.getValue(), newChildren);</span>
+                    }
+<span class="fc" id="L1068">                }</span>
+<span class="fc" id="L1069">                return node;</span>
+            }
+        }
+    }
+
+<span class="nc" id="L1074">    final class Traversal {</span>
+
+        static &lt;T&gt; Stream&lt;T&gt; preOrder(Tree&lt;T&gt; tree) {
+<span class="fc" id="L1077">            return tree.getChildren().foldLeft(Stream.of(tree.getValue()),</span>
+<span class="fc" id="L1078">                    (acc, child) -&gt; acc.appendAll(preOrder(child)));</span>
+        }
+
+        static &lt;T&gt; Stream&lt;T&gt; inOrder(Tree&lt;T&gt; tree) {
+<span class="fc bfc" id="L1082" title="All 2 branches covered.">            if (tree.isLeaf()) {</span>
+<span class="fc" id="L1083">                return Stream.of(tree.getValue());</span>
+            } else {
+<span class="fc" id="L1085">                final List&lt;Node&lt;T&gt;&gt; children = tree.getChildren();</span>
+<span class="fc" id="L1086">                return children</span>
+<span class="fc" id="L1087">                        .tail()</span>
+<span class="fc" id="L1088">                        .foldLeft(Stream.&lt;T&gt; empty(), (acc, child) -&gt; acc.appendAll(inOrder(child)))</span>
+<span class="fc" id="L1089">                        .prepend(tree.getValue())</span>
+<span class="fc" id="L1090">                        .prependAll(inOrder(children.head()));</span>
+            }
+        }
+
+        static &lt;T&gt; Stream&lt;T&gt; postOrder(Tree&lt;T&gt; tree) {
+<span class="fc" id="L1095">            return tree</span>
+<span class="fc" id="L1096">                    .getChildren()</span>
+<span class="fc" id="L1097">                    .foldLeft(Stream.&lt;T&gt; empty(), (acc, child) -&gt; acc.appendAll(postOrder(child)))</span>
+<span class="fc" id="L1098">                    .append(tree.getValue());</span>
+        }
+
+        static &lt;T&gt; Stream&lt;T&gt; levelOrder(Tree&lt;T&gt; tree) {
+<span class="fc" id="L1102">            Stream&lt;T&gt; result = Stream.empty();</span>
+<span class="fc" id="L1103">            final java.util.Queue&lt;Tree&lt;T&gt;&gt; queue = new java.util.LinkedList&lt;&gt;();</span>
+<span class="fc" id="L1104">            queue.add(tree);</span>
+<span class="fc bfc" id="L1105" title="All 2 branches covered.">            while (!queue.isEmpty()) {</span>
+<span class="fc" id="L1106">                final Tree&lt;T&gt; next = queue.remove();</span>
+<span class="fc" id="L1107">                result = result.prepend(next.getValue());</span>
+<span class="fc" id="L1108">                queue.addAll(next.getChildren().toJavaList());</span>
+<span class="fc" id="L1109">            }</span>
+<span class="fc" id="L1110">            return result.reverse();</span>
+        }
+    }
+
+<span class="nc" id="L1114">    final class Unzip {</span>
+
+        static &lt;T, T1, T2&gt; Tuple2&lt;Node&lt;T1&gt;, Node&lt;T2&gt;&gt; apply(Node&lt;T&gt; node,
+                                                            Function&lt;? super T, Tuple2&lt;? extends T1, ? extends T2&gt;&gt; unzipper) {
+<span class="fc" id="L1118">            final Tuple2&lt;? extends T1, ? extends T2&gt; value = unzipper.apply(node.getValue());</span>
+<span class="fc" id="L1119">            final List&lt;Tuple2&lt;Node&lt;T1&gt;, Node&lt;T2&gt;&gt;&gt; children = node</span>
+<span class="fc" id="L1120">                    .getChildren()</span>
+<span class="fc" id="L1121">                    .map(child -&gt; Unzip.apply(child, unzipper));</span>
+<span class="fc" id="L1122">            final Node&lt;T1&gt; node1 = new Node&lt;&gt;(value._1, children.map(t -&gt; t._1));</span>
+<span class="fc" id="L1123">            final Node&lt;T2&gt; node2 = new Node&lt;&gt;(value._2, children.map(t -&gt; t._2));</span>
+<span class="fc" id="L1124">            return Tuple.of(node1, node2);</span>
+        }
+
+        static &lt;T, T1, T2, T3&gt; Tuple3&lt;Node&lt;T1&gt;, Node&lt;T2&gt;, Node&lt;T3&gt;&gt; apply3(Node&lt;T&gt; node,
+                                                                           Function&lt;? super T, Tuple3&lt;? extends T1, ? extends T2, ? extends T3&gt;&gt; unzipper) {
+<span class="fc" id="L1129">            final Tuple3&lt;? extends T1, ? extends T2, ? extends T3&gt; value = unzipper.apply(node.getValue());</span>
+<span class="fc" id="L1130">            final List&lt;Tuple3&lt;Node&lt;T1&gt;, Node&lt;T2&gt;, Node&lt;T3&gt;&gt;&gt; children = node.getChildren()</span>
+<span class="fc" id="L1131">                    .map(child -&gt; Unzip.apply3(child, unzipper));</span>
+<span class="fc" id="L1132">            final Node&lt;T1&gt; node1 = new Node&lt;&gt;(value._1, children.map(t -&gt; t._1));</span>
+<span class="fc" id="L1133">            final Node&lt;T2&gt; node2 = new Node&lt;&gt;(value._2, children.map(t -&gt; t._2));</span>
+<span class="fc" id="L1134">            final Node&lt;T3&gt; node3 = new Node&lt;&gt;(value._3, children.map(t -&gt; t._3));</span>
+<span class="fc" id="L1135">            return Tuple.of(node1, node2, node3);</span>
+        }
+
+    }
+
+<span class="nc" id="L1140">    final class Zip {</span>
+
+        @SuppressWarnings(&quot;unchecked&quot;)
+        static &lt;T, U&gt; Tree&lt;Tuple2&lt;T, U&gt;&gt; apply(Node&lt;T&gt; node, java.util.Iterator&lt;U&gt; that) {
+<span class="fc bfc" id="L1144" title="All 2 branches covered.">            if (!that.hasNext()) {</span>
+<span class="fc" id="L1145">                return Empty.instance();</span>
+            } else {
+<span class="fc" id="L1147">                final Tuple2&lt;T, U&gt; value = Tuple.of(node.getValue(), that.next());</span>
+<span class="fc" id="L1148">                final List&lt;Node&lt;Tuple2&lt;T, U&gt;&gt;&gt; children = (List&lt;Node&lt;Tuple2&lt;T, U&gt;&gt;&gt;) (Object) node</span>
+<span class="fc" id="L1149">                        .getChildren()</span>
+<span class="fc" id="L1150">                        .map(child -&gt; Zip.apply(child, that))</span>
+<span class="fc" id="L1151">                        .filter(Tree::isDefined);</span>
+<span class="fc" id="L1152">                return new Node&lt;&gt;(value, children);</span>
+            }
+        }
+    }
+
+<span class="nc" id="L1157">    final class ZipAll {</span>
+
+        @SuppressWarnings(&quot;unchecked&quot;)
+        static &lt;T, U&gt; Tree&lt;Tuple2&lt;T, U&gt;&gt; apply(Node&lt;T&gt; node, java.util.Iterator&lt;U&gt; that, U thatElem) {
+<span class="fc bfc" id="L1161" title="All 2 branches covered.">            if (!that.hasNext()) {</span>
+<span class="fc" id="L1162">                return node.map(value -&gt; Tuple.of(value, thatElem));</span>
+            } else {
+<span class="fc" id="L1164">                final Tuple2&lt;T, U&gt; value = Tuple.of(node.getValue(), that.next());</span>
+<span class="fc" id="L1165">                final List&lt;Node&lt;Tuple2&lt;T, U&gt;&gt;&gt; children = (List&lt;Node&lt;Tuple2&lt;T, U&gt;&gt;&gt;) (Object) node</span>
+<span class="fc" id="L1166">                        .getChildren()</span>
+<span class="fc" id="L1167">                        .map(child -&gt; ZipAll.apply(child, that, thatElem))</span>
+<span class="fc" id="L1168">                        .filter(Tree::isDefined);</span>
+<span class="fc" id="L1169">                return new Node&lt;&gt;(value, children);</span>
+            }
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

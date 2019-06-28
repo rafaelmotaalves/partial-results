@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Comparators.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang.collection</a> &gt; <span class="el_source">Comparators.java</span></div><h1>Comparators.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang.collection;
+
+import java.io.Serializable;
+import java.util.Comparator;
+
+/**
+ * &lt;strong&gt;INTERNAL API - This class is subject to change.&lt;/strong&gt;
+ */
+final class Comparators {
+
+<span class="nc" id="L16">    private Comparators() {</span>
+<span class="nc" id="L17">    }</span>
+
+    /**
+     * Returns the natural comparator for type U, i.e. treating it as {@code Comparable&lt;? super U&gt;}.
+     * The returned comparator is also {@code java.io.Serializable}.
+     * &lt;p&gt;
+     * Please note that this will lead to runtime exceptions, if U is not Comparable.
+     *
+     * @param &lt;U&gt; The type
+     * @return The natural Comparator of type U
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    static &lt;U&gt; SerializableComparator&lt;U&gt; naturalComparator() {
+<span class="fc" id="L30">        return (o1, o2) -&gt; ((Comparable&lt;U&gt;) o1).compareTo(o2);</span>
+    }
+
+    /**
+     * Needed for serialization of sortable collections which internally need a comparator.
+     * &lt;p&gt;
+     * In general the comparator may be
+     * &lt;ul&gt;
+     * &lt;li&gt;a concrete class&lt;/li&gt;
+     * &lt;li&gt;a lambda&lt;/li&gt;
+     * &lt;li&gt;a method reference&lt;/li&gt;
+     * &lt;/ul&gt;
+     *
+     * @param &lt;T&gt; the type of objects that may be compared by this comparator
+     */
+    @FunctionalInterface
+    interface SerializableComparator&lt;T&gt; extends Comparator&lt;T&gt;, Serializable {
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.twilio.rest.resource.ipmessaging.v1.service.UserTest
+-------------------------------------------------------------------------------
+Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.752 sec

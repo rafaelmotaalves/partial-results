@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Tuple2.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang</a> &gt; <span class="el_source">Tuple2.java</span></div><h1>Tuple2.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang;
+
+/*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*\
+   G E N E R A T O R   C R A F T E D
+\*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*/
+
+import java.io.Serializable;
+import java.util.Comparator;
+import java.util.Objects;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import javaslang.collection.List;
+import javaslang.collection.Seq;
+
+/**
+ * A tuple of two elements which can be seen as cartesian product of two components.
+ *
+ * @param &lt;T1&gt; type of the 1st element
+ * @param &lt;T2&gt; type of the 2nd element
+ * @author Daniel Dietrich
+ * @since 1.1.0
+ */
+public final class Tuple2&lt;T1, T2&gt; implements Tuple, Comparable&lt;Tuple2&lt;T1, T2&gt;&gt;, Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * The 1st element of this tuple.
+     */
+    public final T1 _1;
+
+    /**
+     * The 2nd element of this tuple.
+     */
+    public final T2 _2;
+
+    /**
+     * Constructs a tuple of two elements.
+     *
+     * @param t1 the 1st element
+     * @param t2 the 2nd element
+     */
+<span class="fc" id="L48">    public Tuple2(T1 t1, T2 t2) {</span>
+<span class="fc" id="L49">        this._1 = t1;</span>
+<span class="fc" id="L50">        this._2 = t2;</span>
+<span class="fc" id="L51">    }</span>
+
+    public static &lt;T1, T2&gt; Comparator&lt;Tuple2&lt;T1, T2&gt;&gt; comparator(Comparator&lt;? super T1&gt; t1Comp, Comparator&lt;? super T2&gt; t2Comp) {
+<span class="fc" id="L54">        return (Comparator&lt;Tuple2&lt;T1, T2&gt;&gt; &amp; Serializable) (t1, t2) -&gt; {</span>
+<span class="fc" id="L55">            final int check1 = t1Comp.compare(t1._1, t2._1);</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">            if (check1 != 0) {</span>
+<span class="fc" id="L57">                return check1;</span>
+            }
+
+<span class="fc" id="L60">            final int check2 = t2Comp.compare(t1._2, t2._2);</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">            if (check2 != 0) {</span>
+<span class="fc" id="L62">                return check2;</span>
+            }
+
+            // all components are equal
+<span class="fc" id="L66">            return 0;</span>
+        };
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    private static &lt;U1 extends Comparable&lt;? super U1&gt;, U2 extends Comparable&lt;? super U2&gt;&gt; int compareTo(Tuple2&lt;?, ?&gt; o1, Tuple2&lt;?, ?&gt; o2) {
+<span class="fc" id="L72">        final Tuple2&lt;U1, U2&gt; t1 = (Tuple2&lt;U1, U2&gt;) o1;</span>
+<span class="fc" id="L73">        final Tuple2&lt;U1, U2&gt; t2 = (Tuple2&lt;U1, U2&gt;) o2;</span>
+
+<span class="fc" id="L75">        final int check1 = t1._1.compareTo(t2._1);</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        if (check1 != 0) {</span>
+<span class="fc" id="L77">            return check1;</span>
+        }
+
+<span class="fc" id="L80">        final int check2 = t1._2.compareTo(t2._2);</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        if (check2 != 0) {</span>
+<span class="fc" id="L82">            return check2;</span>
+        }
+
+        // all components are equal
+<span class="fc" id="L86">        return 0;</span>
+    }
+
+    @Override
+    public int arity() {
+<span class="fc" id="L91">        return 2;</span>
+    }
+
+    @Override
+    public int compareTo(Tuple2&lt;T1, T2&gt; that) {
+<span class="fc" id="L96">        return Tuple2.compareTo(this, that);</span>
+    }
+
+    /**
+     * Getter of the 1st element of this tuple.
+     *
+     * @return the 1st element of this Tuple.
+     */
+    public T1 _1() {
+<span class="fc" id="L105">        return _1;</span>
+    }
+
+    /**
+     * Getter of the 2nd element of this tuple.
+     *
+     * @return the 2nd element of this Tuple.
+     */
+    public T2 _2() {
+<span class="fc" id="L114">        return _2;</span>
+    }
+
+    public &lt;U1, U2&gt; Tuple2&lt;U1, U2&gt; map(BiFunction&lt;? super T1, ? super T2, Tuple2&lt;U1, U2&gt;&gt; f) {
+<span class="fc" id="L118">        return f.apply(_1, _2);</span>
+    }
+
+    public &lt;U1, U2&gt; Tuple2&lt;U1, U2&gt; map(Function&lt;? super T1, ? extends U1&gt; f1, Function&lt;? super T2, ? extends U2&gt; f2) {
+<span class="fc" id="L122">        return Tuple.of(f1.apply(_1), f2.apply(_2));</span>
+    }
+
+    /**
+     * Transforms this tuple to an arbitrary object (which may be also a tuple of same or different arity).
+     *
+     * @param f Transformation which creates a new object of type U based on this tuple's contents.
+     * @param &lt;U&gt; New type
+     * @return An object of type U
+     * @throws NullPointerException if {@code f} is null
+     */
+    public &lt;U&gt; U transform(Function&lt;Tuple2&lt;T1, T2&gt;, ? extends U&gt; f) {
+<span class="fc" id="L134">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="fc" id="L135">        return f.apply(this);</span>
+    }
+
+    @Override
+    public Seq&lt;?&gt; toSeq() {
+<span class="fc" id="L140">        return List.of(_1, _2);</span>
+    }
+
+    // -- Object
+
+    @Override
+    public boolean equals(Object o) {
+<span class="fc bfc" id="L147" title="All 2 branches covered.">        if (o == this) {</span>
+<span class="fc" id="L148">            return true;</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">        } else if (!(o instanceof Tuple2)) {</span>
+<span class="fc" id="L150">            return false;</span>
+        } else {
+<span class="fc" id="L152">            final Tuple2&lt;?, ?&gt; that = (Tuple2&lt;?, ?&gt;) o;</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">            return Objects.equals(this._1, that._1)</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">                  &amp;&amp; Objects.equals(this._2, that._2);</span>
+        }
+    }
+
+    @Override
+    public int hashCode() {
+<span class="fc" id="L160">        return Objects.hash(_1, _2);</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L165">        return String.format(&quot;(%s, %s)&quot;, _1, _2);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

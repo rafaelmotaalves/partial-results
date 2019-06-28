@@ -1,0 +1,510 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuite tests="446" failures="0" name="javaslang.collection.TreeTest" time="0.068" errors="0" skipped="0">
+  <properties>
+    <property name="java.runtime.name" value="Java(TM) SE Runtime Environment"/>
+    <property name="sun.boot.library.path" value="/usr/lib/jvm/java-8-oracle/jre/lib/amd64"/>
+    <property name="java.vm.version" value="25.151-b12"/>
+    <property name="java.vm.vendor" value="Oracle Corporation"/>
+    <property name="maven.multiModuleProjectDirectory" value="/home/travis/build/rafaresearch/vavr"/>
+    <property name="java.vendor.url" value="http://java.oracle.com/"/>
+    <property name="path.separator" value=":"/>
+    <property name="guice.disable.misplaced.annotation.check" value="true"/>
+    <property name="java.vm.name" value="Java HotSpot(TM) 64-Bit Server VM"/>
+    <property name="file.encoding.pkg" value="sun.io"/>
+    <property name="user.country" value="US"/>
+    <property name="sun.java.launcher" value="SUN_STANDARD"/>
+    <property name="sun.os.patch.level" value="unknown"/>
+    <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
+    <property name="user.dir" value="/home/travis/build/rafaresearch/vavr"/>
+    <property name="java.runtime.version" value="1.8.0_151-b12"/>
+    <property name="java.awt.graphicsenv" value="sun.awt.X11GraphicsEnvironment"/>
+    <property name="java.endorsed.dirs" value="/usr/lib/jvm/java-8-oracle/jre/lib/endorsed"/>
+    <property name="os.arch" value="amd64"/>
+    <property name="java.io.tmpdir" value="/tmp"/>
+    <property name="line.separator" value="
+"/>
+    <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
+    <property name="os.name" value="Linux"/>
+    <property name="classworlds.conf" value="/usr/local/maven-3.5.2/bin/m2.conf"/>
+    <property name="sun.jnu.encoding" value="UTF-8"/>
+    <property name="java.library.path" value="/usr/java/packages/lib/amd64:/usr/lib64:/lib64:/lib:/usr/lib"/>
+    <property name="maven.conf" value="/usr/local/maven-3.5.2/conf"/>
+    <property name="java.specification.name" value="Java Platform API Specification"/>
+    <property name="java.class.version" value="52.0"/>
+    <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
+    <property name="os.version" value="4.4.0-101-generic"/>
+    <property name="library.jansi.path" value="/usr/local/maven-3.5.2/lib/jansi-native"/>
+    <property name="user.home" value="/home/travis"/>
+    <property name="user.timezone" value="UTC"/>
+    <property name="java.awt.printerjob" value="sun.print.PSPrinterJob"/>
+    <property name="java.specification.version" value="1.8"/>
+    <property name="file.encoding" value="UTF-8"/>
+    <property name="user.name" value="travis"/>
+    <property name="java.class.path" value="/usr/local/maven-3.5.2/boot/plexus-classworlds-2.5.2.jar"/>
+    <property name="java.vm.specification.version" value="1.8"/>
+    <property name="sun.arch.data.model" value="64"/>
+    <property name="java.home" value="/usr/lib/jvm/java-8-oracle/jre"/>
+    <property name="sun.java.command" value="org.codehaus.plexus.classworlds.launcher.Launcher package"/>
+    <property name="java.specification.vendor" value="Oracle Corporation"/>
+    <property name="user.language" value="en"/>
+    <property name="awt.toolkit" value="sun.awt.X11.XToolkit"/>
+    <property name="java.vm.info" value="mixed mode"/>
+    <property name="java.version" value="1.8.0_151"/>
+    <property name="java.ext.dirs" value="/usr/lib/jvm/java-8-oracle/jre/lib/ext:/usr/java/packages/lib/ext"/>
+    <property name="securerandom.source" value="file:/dev/./urandom"/>
+    <property name="sun.boot.class.path" value="/usr/lib/jvm/java-8-oracle/jre/lib/resources.jar:/usr/lib/jvm/java-8-oracle/jre/lib/rt.jar:/usr/lib/jvm/java-8-oracle/jre/lib/sunrsasign.jar:/usr/lib/jvm/java-8-oracle/jre/lib/jsse.jar:/usr/lib/jvm/java-8-oracle/jre/lib/jce.jar:/usr/lib/jvm/java-8-oracle/jre/lib/charsets.jar:/usr/lib/jvm/java-8-oracle/jre/lib/jfr.jar:/usr/lib/jvm/java-8-oracle/jre/classes"/>
+    <property name="java.vendor" value="Oracle Corporation"/>
+    <property name="maven.home" value="/usr/local/maven-3.5.2"/>
+    <property name="file.separator" value="/"/>
+    <property name="java.vendor.url.bug" value="http://bugreport.sun.com/bugreport/"/>
+    <property name="sun.cpu.endian" value="little"/>
+    <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
+    <property name="sun.cpu.isalist" value=""/>
+  </properties>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReturnDrawStringOfEmpty" time="0.002"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldTraverseTreeUsingLevelOrder" time="0.003"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldBeAwareThatHashCodeOfEmptyIsOne" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldIdentifyNilAsEmpty" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldUnzip3EmptyTree" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertNonEmptyToLispString" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldIdentifyNonNilAsNotEmpty" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReturnDrawStringOfNode" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldBeAwareThatTreeNotEqualsObject" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFullyIterateNonNil" time="0.002"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldGetChildrenOfLeaf" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFindExistingNodeInNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldNotGetValueOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldIGetChildrenOfNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldDropNoneIfCountIsNegative" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldSerializeDeserializeNonEmpty" time="0.005"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldNotHasNextWhenNilIterator" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldIdentifyNonLeafAsNonLeaf" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldMapEmpty" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCountNodesOfNonNil" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldNotFindNodeInNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldDropRightNoneIfCountIsNegative" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowOnNextWhenNilIterator" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFlatMapNonEmptyInTheRightOrder" time="0.003"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldNotReplaceAnyElementIfThereIsNoOccurrenceInNonEmptyTree" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldPreserveSingletonInstanceOnDeserialization" time="0.004"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldTraverseTreeUsingPreOrder" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertEmptyToLispString" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCountLeavesOfNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldTraverseTreeUsingInOrder" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCountBranchesOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReturnStringRepresentationOfNode" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReplaceNullInEmpty" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldInstantiateTreeBranchWithOf" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldIdentifiyLeafAsNonBranch" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldNotCallReadObjectOnNodeInstance" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCreateANodeWithoutChildren" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldNotGetValueOfNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReplaceFirstOccurrenceUsingDepthFirstSearchInNonEmptyTree" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCountNodesOfNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldUnzip3NonEmptyTree" time="0.003"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFlatMapNonEmptyTree" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCountLeavesOfNonNil" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldBeAwareOfTwoDifferentEqualTrees" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldIdentifyNonLeafAsBranch" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldGetChildrenOfBranch" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldMapTree" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldUnzipEmptyTree" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldBeAwareThatHashCodeOfLeafIsGreaterThanOne" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldBeAwareThatTwoTreesOfSameInstanceAreEqual" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldTraverseTreeUsingPostOrder" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldIdentifiyLeafAsLeaf" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReturnStringRepresentationOfEmpty" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldIdentifiyNilAsNonBranch" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldInstantiateTreeLeafWithOf" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldTraverseEmpty" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldUnzipNonEmptyTree" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldNotFindNonExistingNodeInNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFlatMapEmptyTree" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFlatMapNonEmptyByExpandingElements" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldIdentifiyNilAsNonLeaf" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldSerializeDeserializeEmpty" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldIterateFirstElementOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCountBranchesOfNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenTailOnNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldZipAllNils" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldDropUntilNoneIfPredicateIsTrue" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenMaxByFunctionOfNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldSplitNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeAverageOfFloat" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeAverageOfShort" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCreateListOfPrimitiveIntArray" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenMaxByOfNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldSpanNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReplaceAllElementsOfNonNilUsingCurrNonExistingNew" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReduceRightNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldSlide4ElementsBySize5AndStep3" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFindFirstOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldScanWithNonComparable" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldScanRightNonEmpty" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldSerializeDeserializeNonNil" time="0.002"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldTabulateTheSeqWith0Elements" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldScanLeftWithNonComparable" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCreateListOfPrimitiveCharArray" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldDropWhileAllIfPredicateIsTrue" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeSumOfBigDecimal" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCreateListOfPrimitiveDoubleArray" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeMaxOfByte" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeMaxOfChar" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeMaxOfLong" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeMaxOfBoolean" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldHaveSizedSpliterator" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldDropRightAllIfCountExceedsSize" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCountWhenSomeSatisfyThePredicate" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldMkStringNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldHaveImmutableSpliterator" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenGroupedWithSizeZero" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldRecognizeNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeMaxOfInt" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenSlidingNonNilByNegativeSize" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeLengthOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldZipNilWithIndex" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenFoldRightNullOperator" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenMinByWithNullComparator" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldScanRightWithNonComparable" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCalculateDifferentHashCodesForDifferentTraversables" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCountWhenAllSatisfyThePredicate" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReturnSomeHeadWhenCallingHeadOptionOnNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldTabulateTheSeqCallingTheFunctionInTheRightOrder" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldNonNilNotEqualsNull" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldClearNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeSumOfBigInteger" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldTakeRightAllIfCountExceedsSize" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReduceRightOptionNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldTakeRightAsExpectedIfCountIsLessThanSize" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertNonNilToArrayList" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReturnHeadOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenFoldLeftNullOperator" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCreateListOfPrimitiveBooleanArray" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldGroupedTraversableWithRemainder" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldUnzip3NonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCalculateHashCodeOfNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldGroupedWhenTraversableLengthIsSmallerThanBlockSize" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReturnNoneWhenComputingMaxOfNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeMinOfBoolean" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldNilGroupBy" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldBeAwareOfExistingUniqueElement" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertNilToHashMap" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertNilToHashSet" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldRecognizeNonEqualityOfTraversablesOfSameSize" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFoldRightNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCreateListOfPrimitiveByteArray" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReplaceAllElementsOfNilUsingCurrNew" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldPartitionIntsInOddAndEvenHavingOddAndEvenNumbers" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldDropAsExpectedIfCountIsLessThanSize" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCalculateMinByOfInts" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldPartitionIntsInOddAndEvenHavingOnlyEvenNumbers" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeMinOfByte" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeMinOfChar" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeMinOfLong" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldUnzipNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReplaceElementOfNilUsingCurrNew" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenGroupedWithNegativeSize" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldWriteToStderr" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldWriteToStdout" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldSlide5ElementsBySize2AndStep3" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldSlide5ElementsBySize2AndStep4" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldSlide5ElementsBySize2AndStep5" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldMkStringWithDelimiterNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldZipAllNonEmptyAndNil" time="0.002"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertNonNilToJavaArray" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenReduceNullOperator" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeMinOfBigDecimal" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenMaxByWithNullFunction" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeDistinctByOfNonEmptyTraversableUsingKeyExtractor" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldDropRightNoneOnNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFoldLeftNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenReduceLeftNullOperator" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenSlidingNilByPositiveStepAndNegativeSize" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReplaceAllElementsOfNonNilUsingCurrNew" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenComputingSumOfStrings" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldZipNonNilsOfSameSize" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldTakeNoneOnNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldTakeRightNoneIfCountIsNegative" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReturnSomethingOnHasDefiniteSize" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFoldMapNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldSpanNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReturnNoneWhenCallingHeadOptionOnNil" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldHandleStdoutIOException" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldGroupedTraversableWithEqualSizedBlocks" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeAverageOfDouble" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCreateNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReturnSomeInitWhenCallingInitOptionOnNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldSlideNilBySizeAndStep" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeMinOfDouble" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeSumOfByte" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeSumOfLong" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReturnSomeTailWhenCallingTailOptionOnNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCalculateInverseMinByFunctionOfInts" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeMinOfBigInteger" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenReduceOptionNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldClearNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldEmptyNotEqualsDifferentType" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReturnLastOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCalculateInverseMaxByFunctionOfInts" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCreateListOfIterable" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldZipNils" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldTakeWhileNoneOnNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCalculateMaxByOfInts" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowIfZipWithThatIsNull" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenMaxByWithNullComparator" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeDistinctByOfEmptyTraversableUsingKeyExtractor" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldMkStringWithDelimiterNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldZipAllEmptyAndNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldBeAwareOfExistingNonUniqueElement" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldGroupedNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldDropRightAsExpectedIfCountIsLessThanSize" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldNonNilGroupByEqual" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldTabulateTheSeqWith0ElementsWhenNIsNegative" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldHandlePrintStreamIOException" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReturnSizeWhenSpliterator" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldMkStringWithDelimiterAndPrefixAndSuffixNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFillTheSeqWith0Elements" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldTakeUntilAllOnFalseCondition" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReplaceElementOfNonNilUsingCurrNewWhenOneOccurrenceExists" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenLastOnNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldRecognizeNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReturnTailOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenReduceNil" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReduceLeftNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldMkStringNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldRecognizeEqualityOfNonNils" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldRetainAllElementsFromNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldScanLeftEmpty" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldTakeUntilAsExpected" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenReduceRightNullOperator" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReturnNoneWhenCallingLastOptionOnNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldTakeUntilNoneOnNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeMinOfFloat" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeProductOfDouble" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeMinOfShort" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeProductOfFloat" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldRecognizeNonNilDoesContainElement" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCreateListOfPrimitiveShortArray" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenMinByWithNullFunction" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeProductOfShort" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCalculateMinByFunctionOfInts" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldUnzipNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldZipAllNonNilsIfThisIsSmaller" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCalculateMaxByFunctionOfInts" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="ofAllShouldReturnTheSingletonEmpty" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCreateSeqOfSeqUsingCons" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldRecognizeNonEqualityOfTraversablesOfDifferentSize" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="ofShouldReturnTheSingletonEmpty" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReturnSomethingOnIsTraversableAgain" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeMaxOfDouble" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeDistinctOfNonEmptyTraversable" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldTakeWhileAllOnTrueCondition" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldDropWhileCorrect" time="0.002"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCreateInstanceOfElements" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldSlideNilBySize" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeMaxOfBigDecimal" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeProductOfInt" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeProductOfNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldScanNonEmpty" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldTakeAllIfCountExceedsSize" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldTakeUntilAllOnTrueCondition" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldUnzip3Nil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenMinByOfNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeDistinctByOfNonEmptyTraversableUsingComparator" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldDropUntilCorrect" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldParallelStreamAndCollectNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCalculateInverseMinByOfInts" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeAverageOfByte" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeAverageOfLong" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReturnNoneWhenCallingInitOptionOnNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldZipNonNilsIfThisIsSmaller" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeAverageOfBigDecimal" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCallMinFunctionOncePerElement" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeSumOfInt" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeSumOfNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldZipNonEmptyAndNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReturnNoneWhenComputingAverageOfNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeAverageOfInt" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeMaxOfStrings" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCallMaxFunctionOncePerElement" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenPartitionNilAndPredicateIsNull" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFindLastOfNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertNonNilToHashMap" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertNonNilToHashSet" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldStreamAndCollectNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeMaxOfBigInteger" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReduceLeftOptionNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeDistinctOfEmptyTraversable" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenReduceOptionNullOperator" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldEqualSameTraversableInstance" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldTakeWhileAsExpected" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenReduceLeftOptionNullOperator" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldTabulateTheSeq" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenReduceLeftOptionNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldHandleStderrIOException" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeMinOfInt" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeAverageOfBigInteger" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenMinByFunctionOfNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReplaceElementOfNonNilUsingCurrNewWhenNoOccurrenceExists" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldSerializeDeserializeNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenSlidingNilByNegativeStepAndPositiveSize" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenSlidingNilByZeroSize" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeDistinctByOfEmptyTraversableUsingComparator" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCreateListOfPrimitiveLongArray" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldTakeWhileAllOnFalseCondition" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldNonNilGroupByIdentity" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReduceOptionNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldScanLeftNonEmpty" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeMinOfStrings" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldGetInitOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenReduceRightNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldRecognizeNonNilDoesNotContainElement" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldZipEmptyAndNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldRecognizeNonNilNotContainsAllOverlappingElements" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCalculateInverseMaxByOfInts" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReturnNoneWhenCallingTailOptionOnNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCalculateHashCodeOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeSumOfDouble" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldRecognizeEqualityOfNils" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFillTheSeqWith0ElementsWhenNIsNegative" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenSlidingNilByNegativeStepAndNegativeSize" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldZipAllNonNilsOfSameSize" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenComputingAverageOfStrings" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFoldMapFailNullMapper" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldSplitNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldRetainAllElementsFromNonNil" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFoldMapFailNullMonoid" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldTakeNoneIfCountIsNegative" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReturnNoneWhenComputingMinOfNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFoldMapNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReturnSomeLastWhenCallingLastOptionOnNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeSumOfFloat" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldHaveOrderedSpliterator" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeSumOfShort" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldDropNoneOnNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldRecognizeNilContainsNoElement" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFoldRightNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldNotRetainAllNonExistingElementsFromNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldZipNonNilWithIndex" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldTakeAsExpectedIfCountIsLessThanSize" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldNilNotEqualsNull" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldRecognizeNilNotContainsAllElements" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldScanEmpty" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertNilToArrayList" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldStreamAndCollectNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldZipAllNonNilsIfThatIsSmaller" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReplaceFirstOccurrenceOfNonNilUsingCurrNewWhenMultipleOccurrencesExist" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenReduceRightOptionNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeLengthOfNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldTakeRightNoneOnNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldBeAwareOfNonExistingUniqueElement" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeProductOfBigDecimal" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReduceNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldDropWhileNoneOnNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldParallelStreamAndCollectNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenSlidingNonNilByZeroSize" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldHandlePrintWriterIOException" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldZipNonNilsIfThatIsSmaller" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowIfZipAllWithThatIsNull" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenReduceRightOptionNullOperator" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldNonEmptyNotEqualsDifferentType" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldRetainAllExistingElementsFromNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCreateListOfPrimitiveFloatArray" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFindFirstOfNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldPartitionIntsInOddAndEvenHavingOnlyOddNumbers" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenReduceLeftNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCountWhenIsEmpty" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeMaxOfFloat" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeMaxOfShort" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenInitOfNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldScanRightEmpty" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldDropWhileNoneIfPredicateIsFalse" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldRecognizeNonNilContainsAllOnSelf" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenComputingProductOfStrings" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenHeadOnNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldWriteToPrintStream" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertNilToJavaArray" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFindLastOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFoldLeftNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFoldMultipleElements" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldDropUntilNoneOnNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeProductOfBigInteger" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeProductOfByte" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldComputeProductOfLong" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldDropUntilAllIfPredicateIsFalse" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFillTheSeqCallingTheSupplierInTheRightOrder" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldPartitionNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCountWhenNoneSatisfiesThePredicate" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldWriteToPrintWriter" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenSlidingNilByNegativeSize" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldDropAllIfCountExceedsSize" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldSlideNonNilBySize1" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldSlideNonNilBySize2" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldMkStringWithDelimiterAndPrefixAndSuffixNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldGetOptionNonEmpty" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldBeAwareOfPropertyThatHoldsForAll" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCorresponds" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowIfEmpty" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCalculateValIfEmpty" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldBeAwareOfExistingElement" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertToMap" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertToSet" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldNotThrowIfNonEmpty" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCalculateValIfDefined" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertToOption" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertToCharSeq" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldBeAwareOfNonExistingElement" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertEmptyToTry" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertToStream" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCalculateIsDefined" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertToVector" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertNonEmptyValueToMatchMonad" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertToEitherRightFromValue" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertToJavaList" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCalculateSupplierIfDefined" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFilterNotEmptyTraversable" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertToEitherLeftFromValue" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldPeekNil" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFoldNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldBeAwareOfPropertyThatNotHoldsForAll" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldGetNonEmpty" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFilterNonEmptyTraversable" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFilterNonEmptyTraversableAllMatch" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCalculateIsEmpty" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenFoldNullOperator" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldPeekNonNilPerformingAnAction" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFilterNotNonEmptyTraversable" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertToArray" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertToQueue" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertToStack" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldntCorrespondsNonNilNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCalculateOrElseGet" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReturnUnderlyingValueWhenCallingOrElseTryOnNonEmptyValue" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCalculateSupplierIfEmpty" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertToJavaMap" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertToJavaSet" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertToLazy" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertToList" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertToJavaArray" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFilterNotNonEmptyTraversableAllMatch" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFoldSingleElement" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertToEitherRightFromValueSupplier" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldntCorrespondsNilNonNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldGetEmpty" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldFilterEmptyTraversable" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldThrowWhenCallingOrElseTryOnEmptyValueAndTryIsAFailure" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertNonEmptyToTryUsingExceptionSupplier" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldntCorrespondsNilNil" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldReturnAlternateValueWhenCallingOrElseTryOnEmptyValue" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertNonEmptyToTry" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertToJavaStream" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldCalculateOrElse" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldntCorrespondsDifferentLengths" time="0.001"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertEmptyToTryUsingExceptionSupplier" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldPeekSingleValuePerformingAnAction" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertEmptyValueToMatchMonad" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldPeekNonNilPerformingNoAction" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertToJavaOptional" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldGetOptionEmpty" time="0"/>
+  <testcase classname="javaslang.collection.TreeTest" name="shouldConvertToEitherLeftFromValueSupplier" time="0"/>
+</testsuite>

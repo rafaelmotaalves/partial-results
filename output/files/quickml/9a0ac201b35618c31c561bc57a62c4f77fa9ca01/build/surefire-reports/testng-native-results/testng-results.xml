@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testng-results skipped="0" failed="0" total="33" passed="33">
+  <reporter-output>
+  </reporter-output>
+  <suite name="quickdt.predictiveModels.downsamplingPredictiveModel.UtilsTest" duration-ms="0" started-at="2019-06-28T20:42:21Z" finished-at="2019-06-28T20:42:21Z">
+    <groups>
+    </groups>
+    <test name="Command line test 8bc16b16-02cb-4389-96c9-91c616f5d84c" duration-ms="0" started-at="2019-06-28T20:42:21Z" finished-at="2019-06-28T20:42:21Z">
+    </test> <!-- Command line test 8bc16b16-02cb-4389-96c9-91c616f5d84c -->
+  </suite> <!-- quickdt.predictiveModels.downsamplingPredictiveModel.UtilsTest -->
+  <suite name="quickdt.predictiveModels.downsamplingPredictiveModel.DownsamplingPredictiveModelBuilderTest" duration-ms="536" started-at="2019-06-28T20:42:21Z" finished-at="2019-06-28T20:42:21Z">
+    <groups>
+    </groups>
+    <test name="Command line test 3ef54ad5-f6a4-4702-99db-29f180f00823" duration-ms="536" started-at="2019-06-28T20:42:21Z" finished-at="2019-06-28T20:42:21Z">
+      <class name="quickdt.predictiveModels.downsamplingPredictiveModel.DownsamplingPredictiveModelBuilderTest">
+        <test-method status="PASS" signature="simpleBmiTest()[pri:0, instance:quickdt.predictiveModels.downsamplingPredictiveModel.DownsamplingPredictiveModelBuilderTest@617c74e5]" name="simpleBmiTest" duration-ms="507" started-at="2019-06-28T20:42:21Z" finished-at="2019-06-28T20:42:21Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- simpleBmiTest -->
+        <test-method status="PASS" signature="simpleTest()[pri:0, instance:quickdt.predictiveModels.downsamplingPredictiveModel.DownsamplingPredictiveModelBuilderTest@617c74e5]" name="simpleTest" duration-ms="29" started-at="2019-06-28T20:42:21Z" finished-at="2019-06-28T20:42:21Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- simpleTest -->
+      </class> <!-- quickdt.predictiveModels.downsamplingPredictiveModel.DownsamplingPredictiveModelBuilderTest -->
+    </test> <!-- Command line test 3ef54ad5-f6a4-4702-99db-29f180f00823 -->
+  </suite> <!-- quickdt.predictiveModels.downsamplingPredictiveModel.DownsamplingPredictiveModelBuilderTest -->
+  <suite name="quickdt.predictiveModels.decisionTree.scorers.MSEScorerTest" duration-ms="2" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:26Z">
+    <groups>
+    </groups>
+    <test name="Command line test 2fc18d92-39bc-4eeb-9102-876fe365ebdc" duration-ms="2" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:26Z">
+      <class name="quickdt.predictiveModels.decisionTree.scorers.MSEScorerTest">
+        <test-method status="PASS" signature="simpleTest()[pri:0, instance:quickdt.predictiveModels.decisionTree.scorers.MSEScorerTest@59e84876]" name="simpleTest" duration-ms="2" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:26Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- simpleTest -->
+      </class> <!-- quickdt.predictiveModels.decisionTree.scorers.MSEScorerTest -->
+    </test> <!-- Command line test 2fc18d92-39bc-4eeb-9102-876fe365ebdc -->
+  </suite> <!-- quickdt.predictiveModels.decisionTree.scorers.MSEScorerTest -->
+  <suite name="quickdt.predictiveModels.decisionTree.scorers.InformationGainScorerTest" duration-ms="4" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:26Z">
+    <groups>
+    </groups>
+    <test name="Command line test 26404bdf-1379-4c03-b42d-06b22c00dc95" duration-ms="4" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:26Z">
+      <class name="quickdt.predictiveModels.decisionTree.scorers.InformationGainScorerTest">
+        <test-method status="PASS" signature="diffClassificationTest()[pri:0, instance:quickdt.predictiveModels.decisionTree.scorers.InformationGainScorerTest@26f67b76]" name="diffClassificationTest" duration-ms="2" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:26Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- diffClassificationTest -->
+        <test-method status="PASS" signature="sameClassificationTest()[pri:0, instance:quickdt.predictiveModels.decisionTree.scorers.InformationGainScorerTest@26f67b76]" name="sameClassificationTest" duration-ms="1" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:26Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- sameClassificationTest -->
+      </class> <!-- quickdt.predictiveModels.decisionTree.scorers.InformationGainScorerTest -->
+    </test> <!-- Command line test 26404bdf-1379-4c03-b42d-06b22c00dc95 -->
+  </suite> <!-- quickdt.predictiveModels.decisionTree.scorers.InformationGainScorerTest -->
+  <suite name="quickdt.predictiveModels.decisionTree.TreeBuilderTest" duration-ms="758" started-at="2019-06-28T20:42:25Z" finished-at="2019-06-28T20:42:26Z">
+    <groups>
+    </groups>
+    <test name="Command line test 8224112a-6d20-4b09-ad86-4823f28465de" duration-ms="758" started-at="2019-06-28T20:42:25Z" finished-at="2019-06-28T20:42:26Z">
+      <class name="quickdt.predictiveModels.decisionTree.TreeBuilderTest">
+        <test-method status="PASS" signature="simpleBmiTest()[pri:0, instance:quickdt.predictiveModels.decisionTree.TreeBuilderTest@61dc03ce]" name="simpleBmiTest" duration-ms="136" started-at="2019-06-28T20:42:25Z" finished-at="2019-06-28T20:42:25Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- simpleBmiTest -->
+        <test-method status="PASS" signature="simpleBmiTestNoSplit()[pri:0, instance:quickdt.predictiveModels.decisionTree.TreeBuilderTest@61dc03ce]" name="simpleBmiTestNoSplit" duration-ms="130" started-at="2019-06-28T20:42:25Z" finished-at="2019-06-28T20:42:25Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- simpleBmiTestNoSplit -->
+        <test-method status="PASS" signature="simpleBmiTestRebuild()[pri:0, instance:quickdt.predictiveModels.decisionTree.TreeBuilderTest@61dc03ce]" name="simpleBmiTestRebuild" duration-ms="345" started-at="2019-06-28T20:42:25Z" finished-at="2019-06-28T20:42:26Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- simpleBmiTestRebuild -->
+        <test-method status="PASS" signature="simpleBmiTestSplit()[pri:0, instance:quickdt.predictiveModels.decisionTree.TreeBuilderTest@61dc03ce]" name="simpleBmiTestSplit" duration-ms="143" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:26Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- simpleBmiTestSplit -->
+      </class> <!-- quickdt.predictiveModels.decisionTree.TreeBuilderTest -->
+    </test> <!-- Command line test 8224112a-6d20-4b09-ad86-4823f28465de -->
+  </suite> <!-- quickdt.predictiveModels.decisionTree.TreeBuilderTest -->
+  <suite name="quickdt.predictiveModels.splitOnAttributePredictiveModel.SplitOnAttributePMBuilderTest" duration-ms="6489" started-at="2019-06-28T20:42:14Z" finished-at="2019-06-28T20:42:21Z">
+    <groups>
+    </groups>
+    <test name="Command line test a1016fb4-e42e-4e34-96c6-4c8292a11175" duration-ms="6489" started-at="2019-06-28T20:42:14Z" finished-at="2019-06-28T20:42:21Z">
+      <class name="quickdt.predictiveModels.splitOnAttributePredictiveModel.SplitOnAttributePMBuilderTest">
+        <test-method status="PASS" signature="simpleBmiTest()[pri:0, instance:quickdt.predictiveModels.splitOnAttributePredictiveModel.SplitOnAttributePMBuilderTest@22f71333]" name="simpleBmiTest" duration-ms="4679" started-at="2019-06-28T20:42:14Z" finished-at="2019-06-28T20:42:19Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- simpleBmiTest -->
+        <test-method status="PASS" signature="simpleBmiTestNoSplit()[pri:0, instance:quickdt.predictiveModels.splitOnAttributePredictiveModel.SplitOnAttributePMBuilderTest@22f71333]" name="simpleBmiTestNoSplit" duration-ms="697" started-at="2019-06-28T20:42:19Z" finished-at="2019-06-28T20:42:20Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- simpleBmiTestNoSplit -->
+        <test-method status="PASS" signature="simpleBmiTestSplit()[pri:0, instance:quickdt.predictiveModels.splitOnAttributePredictiveModel.SplitOnAttributePMBuilderTest@22f71333]" name="simpleBmiTestSplit" duration-ms="1096" started-at="2019-06-28T20:42:20Z" finished-at="2019-06-28T20:42:21Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- simpleBmiTestSplit -->
+      </class> <!-- quickdt.predictiveModels.splitOnAttributePredictiveModel.SplitOnAttributePMBuilderTest -->
+    </test> <!-- Command line test a1016fb4-e42e-4e34-96c6-4c8292a11175 -->
+  </suite> <!-- quickdt.predictiveModels.splitOnAttributePredictiveModel.SplitOnAttributePMBuilderTest -->
+  <suite name="quickdt.predictiveModels.featureEngineering.enrichStrategies.probabilityInjector.ProbabilityEnrichStrategyTest" duration-ms="2" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:26Z">
+    <groups>
+    </groups>
+    <test name="Command line test 12ed0766-3c27-47a1-b2d9-b0e55eaae783" duration-ms="2" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:26Z">
+      <class name="quickdt.predictiveModels.featureEngineering.enrichStrategies.probabilityInjector.ProbabilityEnrichStrategyTest">
+        <test-method status="PASS" signature="testCreateAttributesEnricher()[pri:0, instance:quickdt.predictiveModels.featureEngineering.enrichStrategies.probabilityInjector.ProbabilityEnrichStrategyTest@5d5eef3d]" name="testCreateAttributesEnricher" duration-ms="2" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:26Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testCreateAttributesEnricher -->
+      </class> <!-- quickdt.predictiveModels.featureEngineering.enrichStrategies.probabilityInjector.ProbabilityEnrichStrategyTest -->
+    </test> <!-- Command line test 12ed0766-3c27-47a1-b2d9-b0e55eaae783 -->
+  </suite> <!-- quickdt.predictiveModels.featureEngineering.enrichStrategies.probabilityInjector.ProbabilityEnrichStrategyTest -->
+  <suite name="quickdt.predictiveModelOptimizer.fieldValueRecommenders.FixedOrderRecommenderTest" duration-ms="3" started-at="2019-06-28T20:42:32Z" finished-at="2019-06-28T20:42:32Z">
+    <groups>
+    </groups>
+    <test name="Command line test c96eb533-d894-4ceb-8e5d-acb2f6f9398a" duration-ms="3" started-at="2019-06-28T20:42:32Z" finished-at="2019-06-28T20:42:32Z">
+      <class name="quickdt.predictiveModelOptimizer.fieldValueRecommenders.FixedOrderRecommenderTest">
+        <test-method status="PASS" signature="simpleTest()[pri:0, instance:quickdt.predictiveModelOptimizer.fieldValueRecommenders.FixedOrderRecommenderTest@20e2cbe0]" name="simpleTest" duration-ms="3" started-at="2019-06-28T20:42:32Z" finished-at="2019-06-28T20:42:32Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- simpleTest -->
+      </class> <!-- quickdt.predictiveModelOptimizer.fieldValueRecommenders.FixedOrderRecommenderTest -->
+    </test> <!-- Command line test c96eb533-d894-4ceb-8e5d-acb2f6f9398a -->
+  </suite> <!-- quickdt.predictiveModelOptimizer.fieldValueRecommenders.FixedOrderRecommenderTest -->
+  <suite name="quickdt.predictiveModels.downsamplingPredictiveModel.DownsamplingPredictiveModelTest" duration-ms="143" started-at="2019-06-28T20:42:21Z" finished-at="2019-06-28T20:42:21Z">
+    <groups>
+    </groups>
+    <test name="Command line test bb6b9c7a-780c-46ba-a754-bc712b9277a8" duration-ms="143" started-at="2019-06-28T20:42:21Z" finished-at="2019-06-28T20:42:21Z">
+      <class name="quickdt.predictiveModels.downsamplingPredictiveModel.DownsamplingPredictiveModelTest">
+        <test-method status="PASS" signature="simpleTest()[pri:0, instance:quickdt.predictiveModels.downsamplingPredictiveModel.DownsamplingPredictiveModelTest@15975490]" name="simpleTest" duration-ms="143" started-at="2019-06-28T20:42:21Z" finished-at="2019-06-28T20:42:21Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- simpleTest -->
+      </class> <!-- quickdt.predictiveModels.downsamplingPredictiveModel.DownsamplingPredictiveModelTest -->
+    </test> <!-- Command line test bb6b9c7a-780c-46ba-a754-bc712b9277a8 -->
+  </suite> <!-- quickdt.predictiveModels.downsamplingPredictiveModel.DownsamplingPredictiveModelTest -->
+  <suite name="quickdt.predictiveModels.calibratedPredictiveModel.PAVCalibratedPredictiveModelBuilderTest" duration-ms="3387" started-at="2019-06-28T20:42:21Z" finished-at="2019-06-28T20:42:25Z">
+    <groups>
+    </groups>
+    <test name="Command line test 1dbca8de-ca3e-4e68-bf10-6f0c987a1458" duration-ms="3387" started-at="2019-06-28T20:42:21Z" finished-at="2019-06-28T20:42:25Z">
+      <class name="quickdt.predictiveModels.calibratedPredictiveModel.PAVCalibratedPredictiveModelBuilderTest">
+        <test-method status="PASS" signature="simpleBmiTest()[pri:0, instance:quickdt.predictiveModels.calibratedPredictiveModel.PAVCalibratedPredictiveModelBuilderTest@35fb3008]" name="simpleBmiTest" duration-ms="2493" started-at="2019-06-28T20:42:21Z" finished-at="2019-06-28T20:42:24Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- simpleBmiTest -->
+        <test-method status="PASS" signature="simpleBmiTestNoSplit()[pri:0, instance:quickdt.predictiveModels.calibratedPredictiveModel.PAVCalibratedPredictiveModelBuilderTest@35fb3008]" name="simpleBmiTestNoSplit" duration-ms="319" started-at="2019-06-28T20:42:24Z" finished-at="2019-06-28T20:42:24Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- simpleBmiTestNoSplit -->
+        <test-method status="PASS" signature="simpleBmiTestSplit()[pri:0, instance:quickdt.predictiveModels.calibratedPredictiveModel.PAVCalibratedPredictiveModelBuilderTest@35fb3008]" name="simpleBmiTestSplit" duration-ms="574" started-at="2019-06-28T20:42:24Z" finished-at="2019-06-28T20:42:25Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- simpleBmiTestSplit -->
+      </class> <!-- quickdt.predictiveModels.calibratedPredictiveModel.PAVCalibratedPredictiveModelBuilderTest -->
+    </test> <!-- Command line test 1dbca8de-ca3e-4e68-bf10-6f0c987a1458 -->
+  </suite> <!-- quickdt.predictiveModels.calibratedPredictiveModel.PAVCalibratedPredictiveModelBuilderTest -->
+  <suite name="quickdt.predictiveModels.randomForest.RandomForestBuilderTest" duration-ms="6262" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:32Z">
+    <groups>
+    </groups>
+    <test name="Command line test a435ba5c-6894-4175-b530-fef4c9dca2fb" duration-ms="6262" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:32Z">
+      <class name="quickdt.predictiveModels.randomForest.RandomForestBuilderTest">
+        <test-method status="PASS" signature="simpleBmiTest()[pri:0, instance:quickdt.predictiveModels.randomForest.RandomForestBuilderTest@9629756]" name="simpleBmiTest" duration-ms="1427" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:27Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- simpleBmiTest -->
+        <test-method status="PASS" signature="simpleBmiTestNoSplit()[pri:0, instance:quickdt.predictiveModels.randomForest.RandomForestBuilderTest@9629756]" name="simpleBmiTestNoSplit" duration-ms="1863" started-at="2019-06-28T20:42:27Z" finished-at="2019-06-28T20:42:29Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- simpleBmiTestNoSplit -->
+        <test-method status="PASS" signature="simpleBmiTestSplit()[pri:0, instance:quickdt.predictiveModels.randomForest.RandomForestBuilderTest@9629756]" name="simpleBmiTestSplit" duration-ms="2969" started-at="2019-06-28T20:42:29Z" finished-at="2019-06-28T20:42:32Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- simpleBmiTestSplit -->
+      </class> <!-- quickdt.predictiveModels.randomForest.RandomForestBuilderTest -->
+    </test> <!-- Command line test a435ba5c-6894-4175-b530-fef4c9dca2fb -->
+  </suite> <!-- quickdt.predictiveModels.randomForest.RandomForestBuilderTest -->
+  <suite name="quickdt.predictiveModels.featureEngineering.enrichStrategies.probabilityInjector.ProbabilityInjectingEnricherTest" duration-ms="1" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:26Z">
+    <groups>
+    </groups>
+    <test name="Command line test a22e3c0f-8bd6-4196-8225-4aa2b55de7a3" duration-ms="1" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:26Z">
+      <class name="quickdt.predictiveModels.featureEngineering.enrichStrategies.probabilityInjector.ProbabilityInjectingEnricherTest">
+        <test-method status="PASS" signature="simpleTest()[pri:0, instance:quickdt.predictiveModels.featureEngineering.enrichStrategies.probabilityInjector.ProbabilityInjectingEnricherTest@36d4b5c]" name="simpleTest" duration-ms="1" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:26Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- simpleTest -->
+      </class> <!-- quickdt.predictiveModels.featureEngineering.enrichStrategies.probabilityInjector.ProbabilityInjectingEnricherTest -->
+    </test> <!-- Command line test a22e3c0f-8bd6-4196-8225-4aa2b55de7a3 -->
+  </suite> <!-- quickdt.predictiveModels.featureEngineering.enrichStrategies.probabilityInjector.ProbabilityInjectingEnricherTest -->
+  <suite name="quickdt.predictiveModels.featureEngineering.enrichStrategies.attributeCombiner.AttributeCombiningEnricherTest" duration-ms="2" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:26Z">
+    <groups>
+    </groups>
+    <test name="Command line test c842953d-d525-4dd1-9035-39a3f5331783" duration-ms="2" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:26Z">
+      <class name="quickdt.predictiveModels.featureEngineering.enrichStrategies.attributeCombiner.AttributeCombiningEnricherTest">
+        <test-method status="PASS" signature="simpleTest()[pri:0, instance:quickdt.predictiveModels.featureEngineering.enrichStrategies.attributeCombiner.AttributeCombiningEnricherTest@5f375618]" name="simpleTest" duration-ms="1" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:26Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- simpleTest -->
+      </class> <!-- quickdt.predictiveModels.featureEngineering.enrichStrategies.attributeCombiner.AttributeCombiningEnricherTest -->
+    </test> <!-- Command line test c842953d-d525-4dd1-9035-39a3f5331783 -->
+  </suite> <!-- quickdt.predictiveModels.featureEngineering.enrichStrategies.attributeCombiner.AttributeCombiningEnricherTest -->
+  <suite name="quickdt.MiscTest" duration-ms="3" started-at="2019-06-28T20:42:32Z" finished-at="2019-06-28T20:42:32Z">
+    <groups>
+    </groups>
+    <test name="Command line test c2d66739-2f62-458f-b25d-b65f8a88a576" duration-ms="3" started-at="2019-06-28T20:42:32Z" finished-at="2019-06-28T20:42:32Z">
+      <class name="quickdt.MiscTest">
+        <test-method status="PASS" signature="testGetEntryWithLowestValue()[pri:0, instance:quickdt.MiscTest@d2cc05a]" name="testGetEntryWithLowestValue" duration-ms="3" started-at="2019-06-28T20:42:32Z" finished-at="2019-06-28T20:42:32Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testGetEntryWithLowestValue -->
+      </class> <!-- quickdt.MiscTest -->
+    </test> <!-- Command line test c2d66739-2f62-458f-b25d-b65f8a88a576 -->
+  </suite> <!-- quickdt.MiscTest -->
+  <suite name="quickdt.predictiveModels.decisionTree.scorers.GiniImpurityScorerTest" duration-ms="2" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:26Z">
+    <groups>
+    </groups>
+    <test name="Command line test 1781ebaa-bc96-4849-bda3-92cd317f130d" duration-ms="2" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:26Z">
+      <class name="quickdt.predictiveModels.decisionTree.scorers.GiniImpurityScorerTest">
+        <test-method status="PASS" signature="diffClassificationTest()[pri:0, instance:quickdt.predictiveModels.decisionTree.scorers.GiniImpurityScorerTest@b97c004]" name="diffClassificationTest" duration-ms="1" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:26Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- diffClassificationTest -->
+        <test-method status="PASS" signature="sameClassificationTest()[pri:0, instance:quickdt.predictiveModels.decisionTree.scorers.GiniImpurityScorerTest@b97c004]" name="sameClassificationTest" duration-ms="0" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:26Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- sameClassificationTest -->
+      </class> <!-- quickdt.predictiveModels.decisionTree.scorers.GiniImpurityScorerTest -->
+    </test> <!-- Command line test 1781ebaa-bc96-4849-bda3-92cd317f130d -->
+  </suite> <!-- quickdt.predictiveModels.decisionTree.scorers.GiniImpurityScorerTest -->
+  <suite name="quickdt.predictiveModelOptimizer.PredictiveModelOptimizerTest" duration-ms="10420" started-at="2019-06-28T20:42:32Z" finished-at="2019-06-28T20:42:43Z">
+    <groups>
+    </groups>
+    <test name="Command line test c2faec90-bcf0-4f06-b941-cd33cb45398f" duration-ms="10420" started-at="2019-06-28T20:42:32Z" finished-at="2019-06-28T20:42:43Z">
+      <class name="quickdt.predictiveModelOptimizer.PredictiveModelOptimizerTest">
+        <test-method status="PASS" signature="irisTest()[pri:0, instance:quickdt.predictiveModelOptimizer.PredictiveModelOptimizerTest@17579e0f]" name="irisTest" duration-ms="10417" started-at="2019-06-28T20:42:32Z" finished-at="2019-06-28T20:42:43Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- irisTest -->
+      </class> <!-- quickdt.predictiveModelOptimizer.PredictiveModelOptimizerTest -->
+    </test> <!-- Command line test c2faec90-bcf0-4f06-b941-cd33cb45398f -->
+  </suite> <!-- quickdt.predictiveModelOptimizer.PredictiveModelOptimizerTest -->
+  <suite name="quickdt.predictiveModels.temporallyWeightPredictiveModel.TemporallyReweightedPMBuilderTest" duration-ms="332" started-at="2019-06-28T20:42:25Z" finished-at="2019-06-28T20:42:25Z">
+    <groups>
+    </groups>
+    <test name="Command line test 34d8bcf5-a879-40b1-af98-f3253df4ebf0" duration-ms="332" started-at="2019-06-28T20:42:25Z" finished-at="2019-06-28T20:42:25Z">
+      <class name="quickdt.predictiveModels.temporallyWeightPredictiveModel.TemporallyReweightedPMBuilderTest">
+        <test-method status="PASS" signature="simpleBmiTest()[pri:0, instance:quickdt.predictiveModels.temporallyWeightPredictiveModel.TemporallyReweightedPMBuilderTest@52af6cff]" name="simpleBmiTest" duration-ms="331" started-at="2019-06-28T20:42:25Z" finished-at="2019-06-28T20:42:25Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- simpleBmiTest -->
+      </class> <!-- quickdt.predictiveModels.temporallyWeightPredictiveModel.TemporallyReweightedPMBuilderTest -->
+    </test> <!-- Command line test 34d8bcf5-a879-40b1-af98-f3253df4ebf0 -->
+  </suite> <!-- quickdt.predictiveModels.temporallyWeightPredictiveModel.TemporallyReweightedPMBuilderTest -->
+  <suite name="quickdt.predictiveModels.featureEngineering.FeatureEngineeringPredictiveModelBuilderTest" duration-ms="4" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:26Z">
+    <groups>
+    </groups>
+    <test name="Command line test 24761d3b-040e-4ede-ab75-8c3e56530b8f" duration-ms="4" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:26Z">
+      <class name="quickdt.predictiveModels.featureEngineering.FeatureEngineeringPredictiveModelBuilderTest">
+        <test-method status="PASS" signature="simpleTest()[pri:0, instance:quickdt.predictiveModels.featureEngineering.FeatureEngineeringPredictiveModelBuilderTest@573f2bb1]" name="simpleTest" duration-ms="4" started-at="2019-06-28T20:42:26Z" finished-at="2019-06-28T20:42:26Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- simpleTest -->
+      </class> <!-- quickdt.predictiveModels.featureEngineering.FeatureEngineeringPredictiveModelBuilderTest -->
+    </test> <!-- Command line test 24761d3b-040e-4ede-ab75-8c3e56530b8f -->
+  </suite> <!-- quickdt.predictiveModels.featureEngineering.FeatureEngineeringPredictiveModelBuilderTest -->
+  <suite name="quickdt.ClassificationCounterTest" duration-ms="2" started-at="2019-06-28T20:42:43Z" finished-at="2019-06-28T20:42:43Z">
+    <groups>
+    </groups>
+    <test name="Command line test 8fcf7bc0-31b4-4385-a666-c691ce8e3514" duration-ms="2" started-at="2019-06-28T20:42:43Z" finished-at="2019-06-28T20:42:43Z">
+      <class name="quickdt.ClassificationCounterTest">
+        <test-method status="PASS" signature="testAdd()[pri:0, instance:quickdt.ClassificationCounterTest@704a52ec]" name="testAdd" duration-ms="0" started-at="2019-06-28T20:42:43Z" finished-at="2019-06-28T20:42:43Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testAdd -->
+        <test-method status="PASS" signature="testMerge()[pri:0, instance:quickdt.ClassificationCounterTest@704a52ec]" name="testMerge" duration-ms="1" started-at="2019-06-28T20:42:43Z" finished-at="2019-06-28T20:42:43Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testMerge -->
+        <test-method status="PASS" signature="testSubtract()[pri:0, instance:quickdt.ClassificationCounterTest@704a52ec]" name="testSubtract" duration-ms="0" started-at="2019-06-28T20:42:43Z" finished-at="2019-06-28T20:42:43Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testSubtract -->
+      </class> <!-- quickdt.ClassificationCounterTest -->
+    </test> <!-- Command line test 8fcf7bc0-31b4-4385-a666-c691ce8e3514 -->
+  </suite> <!-- quickdt.ClassificationCounterTest -->
+  <suite name="quickdt.collections.ValueSummingMapTest" duration-ms="4" started-at="2019-06-28T20:42:43Z" finished-at="2019-06-28T20:42:43Z">
+    <groups>
+    </groups>
+    <test name="Command line test c34ed7e7-499c-43ce-9c59-d73646246dd5" duration-ms="4" started-at="2019-06-28T20:42:43Z" finished-at="2019-06-28T20:42:43Z">
+      <class name="quickdt.collections.ValueSummingMapTest">
+        <test-method status="PASS" signature="simpleTest()[pri:0, instance:quickdt.collections.ValueSummingMapTest@1b68ddbd]" name="simpleTest" duration-ms="3" started-at="2019-06-28T20:42:43Z" finished-at="2019-06-28T20:42:43Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- simpleTest -->
+      </class> <!-- quickdt.collections.ValueSummingMapTest -->
+    </test> <!-- Command line test c34ed7e7-499c-43ce-9c59-d73646246dd5 -->
+  </suite> <!-- quickdt.collections.ValueSummingMapTest -->
+</testng-results>

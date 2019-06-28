@@ -1,0 +1,638 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>HashMap.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang.collection</a> &gt; <span class="el_source">HashMap.java</span></div><h1>HashMap.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang.collection;
+
+import javaslang.Lazy;
+import javaslang.Tuple;
+import javaslang.Tuple2;
+import javaslang.control.Match;
+import javaslang.control.Option;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.function.*;
+import java.util.stream.Collector;
+
+/**
+ * An immutable {@code HashMap} implementation based on a
+ * &lt;a href=&quot;https://en.wikipedia.org/wiki/Hash_array_mapped_trie&quot;&gt;Hash array mapped trie (HAMT)&lt;/a&gt;.
+ *
+ * @author Ruslan Sennov, Patryk Najda, Daniel Dietrich
+ * @since 2.0.0
+ */
+public final class HashMap&lt;K, V&gt; implements Map&lt;K, V&gt;, Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+<span class="fc" id="L33">    private static final HashMap&lt;?, ?&gt; EMPTY = new HashMap&lt;&gt;(HashArrayMappedTrie.empty());</span>
+
+    private final HashArrayMappedTrie&lt;K, V&gt; trie;
+    private final transient Lazy&lt;Integer&gt; hash;
+
+<span class="fc" id="L38">    private HashMap(HashArrayMappedTrie&lt;K, V&gt; trie) {</span>
+<span class="fc" id="L39">        this.trie = trie;</span>
+<span class="fc" id="L40">        this.hash = Lazy.of(() -&gt; Traversable.hash(trie::iterator));</span>
+<span class="fc" id="L41">    }</span>
+
+    /**
+     * Returns a {@link java.util.stream.Collector} which may be used in conjunction with
+     * {@link java.util.stream.Stream#collect(java.util.stream.Collector)} to obtain a {@link javaslang.collection.HashMap}.
+     *
+     * @param &lt;K&gt; The key type
+     * @param &lt;V&gt; The value type
+     * @return A {@link javaslang.collection.HashMap} Collector.
+     */
+    public static &lt;K, V&gt; Collector&lt;Tuple2&lt;K, V&gt;, ArrayList&lt;Tuple2&lt;K, V&gt;&gt;, HashMap&lt;K, V&gt;&gt; collector() {
+<span class="fc" id="L52">        final Supplier&lt;ArrayList&lt;Tuple2&lt;K, V&gt;&gt;&gt; supplier = ArrayList::new;</span>
+<span class="fc" id="L53">        final BiConsumer&lt;ArrayList&lt;Tuple2&lt;K, V&gt;&gt;, Tuple2&lt;K, V&gt;&gt; accumulator = ArrayList::add;</span>
+<span class="fc" id="L54">        final BinaryOperator&lt;ArrayList&lt;Tuple2&lt;K, V&gt;&gt;&gt; combiner = (left, right) -&gt; {</span>
+<span class="fc" id="L55">            left.addAll(right);</span>
+<span class="fc" id="L56">            return left;</span>
+        };
+<span class="fc" id="L58">        final Function&lt;ArrayList&lt;Tuple2&lt;K, V&gt;&gt;, HashMap&lt;K, V&gt;&gt; finisher = HashMap::ofEntries;</span>
+<span class="fc" id="L59">        return Collector.of(supplier, accumulator, combiner, finisher);</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    public static &lt;K, V&gt; HashMap&lt;K, V&gt; empty() {
+<span class="fc" id="L64">        return (HashMap&lt;K, V&gt;) EMPTY;</span>
+    }
+
+    /**
+     * Returns a singleton {@code HashMap}, i.e. a {@code HashMap} of one element.
+     *
+     * @param entry A map entry.
+     * @param &lt;K&gt;   The key type
+     * @param &lt;V&gt;   The value type
+     * @return A new Map containing the given entry
+     */
+    public static &lt;K, V&gt; HashMap&lt;K, V&gt; of(Tuple2&lt;? extends K, ? extends V&gt; entry) {
+<span class="fc" id="L76">        return new HashMap&lt;&gt;(HashArrayMappedTrie.&lt;K, V&gt; empty().put(entry._1, entry._2));</span>
+    }
+
+    /**
+     * Returns a {@code HashMap}, from a source java.util.Map.
+     *
+     * @param map A map entry.
+     * @param &lt;K&gt; The key type
+     * @param &lt;V&gt; The value type
+     * @return A new Map containing the given map
+     */
+    public static &lt;K, V&gt; HashMap&lt;K, V&gt; ofAll(java.util.Map&lt;? extends K, ? extends V&gt; map) {
+<span class="fc" id="L88">        Objects.requireNonNull(map, &quot;map is null&quot;);</span>
+<span class="fc" id="L89">        HashArrayMappedTrie&lt;K, V&gt; tree = HashArrayMappedTrie.empty();</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        for (java.util.Map.Entry&lt;? extends K, ? extends V&gt; entry : map.entrySet()) {</span>
+<span class="fc" id="L91">            tree = tree.put(entry.getKey(), entry.getValue());</span>
+<span class="fc" id="L92">        }</span>
+<span class="fc" id="L93">        return wrap(tree);</span>
+    }
+
+    /**
+     * Returns a singleton {@code HashMap}, i.e. a {@code HashMap} of one element.
+     *
+     * @param key   A singleton map key.
+     * @param value A singleton map value.
+     * @param &lt;K&gt;   The key type
+     * @param &lt;V&gt;   The value type
+     * @return A new Map containing the given entry
+     */
+    public static &lt;K, V&gt; HashMap&lt;K, V&gt; of(K key, V value) {
+<span class="fc" id="L106">        return new HashMap&lt;&gt;(HashArrayMappedTrie.&lt;K, V&gt; empty().put(key, value));</span>
+    }
+
+    /**
+     * Creates a HashMap of the given list of key-value pairs.
+     *
+     * @param pairs A list of key-value pairs
+     * @param &lt;K&gt;   The key type
+     * @param &lt;V&gt;   The value type
+     * @return A new Map containing the given entries
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    public static &lt;K, V&gt; HashMap&lt;K, V&gt; of(Object... pairs) {
+<span class="fc" id="L119">        Objects.requireNonNull(pairs, &quot;pairs is null&quot;);</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">        if ((pairs.length &amp; 1) != 0) {</span>
+<span class="fc" id="L121">            throw new IllegalArgumentException(&quot;Odd length of key-value pairs list&quot;);</span>
+        }
+<span class="fc" id="L123">        HashArrayMappedTrie&lt;K, V&gt; trie = HashArrayMappedTrie.empty();</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">        for (int i = 0; i &lt; pairs.length; i += 2) {</span>
+<span class="fc" id="L125">            trie = trie.put((K) pairs[i], (V) pairs[i + 1]);</span>
+        }
+<span class="fc" id="L127">        return wrap(trie);</span>
+    }
+
+    /**
+     * Returns an HashMap containing {@code n} values of a given Function {@code f}
+     * over a range of integer values from 0 to {@code n - 1}.
+     *
+     * @param &lt;K&gt; The key type
+     * @param &lt;V&gt; The value type
+     * @param n   The number of elements in the HashMap
+     * @param f   The Function computing element values
+     * @return An HashMap consisting of elements {@code f(0),f(1), ..., f(n - 1)}
+     * @throws NullPointerException if {@code f} is null
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    public static &lt;K, V&gt; HashMap&lt;K, V&gt; tabulate(int n, Function&lt;? super Integer, ? extends Tuple2&lt;? extends K, ? extends V&gt;&gt; f) {
+<span class="fc" id="L143">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="fc" id="L144">        return ofEntries(Collections.tabulate(n, (Function&lt;? super Integer, ? extends Tuple2&lt;K, V&gt;&gt;) f));</span>
+    }
+
+    /**
+     * Returns an HashMap containing {@code n} values supplied by a given Supplier {@code s}.
+     *
+     * @param &lt;K&gt; The key type
+     * @param &lt;V&gt; The value type
+     * @param n   The number of elements in the HashMap
+     * @param s   The Supplier computing element values
+     * @return An HashMap of size {@code n}, where each element contains the result supplied by {@code s}.
+     * @throws NullPointerException if {@code s} is null
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    public static &lt;K, V&gt; HashMap&lt;K, V&gt; fill(int n, Supplier&lt;? extends Tuple2&lt;? extends K, ? extends V&gt;&gt; s) {
+<span class="fc" id="L159">        Objects.requireNonNull(s, &quot;s is null&quot;);</span>
+<span class="fc" id="L160">        return ofEntries(Collections.fill(n, (Supplier&lt;? extends Tuple2&lt;K, V&gt;&gt;) s));</span>
+    }
+
+    /**
+     * Creates a HashMap of the given entries.
+     *
+     * @param entries Map entries
+     * @param &lt;K&gt;     The key type
+     * @param &lt;V&gt;     The value type
+     * @return A new Map containing the given entries
+     */
+    @SafeVarargs
+    public static &lt;K, V&gt; HashMap&lt;K, V&gt; ofEntries(java.util.Map.Entry&lt;? extends K, ? extends V&gt;... entries) {
+<span class="fc" id="L173">        Objects.requireNonNull(entries, &quot;entries is null&quot;);</span>
+<span class="fc" id="L174">        HashArrayMappedTrie&lt;K, V&gt; trie = HashArrayMappedTrie.empty();</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">        for (java.util.Map.Entry&lt;? extends K, ? extends V&gt; entry : entries) {</span>
+<span class="fc" id="L176">            trie = trie.put(entry.getKey(), entry.getValue());</span>
+        }
+<span class="fc" id="L178">        return wrap(trie);</span>
+    }
+
+    /**
+     * Creates a HashMap of the given entries.
+     *
+     * @param entries Map entries
+     * @param &lt;K&gt;     The key type
+     * @param &lt;V&gt;     The value type
+     * @return A new Map containing the given entries
+     */
+    @SafeVarargs
+    public static &lt;K, V&gt; HashMap&lt;K, V&gt; ofEntries(Tuple2&lt;? extends K, ? extends V&gt;... entries) {
+<span class="fc" id="L191">        Objects.requireNonNull(entries, &quot;entries is null&quot;);</span>
+<span class="fc" id="L192">        HashArrayMappedTrie&lt;K, V&gt; trie = HashArrayMappedTrie.empty();</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">        for (Tuple2&lt;? extends K, ? extends V&gt; entry : entries) {</span>
+<span class="fc" id="L194">            trie = trie.put(entry._1, entry._2);</span>
+        }
+<span class="fc" id="L196">        return wrap(trie);</span>
+    }
+
+    /**
+     * Creates a HashMap of the given entries.
+     *
+     * @param entries Map entries
+     * @param &lt;K&gt;     The key type
+     * @param &lt;V&gt;     The value type
+     * @return A new Map containing the given entries
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    public static &lt;K, V&gt; HashMap&lt;K, V&gt; ofEntries(Iterable&lt;? extends Tuple2&lt;? extends K, ? extends V&gt;&gt; entries) {
+<span class="fc" id="L209">        Objects.requireNonNull(entries, &quot;entries is null&quot;);</span>
+<span class="fc bfc" id="L210" title="All 2 branches covered.">        if (entries instanceof HashMap) {</span>
+<span class="fc" id="L211">            return (HashMap&lt;K, V&gt;) entries;</span>
+        } else {
+<span class="fc" id="L213">            HashArrayMappedTrie&lt;K, V&gt; trie = HashArrayMappedTrie.empty();</span>
+<span class="fc bfc" id="L214" title="All 2 branches covered.">            for (Tuple2&lt;? extends K, ? extends V&gt; entry : entries) {</span>
+<span class="fc" id="L215">                trie = trie.put(entry._1, entry._2);</span>
+<span class="fc" id="L216">            }</span>
+<span class="fc" id="L217">            return wrap(trie);</span>
+        }
+    }
+
+    @Override
+    public &lt;K2, V2&gt; HashMap&lt;K2, V2&gt; bimap(Function&lt;? super K, ? extends K2&gt; keyMapper, Function&lt;? super V, ? extends V2&gt; valueMapper) {
+<span class="nc" id="L223">        Objects.requireNonNull(keyMapper, &quot;keyMapper is null&quot;);</span>
+<span class="nc" id="L224">        Objects.requireNonNull(valueMapper, &quot;valueMapper is null&quot;);</span>
+<span class="nc" id="L225">        final Iterator&lt;Tuple2&lt;K2, V2&gt;&gt; entries = iterator().map(entry -&gt; Tuple.of(keyMapper.apply(entry._1), valueMapper.apply(entry._2)));</span>
+<span class="nc" id="L226">        return HashMap.ofEntries(entries);</span>
+    }
+
+    @Override
+    public HashMap&lt;K, V&gt; clear() {
+<span class="fc" id="L231">        return HashMap.empty();</span>
+    }
+
+    @Override
+    public boolean containsKey(K key) {
+<span class="fc" id="L236">        return trie.containsKey(key);</span>
+    }
+
+    @Override
+    public boolean containsValue(V value) {
+<span class="fc" id="L241">        return iterator().map(entry -&gt; entry._2).contains(value);</span>
+    }
+
+    @Override
+    public HashMap&lt;K, V&gt; distinct() {
+<span class="fc" id="L246">        return this;</span>
+    }
+
+    @Override
+    public HashMap&lt;K, V&gt; distinctBy(Comparator&lt;? super Tuple2&lt;K, V&gt;&gt; comparator) {
+<span class="fc" id="L251">        Objects.requireNonNull(comparator, &quot;comparator is null&quot;);</span>
+<span class="fc" id="L252">        return HashMap.ofEntries(iterator().distinctBy(comparator));</span>
+    }
+
+    @Override
+    public &lt;U&gt; HashMap&lt;K, V&gt; distinctBy(Function&lt;? super Tuple2&lt;K, V&gt;, ? extends U&gt; keyExtractor) {
+<span class="fc" id="L257">        Objects.requireNonNull(keyExtractor, &quot;keyExtractor is null&quot;);</span>
+<span class="fc" id="L258">        return HashMap.ofEntries(iterator().distinctBy(keyExtractor));</span>
+    }
+
+    @Override
+    public HashMap&lt;K, V&gt; drop(int n) {
+<span class="fc bfc" id="L263" title="All 2 branches covered.">        if (n &lt;= 0) {</span>
+<span class="fc" id="L264">            return this;</span>
+        }
+<span class="fc bfc" id="L266" title="All 2 branches covered.">        if (n &gt;= length()) {</span>
+<span class="fc" id="L267">            return empty();</span>
+        }
+<span class="fc" id="L269">        return HashMap.ofEntries(iterator().drop(n));</span>
+    }
+
+    @Override
+    public HashMap&lt;K, V&gt; dropRight(int n) {
+<span class="fc bfc" id="L274" title="All 2 branches covered.">        if (n &lt;= 0) {</span>
+<span class="fc" id="L275">            return this;</span>
+        }
+<span class="fc bfc" id="L277" title="All 2 branches covered.">        if (n &gt;= length()) {</span>
+<span class="fc" id="L278">            return empty();</span>
+        }
+<span class="fc" id="L280">        return HashMap.ofEntries(iterator().dropRight(n));</span>
+    }
+
+    @Override
+    public HashMap&lt;K, V&gt; dropUntil(Predicate&lt;? super Tuple2&lt;K, V&gt;&gt; predicate) {
+<span class="fc" id="L285">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L286">        return dropWhile(predicate.negate());</span>
+    }
+
+    @Override
+    public HashMap&lt;K, V&gt; dropWhile(Predicate&lt;? super Tuple2&lt;K, V&gt;&gt; predicate) {
+<span class="fc" id="L291">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L292">        return HashMap.ofEntries(iterator().dropWhile(predicate));</span>
+    }
+
+    @Override
+    public HashMap&lt;K, V&gt; filter(Predicate&lt;? super Tuple2&lt;K, V&gt;&gt; predicate) {
+<span class="fc" id="L297">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L298">        return foldLeft(HashMap.&lt;K, V&gt; empty(), (acc, entry) -&gt; {</span>
+<span class="fc bfc" id="L299" title="All 2 branches covered.">            if (predicate.test(entry)) {</span>
+<span class="fc" id="L300">                return acc.put(entry);</span>
+            } else {
+<span class="fc" id="L302">                return acc;</span>
+            }
+        });
+    }
+
+    @Override
+    public HashMap&lt;K, V&gt; filterNot(Predicate&lt;? super Tuple2&lt;K, V&gt;&gt; predicate) {
+<span class="fc" id="L309">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L310">        return filter(predicate.negate());</span>
+    }
+
+    @Override
+    public &lt;K2, V2&gt; HashMap&lt;K2, V2&gt; flatMap(BiFunction&lt;? super K, ? super V, ? extends Iterable&lt;Tuple2&lt;K2, V2&gt;&gt;&gt; mapper) {
+<span class="fc" id="L315">        Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+<span class="fc" id="L316">        return foldLeft(HashMap.&lt;K2, V2&gt; empty(), (acc, entry) -&gt; {</span>
+<span class="fc bfc" id="L317" title="All 2 branches covered.">            for (Tuple2&lt;? extends K2, ? extends V2&gt; mappedEntry : mapper.apply(entry._1, entry._2)) {</span>
+<span class="fc" id="L318">                acc = acc.put(mappedEntry);</span>
+<span class="fc" id="L319">            }</span>
+<span class="fc" id="L320">            return acc;</span>
+        });
+    }
+
+    @Override
+    public &lt;U&gt; U foldRight(U zero, BiFunction&lt;? super Tuple2&lt;K, V&gt;, ? super U, ? extends U&gt; f) {
+<span class="fc" id="L326">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="fc" id="L327">        return foldLeft(zero, (u, t) -&gt; f.apply(t, u));</span>
+    }
+
+    @Override
+    public Option&lt;V&gt; get(K key) {
+<span class="fc" id="L332">        return trie.get(key);</span>
+    }
+
+    @Override
+    public &lt;C&gt; Map&lt;C, HashMap&lt;K, V&gt;&gt; groupBy(Function&lt;? super Tuple2&lt;K, V&gt;, ? extends C&gt; classifier) {
+<span class="fc" id="L337">        Objects.requireNonNull(classifier, &quot;classifier is null&quot;);</span>
+<span class="fc" id="L338">        return foldLeft(HashMap.empty(), (map, entry) -&gt; {</span>
+<span class="fc" id="L339">            final C key = classifier.apply(entry);</span>
+<span class="fc" id="L340">            final HashMap&lt;K, V&gt; values = map</span>
+<span class="fc" id="L341">                    .get(key)</span>
+<span class="fc" id="L342">                    .map(entries -&gt; entries.put(entry))</span>
+<span class="fc" id="L343">                    .orElse(HashMap.of(entry));</span>
+<span class="fc" id="L344">            return map.put(key, values);</span>
+        });
+    }
+
+    @Override
+    public Iterator&lt;HashMap&lt;K, V&gt;&gt; grouped(int size) {
+<span class="fc" id="L350">        return sliding(size, size);</span>
+    }
+
+    @Override
+    public boolean hasDefiniteSize() {
+<span class="fc" id="L355">        return true;</span>
+    }
+
+    @Override
+    public Tuple2&lt;K, V&gt; head() {
+<span class="fc bfc" id="L360" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L361">            throw new NoSuchElementException(&quot;head of empty HashMap&quot;);</span>
+        } else {
+<span class="fc" id="L363">            return iterator().next();</span>
+        }
+    }
+
+    @Override
+    public Option&lt;Tuple2&lt;K, V&gt;&gt; headOption() {
+<span class="fc bfc" id="L369" title="All 2 branches covered.">        return isEmpty() ? Option.none() : Option.some(head());</span>
+    }
+
+    @Override
+    public HashMap&lt;K, V&gt; init() {
+<span class="fc bfc" id="L374" title="All 2 branches covered.">        if (trie.isEmpty()) {</span>
+<span class="fc" id="L375">            throw new UnsupportedOperationException(&quot;init of empty HashMap&quot;);</span>
+        } else {
+<span class="fc" id="L377">            return remove(last()._1);</span>
+        }
+    }
+
+    @Override
+    public Option&lt;HashMap&lt;K, V&gt;&gt; initOption() {
+<span class="fc bfc" id="L383" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L384">            return Option.none();</span>
+        } else {
+<span class="fc" id="L386">            return Option.some(init());</span>
+        }
+    }
+
+    @Override
+    public boolean isEmpty() {
+<span class="fc" id="L392">        return trie.isEmpty();</span>
+    }
+
+    @Override
+    public boolean isTraversableAgain() {
+<span class="fc" id="L397">        return true;</span>
+    }
+
+    @Override
+    public Iterator&lt;Tuple2&lt;K, V&gt;&gt; iterator() {
+<span class="fc" id="L402">        return trie.iterator();</span>
+    }
+
+    @Override
+    public Set&lt;K&gt; keySet() {
+<span class="fc" id="L407">        return HashSet.ofAll(iterator().map(Tuple2::_1));</span>
+    }
+
+    @Override
+    public int length() {
+<span class="fc" id="L412">        return trie.size();</span>
+    }
+    
+    @Override
+    public &lt;K2, V2&gt; HashMap&lt;K2, V2&gt; map(BiFunction&lt;? super K, ? super V, Tuple2&lt;K2, V2&gt;&gt; mapper) {
+<span class="fc" id="L417">        Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+<span class="fc" id="L418">        return foldLeft(HashMap.empty(), (acc, entry) -&gt; acc.put(entry.map(mapper)));</span>
+    }
+
+    @Override
+    public &lt;V2&gt; HashMap&lt;K, V2&gt; mapValues(Function&lt;? super V, ? extends V2&gt; valueMapper) {
+<span class="fc" id="L423">        Objects.requireNonNull(valueMapper, &quot;valueMapper is null&quot;);</span>
+<span class="fc" id="L424">        return map((k, v) -&gt; Tuple.of(k, valueMapper.apply(v)));</span>
+    }
+
+    @Override
+    public Match.MatchMonad.Of&lt;HashMap&lt;K, V&gt;&gt; match() {
+<span class="nc" id="L429">        return Match.of(this);</span>
+    }
+
+    @Override
+    public HashMap&lt;K, V&gt; merge(Map&lt;? extends K, ? extends V&gt; that) {
+<span class="fc" id="L434">        return (HashMap&lt;K, V&gt;) Collections.mergeMaps(this, that, HashMap::ofEntries);</span>
+    }
+
+    @Override
+    public &lt;U extends V&gt; HashMap&lt;K, V&gt; merge(Map&lt;? extends K, U&gt; that,
+                                             BiFunction&lt;? super V, ? super U, ? extends V&gt; collisionResolution) {
+<span class="fc" id="L440">        return (HashMap&lt;K, V&gt;) Collections.mergeMaps(this, that, HashMap::ofEntries, collisionResolution);</span>
+    }
+
+    @Override
+    public Tuple2&lt;HashMap&lt;K, V&gt;, HashMap&lt;K, V&gt;&gt; partition(Predicate&lt;? super Tuple2&lt;K, V&gt;&gt; predicate) {
+<span class="fc" id="L445">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L446">        final Tuple2&lt;Iterator&lt;Tuple2&lt;K, V&gt;&gt;, Iterator&lt;Tuple2&lt;K, V&gt;&gt;&gt; p = iterator().partition(predicate);</span>
+<span class="fc" id="L447">        return Tuple.of(HashMap.ofEntries(p._1), HashMap.ofEntries(p._2));</span>
+    }
+
+    @Override
+    public HashMap&lt;K, V&gt; peek(Consumer&lt;? super Tuple2&lt;K, V&gt;&gt; action) {
+<span class="fc" id="L452">        Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="fc bfc" id="L453" title="All 2 branches covered.">        if (!isEmpty()) {</span>
+<span class="fc" id="L454">            action.accept(iterator().next());</span>
+        }
+<span class="fc" id="L456">        return this;</span>
+    }
+
+    @Override
+    public HashMap&lt;K, V&gt; put(K key, V value) {
+<span class="fc" id="L461">        return new HashMap&lt;&gt;(trie.put(key, value));</span>
+    }
+
+    @Override
+    public HashMap&lt;K, V&gt; put(Tuple2&lt;? extends K, ? extends V&gt; entry) {
+<span class="fc" id="L466">        return put(entry._1, entry._2);</span>
+    }
+
+    @Override
+    public HashMap&lt;K, V&gt; remove(K key) {
+<span class="fc" id="L471">        final HashArrayMappedTrie&lt;K, V&gt; result = trie.remove(key);</span>
+<span class="fc bfc" id="L472" title="All 2 branches covered.">        return result.size() == trie.size() ? this : wrap(result);</span>
+    }
+
+    @Override
+    public HashMap&lt;K, V&gt; removeAll(Iterable&lt;? extends K&gt; keys) {
+<span class="fc" id="L477">        Objects.requireNonNull(keys, &quot;keys is null&quot;);</span>
+<span class="fc" id="L478">        HashArrayMappedTrie&lt;K, V&gt; result = trie;</span>
+<span class="fc bfc" id="L479" title="All 2 branches covered.">        for (K key : keys) {</span>
+<span class="fc" id="L480">            result = result.remove(key);</span>
+<span class="fc" id="L481">        }</span>
+<span class="fc bfc" id="L482" title="All 2 branches covered.">        return result.size() == trie.size() ? this : wrap(result);</span>
+    }
+
+    @Override
+    public HashMap&lt;K, V&gt; replace(Tuple2&lt;K, V&gt; currentElement, Tuple2&lt;K, V&gt; newElement) {
+<span class="fc" id="L487">        Objects.requireNonNull(currentElement, &quot;currentElement is null&quot;);</span>
+<span class="fc" id="L488">        Objects.requireNonNull(newElement, &quot;newElement is null&quot;);</span>
+<span class="pc bpc" id="L489" title="1 of 2 branches missed.">        return containsKey(currentElement._1) ? remove(currentElement._1).put(newElement) : this;</span>
+    }
+
+    @Override
+    public HashMap&lt;K, V&gt; replaceAll(Tuple2&lt;K, V&gt; currentElement, Tuple2&lt;K, V&gt; newElement) {
+<span class="fc" id="L494">        return replace(currentElement, newElement);</span>
+    }
+
+    @Override
+    public HashMap&lt;K, V&gt; retainAll(Iterable&lt;? extends Tuple2&lt;K, V&gt;&gt; elements) {
+<span class="fc" id="L499">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc" id="L500">        HashArrayMappedTrie&lt;K, V&gt; tree = HashArrayMappedTrie.empty();</span>
+<span class="fc bfc" id="L501" title="All 2 branches covered.">        for (Tuple2&lt;K, V&gt; entry : elements) {</span>
+<span class="pc bpc" id="L502" title="1 of 2 branches missed.">            if (contains(entry)) {</span>
+<span class="fc" id="L503">                tree = tree.put(entry._1, entry._2);</span>
+            }
+<span class="fc" id="L505">        }</span>
+<span class="fc" id="L506">        return wrap(tree);</span>
+    }
+
+    @Override
+    public HashMap&lt;K, V&gt; scan(Tuple2&lt;K, V&gt; zero, BiFunction&lt;? super Tuple2&lt;K, V&gt;, ? super Tuple2&lt;K, V&gt;, ? extends Tuple2&lt;K, V&gt;&gt; operation) {
+<span class="fc" id="L511">        Objects.requireNonNull(operation, &quot;operation is null&quot;);</span>
+<span class="fc" id="L512">        return Collections.scanLeft(this, zero, operation, HashMap.empty(), HashMap::put, Function.identity());</span>
+    }
+
+    @Override
+    public &lt;U&gt; Seq&lt;U&gt; scanLeft(U zero, BiFunction&lt;? super U, ? super Tuple2&lt;K, V&gt;, ? extends U&gt; operation) {
+<span class="fc" id="L517">        Objects.requireNonNull(operation, &quot;operation is null&quot;);</span>
+<span class="fc" id="L518">        return Collections.scanLeft(this, zero, operation, List.empty(), List::prepend, List::reverse);</span>
+    }
+
+    @Override
+    public &lt;U&gt; Seq&lt;U&gt; scanRight(U zero, BiFunction&lt;? super Tuple2&lt;K, V&gt;, ? super U, ? extends U&gt; operation) {
+<span class="fc" id="L523">        Objects.requireNonNull(operation, &quot;operation is null&quot;);</span>
+<span class="fc" id="L524">        return Collections.scanRight(this, zero, operation, List.empty(), List::prepend, Function.identity());</span>
+    }
+
+    @Override
+    public int size() {
+<span class="fc" id="L529">        return trie.size();</span>
+    }
+
+    @Override
+    public Iterator&lt;HashMap&lt;K, V&gt;&gt; sliding(int size) {
+<span class="fc" id="L534">        return sliding(size, 1);</span>
+    }
+
+    @Override
+    public Iterator&lt;HashMap&lt;K, V&gt;&gt; sliding(int size, int step) {
+<span class="fc" id="L539">        return iterator().sliding(size, step).map(HashMap::ofEntries);</span>
+    }
+
+    @Override
+    public Tuple2&lt;HashMap&lt;K, V&gt;, HashMap&lt;K, V&gt;&gt; span(Predicate&lt;? super Tuple2&lt;K, V&gt;&gt; predicate) {
+<span class="fc" id="L544">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L545">        final Tuple2&lt;Iterator&lt;Tuple2&lt;K, V&gt;&gt;, Iterator&lt;Tuple2&lt;K, V&gt;&gt;&gt; t = iterator().span(predicate);</span>
+<span class="fc" id="L546">        return Tuple.of(HashMap.ofEntries(t._1), HashMap.ofEntries(t._2));</span>
+    }
+
+    @Override
+    public HashMap&lt;K, V&gt; tail() {
+<span class="fc bfc" id="L551" title="All 2 branches covered.">        if (trie.isEmpty()) {</span>
+<span class="fc" id="L552">            throw new UnsupportedOperationException(&quot;tail of empty HashMap&quot;);</span>
+        } else {
+<span class="fc" id="L554">            return remove(head()._1);</span>
+        }
+    }
+
+    @Override
+    public Option&lt;HashMap&lt;K, V&gt;&gt; tailOption() {
+<span class="fc bfc" id="L560" title="All 2 branches covered.">        if (trie.isEmpty()) {</span>
+<span class="fc" id="L561">            return Option.none();</span>
+        } else {
+<span class="fc" id="L563">            return Option.some(tail());</span>
+        }
+    }
+
+    @Override
+    public HashMap&lt;K, V&gt; take(int n) {
+<span class="fc bfc" id="L569" title="All 2 branches covered.">        if (trie.size() &lt;= n) {</span>
+<span class="fc" id="L570">            return this;</span>
+        } else {
+<span class="fc" id="L572">            return HashMap.ofEntries(trie.iterator().take(n));</span>
+        }
+    }
+
+    @Override
+    public HashMap&lt;K, V&gt; takeRight(int n) {
+<span class="fc bfc" id="L578" title="All 2 branches covered.">        if (trie.size() &lt;= n) {</span>
+<span class="fc" id="L579">            return this;</span>
+        } else {
+<span class="fc" id="L581">            return HashMap.ofEntries(trie.iterator().takeRight(n));</span>
+        }
+    }
+
+    @Override
+    public HashMap&lt;K, V&gt; takeUntil(Predicate&lt;? super Tuple2&lt;K, V&gt;&gt; predicate) {
+<span class="fc" id="L587">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L588">        return takeWhile(predicate.negate());</span>
+    }
+
+    @Override
+    public HashMap&lt;K, V&gt; takeWhile(Predicate&lt;? super Tuple2&lt;K, V&gt;&gt; predicate) {
+<span class="fc" id="L593">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L594">        final HashMap&lt;K, V&gt; taken = HashMap.ofEntries(iterator().takeWhile(predicate));</span>
+<span class="fc bfc" id="L595" title="All 2 branches covered.">        return taken.length() == length() ? this : taken;</span>
+    }
+
+    @Override
+    public Seq&lt;V&gt; values() {
+<span class="fc" id="L600">        return map(Tuple2::_2);</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="fc" id="L605">        return hash.get();</span>
+    }
+
+    @Override
+    public boolean equals(Object o) {
+<span class="fc bfc" id="L610" title="All 2 branches covered.">        if (o == this) {</span>
+<span class="fc" id="L611">            return true;</span>
+<span class="pc bpc" id="L612" title="1 of 2 branches missed.">        } else if (o instanceof HashMap) {</span>
+<span class="fc" id="L613">            final HashMap&lt;?, ?&gt; that = (HashMap&lt;?, ?&gt;) o;</span>
+<span class="fc" id="L614">            return this.corresponds(that, Objects::equals);</span>
+        } else {
+<span class="nc" id="L616">            return false;</span>
+        }
+    }
+
+    private Object readResolve() {
+<span class="fc bfc" id="L621" title="All 2 branches covered.">        return isEmpty() ? EMPTY : this;</span>
+    }
+
+    @Override
+    public String stringPrefix() {
+<span class="fc" id="L626">        return &quot;HashMap&quot;;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L631">        return mkString(stringPrefix() + &quot;(&quot;, &quot;, &quot;, &quot;)&quot;);</span>
+    }
+
+    private static &lt;K, V&gt; HashMap&lt;K, V&gt; wrap(HashArrayMappedTrie&lt;K, V&gt; trie) {
+<span class="fc bfc" id="L635" title="All 2 branches covered.">        return trie.isEmpty() ? empty() : new HashMap&lt;&gt;(trie);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

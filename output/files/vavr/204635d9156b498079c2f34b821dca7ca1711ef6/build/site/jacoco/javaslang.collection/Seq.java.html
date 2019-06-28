@@ -1,0 +1,952 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Seq.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang.collection</a> &gt; <span class="el_source">Seq.java</span></div><h1>Seq.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang.collection;
+
+import javaslang.Function1;
+import javaslang.Tuple;
+import javaslang.Tuple2;
+import javaslang.Tuple3;
+import javaslang.control.Match;
+import javaslang.control.Option;
+
+import java.util.Comparator;
+import java.util.Objects;
+import java.util.function.*;
+
+/**
+ * Interface for immutable sequential data structures.
+ * &lt;p&gt;
+ * Creation:
+ *
+ * &lt;ul&gt;
+ * &lt;li&gt;{@link #unit(Iterable)}&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * Filtering:
+ *
+ * &lt;ul&gt;
+ * &lt;li&gt;{@link #remove(Object)}&lt;/li&gt;
+ * &lt;li&gt;{@link #removeAll(Object)}&lt;/li&gt;
+ * &lt;li&gt;{@link #removeAll(Iterable)}&lt;/li&gt;
+ * &lt;li&gt;{@link #removeAt(int)}&lt;/li&gt;
+ * &lt;li&gt;{@link #removeFirst(Predicate)}&lt;/li&gt;
+ * &lt;li&gt;{@link #removeLast(Predicate)}&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * Mutation:
+ *
+ * &lt;ul&gt;
+ * &lt;li&gt;{@link #append(Object)}&lt;/li&gt;
+ * &lt;li&gt;{@link #appendAll(Iterable)}&lt;/li&gt;
+ * &lt;li&gt;{@link #insert(int, Object)}&lt;/li&gt;
+ * &lt;li&gt;{@link #insertAll(int, Iterable)}&lt;/li&gt;
+ * &lt;li&gt;{@link #prepend(Object)}&lt;/li&gt;
+ * &lt;li&gt;{@link #prependAll(Iterable)}&lt;/li&gt;
+ * &lt;li&gt;{@link #update(int, Object)}&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * Selection:
+ *
+ * &lt;ul&gt;
+ * &lt;li&gt;{@link #get(int)}&lt;/li&gt;
+ * &lt;li&gt;{@link #indexOf(Object)}&lt;/li&gt;
+ * &lt;li&gt;{@link #indexOf(Object, int)}&lt;/li&gt;
+ * &lt;li&gt;{@link #lastIndexOf(Object)}&lt;/li&gt;
+ * &lt;li&gt;{@link #lastIndexOf(Object, int)}&lt;/li&gt;
+ * &lt;li&gt;{@link #slice(int, int)}&lt;/li&gt;
+ * &lt;li&gt;{@link #subSequence(int)}&lt;/li&gt;
+ * &lt;li&gt;{@link #subSequence(int, int)}&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * Transformation:
+ *
+ * &lt;ul&gt;
+ * &lt;li&gt;{@link #crossProduct()}&lt;/li&gt;
+ * &lt;li&gt;{@link #crossProduct(int)}&lt;/li&gt;
+ * &lt;li&gt;{@link #crossProduct(Iterable)}&lt;/li&gt;
+ * &lt;li&gt;{@link #combinations()}&lt;/li&gt;
+ * &lt;li&gt;{@link #combinations(int)}&lt;/li&gt;
+ * &lt;li&gt;{@link #intersperse(Object)}&lt;/li&gt;
+ * &lt;li&gt;{@link #padTo(int, Object)}&lt;/li&gt;
+ * &lt;li&gt;{@link #permutations()}&lt;/li&gt;
+ * &lt;li&gt;{@link #reverse()}&lt;/li&gt;
+ * &lt;li&gt;{@link #sort()}&lt;/li&gt;
+ * &lt;li&gt;{@link #sort(Comparator)}&lt;/li&gt;
+ * &lt;li&gt;{@link #splitAt(int)}&lt;/li&gt;
+ * &lt;li&gt;{@link #unzip(Function)}&lt;/li&gt;
+ * &lt;li&gt;{@link #zip(Iterable)}&lt;/li&gt;
+ * &lt;li&gt;{@link #zipAll(Iterable, Object, Object)}&lt;/li&gt;
+ * &lt;li&gt;{@link #zipWithIndex()}&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * Traversal:
+ *
+ * &lt;ul&gt;
+ * &lt;li&gt;{@link #iterator(int)}&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * @param &lt;T&gt; Component type
+ * @author Daniel Dietrich
+ * @since 1.1.0
+ */
+public interface Seq&lt;T&gt; extends Traversable&lt;T&gt;, Function1&lt;Integer, T&gt; {
+
+    long serialVersionUID = 1L;
+
+    /**
+     * Creates a Seq of the given elements.
+     * &lt;p&gt;
+     * The resulting sequence has the same iteration order as the given iterable of elements
+     * if the iteration order of the elements is stable.
+     *
+     * @param &lt;T&gt;      Component type of the Seq.
+     * @param elements An Iterable of elements.
+     * @return A sequence containing the given elements in the same order or the
+     * given argument if it is already an instance of Seq.
+     * @throws NullPointerException if {@code elements} is null
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    static &lt;T&gt; Seq&lt;T&gt; ofAll(Iterable&lt;? extends T&gt; elements) {
+<span class="fc" id="L113">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        if (elements instanceof Seq) {</span>
+<span class="fc" id="L115">            return (Seq&lt;T&gt;) elements;</span>
+        } else {
+<span class="fc" id="L117">            return List.ofAll(elements);</span>
+        }
+    }
+
+    /**
+     * A {@code Seq} is a partial function which returns the element at the specified index by calling
+     * {@linkplain #get(int)}.
+     *
+     * @param index an index
+     * @return the element at the given index
+     * @throws IndexOutOfBoundsException if this is empty, index &amp;lt; 0 or index &amp;gt;= length()
+     */
+    @Override
+    default T apply(Integer index) {
+<span class="fc" id="L131">        return get(index);</span>
+    }
+
+    /**
+     * Appends an element to this.
+     *
+     * @param element An element
+     * @return A new Seq containing the given element appended to this elements
+     */
+    Seq&lt;T&gt; append(T element);
+
+    /**
+     * Appends all given elements to this.
+     *
+     * @param elements An Iterable of elements
+     * @return A new Seq containing the given elements appended to this elements
+     * @throws NullPointerException if {@code elements} is null
+     */
+    Seq&lt;T&gt; appendAll(Iterable&lt;? extends T&gt; elements);
+
+    /**
+     * Returns the union of all combinations from k = 0 to length().
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * [].combinations() = [[]]
+     *
+     * [1,2,3].combinations() = [
+     *   [],                  // k = 0
+     *   [1], [2], [3],       // k = 1
+     *   [1,2], [1,3], [2,3], // k = 2
+     *   [1,2,3]              // k = 3
+     * ]
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @return the combinations of this
+     */
+    Seq&lt;? extends Seq&lt;T&gt;&gt; combinations();
+
+    /**
+     * Returns the k-combination of this traversable, i.e. all subset of this of k distinct elements.
+     *
+     * @param k Size of subsets
+     * @return the k-combination of this elements
+     * @see &lt;a href=&quot;http://en.wikipedia.org/wiki/Combination&quot;&gt;Combination&lt;/a&gt;
+     */
+    Seq&lt;? extends Seq&lt;T&gt;&gt; combinations(int k);
+
+    /**
+     * Tests whether this sequence contains a given sequence as a slice.
+     * &lt;p&gt;
+     * Note: may not terminate for infinite-sized collections.
+     *
+     * @param that the sequence to test
+     * @return true if this sequence contains a slice with the same elements as that, otherwise false.
+     * @throws NullPointerException if {@code that} is null.
+     */
+    default boolean containsSlice(Iterable&lt;? extends T&gt; that) {
+<span class="fc" id="L191">        Objects.requireNonNull(that, &quot;that is null&quot;);</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">        return indexOfSlice(that) &gt;= 0;</span>
+    }
+
+    /**
+     * Calculates the cross product (, i.e. square) of {@code this x this}.
+     * &lt;p&gt;
+     * Example:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * // = List of Tuples (1, 1), (1, 2), (1, 3), (2, 1), (2, 2), (2, 3), (3, 1), (3, 2), (3, 3)
+     * List.of(1, 2, 3).crossProduct();
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @return a new Seq containing the square of {@code this}
+     */
+    Seq&lt;Tuple2&lt;T, T&gt;&gt; crossProduct();
+
+    /**
+     * Calculates the n-ary cartesian power (or &lt;em&gt;cross product&lt;/em&gt; or simply &lt;em&gt;product&lt;/em&gt;) of this.
+     * &lt;p&gt;
+     * Example:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * // = ((A,A), (A,B), (A,C), ..., (B,A), (B,B), ..., (Z,Y), (Z,Z))
+     * CharSeq.rangeClosed('A', 'Z').crossProduct(2);
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param power the number of cartesian multiplications
+     * @return A new Seq representing the n-ary cartesian power of this
+     */
+    Seq&lt;? extends Seq&lt;T&gt;&gt; crossProduct(int power);
+
+    /**
+     * Calculates the cross product {@code this x that}.
+     * &lt;p&gt;
+     * Example:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * // = List of Tuples (1, 'a'), (1, 'b'), (2, 'a'), (2, 'b'), (3, 'a'), (3, 'b')
+     * List.of(1, 2, 3).crossProduct(List.of('a', 'b');
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param that Another iterable
+     * @param &lt;U&gt;  Component type
+     * @return a new Seq containing the cross product {@code this x that}
+     * @throws NullPointerException if that is null
+     */
+    &lt;U&gt; Seq&lt;Tuple2&lt;T, U&gt;&gt; crossProduct(Iterable&lt;? extends U&gt; that);
+
+    /**
+     * Tests whether this sequence ends with the given sequence.
+     * &lt;p&gt;
+     * Note: If the both the receiver object this and the argument that are infinite sequences this method may not terminate.
+     *
+     * @param that the sequence to test
+     * @return true if this sequence has that as a suffix, false otherwise..
+     */
+    default boolean endsWith(Seq&lt;? extends T&gt; that) {
+<span class="fc" id="L253">        Objects.requireNonNull(that, &quot;that is null&quot;);</span>
+<span class="fc" id="L254">        Iterator&lt;T&gt; i = this.iterator().drop(length() - that.length());</span>
+<span class="fc" id="L255">        Iterator&lt;? extends T&gt; j = that.iterator();</span>
+<span class="pc bpc" id="L256" title="1 of 4 branches missed.">        while (i.hasNext() &amp;&amp; j.hasNext()) {</span>
+<span class="fc bfc" id="L257" title="All 2 branches covered.">            if (!Objects.equals(i.next(), j.next())) {</span>
+<span class="fc" id="L258">                return false;</span>
+            }
+        }
+<span class="fc bfc" id="L261" title="All 2 branches covered.">        return !j.hasNext();</span>
+    }
+
+    /**
+     * Returns the element at the specified index.
+     *
+     * @param index an index
+     * @return the element at the given index
+     * @throws IndexOutOfBoundsException if this is empty, index &amp;lt; 0 or index &amp;gt;= length()
+     */
+    T get(int index);
+
+    /**
+     * Returns the index of the first occurrence of the given element or -1 if this does not contain the given element.
+     *
+     * @param element an element
+     * @return the index of the first occurrence of the given element
+     */
+    default int indexOf(T element) {
+<span class="fc" id="L280">        return indexOf(element, 0);</span>
+    }
+
+    /**
+     * Returns the index of the first occurrence of the given element after or at some start index
+     * or -1 if this does not contain the given element.
+     *
+     * @param element an element
+     * @param from    start index
+     * @return the index of the first occurrence of the given element
+     */
+    int indexOf(T element, int from);
+
+    /**
+     * Finds first index where this sequence contains a given sequence as a slice.
+     * &lt;p&gt;
+     * Note: may not terminate for infinite-sized collections.
+     *
+     * @param that the sequence to test
+     * @return the first index such that the elements of this sequence starting at this index match
+     * the elements of sequence that, or -1 of no such slice exists.
+     * @throws NullPointerException if {@code that} is null.
+     */
+    default int indexOfSlice(Iterable&lt;? extends T&gt; that) {
+<span class="fc" id="L304">        Objects.requireNonNull(that, &quot;that is null&quot;);</span>
+<span class="fc" id="L305">        return indexOfSlice(that, 0);</span>
+    }
+
+    /**
+     * Finds first index after or at a start index where this sequence contains a given sequence as a slice.
+     * &lt;p&gt;
+     * Note: may not terminate for infinite-sized collections.
+     *
+     * @param that the sequence to test
+     * @param from the start index
+     * @return the first index &amp;gt;= from such that the elements of this sequence starting at this index match
+     * the elements of sequence that, or -1 of no such slice exists.
+     * @throws NullPointerException if {@code that} is null.
+     */
+    default int indexOfSlice(Iterable&lt;? extends T&gt; that, int from) {
+<span class="fc" id="L320">        Objects.requireNonNull(that, &quot;that is null&quot;);</span>
+<span class="fc" id="L321">        class Util {</span>
+            int indexOfSlice(Seq&lt;T&gt; t, Seq&lt;T&gt; slice, int from) {
+<span class="fc bfc" id="L323" title="All 2 branches covered.">                if (t.isEmpty()) {</span>
+<span class="pc bpc" id="L324" title="1 of 4 branches missed.">                    return from == 0 &amp;&amp; slice.isEmpty() ? 0 : -1;</span>
+                }
+<span class="fc bfc" id="L326" title="All 4 branches covered.">                if (from &lt;= 0 &amp;&amp; checkPrefix(t, slice)) {</span>
+<span class="fc" id="L327">                    return 0;</span>
+                }
+<span class="fc" id="L329">                int idx = indexOfSlice(t.tail(), slice, from - 1);</span>
+<span class="fc bfc" id="L330" title="All 2 branches covered.">                return idx &gt;= 0 ? idx + 1 : -1;</span>
+            }
+
+            private boolean checkPrefix(Seq&lt;T&gt; t, Seq&lt;T&gt; prefix) {
+<span class="fc bfc" id="L334" title="All 2 branches covered.">                if (prefix.isEmpty()) {</span>
+<span class="fc" id="L335">                    return true;</span>
+                } else {
+<span class="pc bpc" id="L337" title="1 of 4 branches missed.">                    return !t.isEmpty() &amp;&amp; java.util.Objects.equals(t.head(), prefix.head())</span>
+<span class="fc bfc" id="L338" title="All 2 branches covered.">                            &amp;&amp; checkPrefix(t.tail(), prefix.tail());</span>
+                }
+            }
+        }
+
+<span class="fc" id="L343">        return new Util().indexOfSlice(this, unit(that), from);</span>
+    }
+
+    /**
+     * Finds index of first element satisfying some predicate.
+     *
+     * @param p the predicate used to test elements.
+     * @return the index of the first element of this Seq that satisfies the given
+     * {@code predicate}, or {@code -1}, if none exists.
+     */
+    default int indexWhere(Predicate&lt;? super T&gt; p) {
+<span class="fc" id="L354">        return indexWhere(p, 0);</span>
+    }
+
+    /**
+     * Finds index of the first element satisfying some predicate after or at
+     * some start index.
+     *
+     * @param predicate the predicate used to test elements.
+     * @param from      the start index
+     * @return the index {@code &gt;= from} of the first element of this Seq that
+     * satisfies the given {@code predicate}, or {@code -1}, if none exists.
+     */
+    int indexWhere(Predicate&lt;? super T&gt; predicate, int from);
+
+    /**
+     * Inserts the given element at the specified index.
+     *
+     * @param index   an index
+     * @param element an element
+     * @return a new Seq, where the given element is inserted into this at the given index
+     * @throws IndexOutOfBoundsException if this is empty, index &amp;lt; 0 or index &amp;gt;= length()
+     */
+    Seq&lt;T&gt; insert(int index, T element);
+
+    /**
+     * Inserts the given elements at the specified index.
+     *
+     * @param index    an index
+     * @param elements An Iterable of elements
+     * @return a new Seq, where the given elements are inserted into this at the given index
+     * @throws IndexOutOfBoundsException if this is empty, index &amp;lt; 0 or index &amp;gt;= length()
+     */
+    Seq&lt;T&gt; insertAll(int index, Iterable&lt;? extends T&gt; elements);
+
+    /**
+     * Inserts an element between all elements of this Traversable.
+     *
+     * @param element An element.
+     * @return an interspersed version of this
+     */
+    Seq&lt;T&gt; intersperse(T element);
+
+    /**
+     * Returns an iterator of this elements starting at the given index.
+     * The result is equivalent to {@code this.subSequence(index).iterator()}.
+     *
+     * @param index an index
+     * @return a new Iterator, starting with the element at the given index or the empty Iterator, if index = length()
+     * @throws IndexOutOfBoundsException if index &amp;lt; 0 or index &amp;gt; length()
+     */
+    default Iterator&lt;T&gt; iterator(int index) {
+<span class="fc" id="L405">        return subSequence(index).iterator();</span>
+    }
+
+    /**
+     * Returns the index of the last occurrence of the given element or -1 if this does not contain the given element.
+     *
+     * @param element an element
+     * @return the index of the last occurrence of the given element
+     */
+    default int lastIndexOf(T element) {
+<span class="fc" id="L415">        return lastIndexOf(element, Integer.MAX_VALUE);</span>
+    }
+
+    /**
+     * Finds index of last element satisfying some predicate.
+     *
+     * @param predicate the predicate used to test elements.
+     * @return the index of the last element of this Seq that satisfies the given {@code predicate}, or {@code -1},
+     * if none exists.
+     */
+    default int lastIndexWhere(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L426">        return lastIndexWhere(predicate, length() - 1);</span>
+    }
+
+    /**
+     * Finds index of last element satisfying some predicate before or at given
+     * end index.
+     *
+     * @param predicate the predicate used to test elements.
+     * @param end       the maximum index of the search
+     * @return the index {@code &lt;= end} of the last element of this Seq that
+     * satisfies the given {@code predicate}, or {@code -1}, if none exists.
+     */
+    int lastIndexWhere(Predicate&lt;? super T&gt; predicate, int end);
+
+    /**
+     * Returns the index of the last occurrence of the given element before or at a given end index
+     * or -1 if this does not contain the given element.
+     *
+     * @param element an element
+     * @param end     the end index
+     * @return the index of the last occurrence of the given element
+     */
+    int lastIndexOf(T element, int end);
+
+    /**
+     * Finds last index where this sequence contains a given sequence as a slice.
+     * &lt;p&gt;
+     * Note: will not terminate for infinite-sized collections.
+     *
+     * @param that the sequence to test
+     * @return the last index such that the elements of this sequence starting a this index match the elements
+     * of sequence that, or -1 of no such slice exists.
+     * @throws NullPointerException if {@code that} is null.
+     */
+    default int lastIndexOfSlice(Iterable&lt;? extends T&gt; that) {
+<span class="fc" id="L461">        Objects.requireNonNull(that, &quot;that is null&quot;);</span>
+<span class="fc" id="L462">        return lastIndexOfSlice(that, Integer.MAX_VALUE);</span>
+    }
+
+    /**
+     * Finds last index before or at a given end index where this sequence contains a given sequence as a slice.
+     *
+     * @param that the sequence to test
+     * @param end  the end index
+     * @return the last index &amp;lt;= end such that the elements of this sequence starting at this index match
+     * the elements of sequence that, or -1 of no such slice exists.
+     * @throws NullPointerException if {@code that} is null.
+     */
+    int lastIndexOfSlice(Iterable&lt;? extends T&gt; that, int end);
+
+    /**
+     * A copy of this sequence with an element appended until a given target length is reached.
+     *
+     * @param length  the target length
+     * @param element the padding element
+     * @return a new sequence consisting of all elements of this sequence followed by the minimal number
+     * of occurrences of &lt;code&gt;element&lt;/code&gt; so that the resulting sequence has a length of at least &lt;code&gt;length&lt;/code&gt;.
+     */
+    Seq&lt;T&gt; padTo(int length, T element);
+
+    /**
+     * Produces a new list where a slice of elements in this list is replaced by another sequence.
+     *
+     * @param from     the index of the first replaced element
+     * @param that     sequence for replacement
+     * @param replaced the number of elements to drop in the original list
+     * @return a new sequence.
+     */
+    Seq&lt;T&gt; patch(int from, Iterable&lt;? extends T&gt; that, int replaced);
+
+    /**
+     * Computes all unique permutations.
+     * &lt;p&gt;
+     * Example:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * [].permutations() = []
+     *
+     * [1,2,3].permutations() = [
+     *   [1,2,3],
+     *   [1,3,2],
+     *   [2,1,3],
+     *   [2,3,1],
+     *   [3,1,2],
+     *   [3,2,1]
+     * ]
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @return this unique permutations
+     */
+    Seq&lt;? extends Seq&lt;T&gt;&gt; permutations();
+
+    /**
+     * Returns the length of the longest prefix whose elements all satisfy some predicate.
+     *
+     * Note: may not terminate for infinite-sized collections.
+     *
+     * @param predicate the predicate used to test elements.
+     * @return the length of the longest prefix of this general sequence such that every
+     * element of the segment satisfies the predicate p.
+     */
+    default int prefixLength(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L529">        return segmentLength(predicate, 0);</span>
+    }
+
+    /**
+     * Prepends an element to this.
+     *
+     * @param element An element
+     * @return A new Seq containing the given element prepended to this elements
+     */
+    Seq&lt;T&gt; prepend(T element);
+
+    /**
+     * Prepends all given elements to this.
+     *
+     * @param elements An Iterable of elements
+     * @return A new Seq containing the given elements prepended to this elements
+     */
+    Seq&lt;T&gt; prependAll(Iterable&lt;? extends T&gt; elements);
+
+    /**
+     * Removes the first occurrence of the given element.
+     *
+     * @param element An element to be removed from this Seq.
+     * @return a Seq containing all elements of this without the first occurrence of the given element.
+     */
+    Seq&lt;T&gt; remove(T element);
+
+    /**
+     * Removes all occurrences of the given element.
+     *
+     * @param element An element to be removed from this Seq.
+     * @return a Seq containing all elements of this but not the given element.
+     */
+    Seq&lt;T&gt; removeAll(T element);
+
+    /**
+     * Removes all occurrences of the given elements.
+     *
+     * @param elements Elements to be removed from this Seq.
+     * @return a Seq containing all elements of this but none of the given elements.
+     * @throws NullPointerException if {@code elements} is null
+     */
+    Seq&lt;T&gt; removeAll(Iterable&lt;? extends T&gt; elements);
+
+    /**
+     * Removes the element at the specified position in this sequence. Shifts any subsequent elements to the left
+     * (subtracts one from their indices).
+     *
+     * @param index position of element to remove
+     * @return a sequence containing all elements of this without the element at the specified position.
+     * @throws IndexOutOfBoundsException if this is empty, index &amp;lt; 0 or index &amp;gt;= length()
+     */
+    Seq&lt;T&gt; removeAt(int index);
+
+    /**
+     * Removes the first occurrence that satisfy predicate
+     *
+     * @param predicate an predicate
+     * @return a new Seq
+     */
+    Seq&lt;T&gt; removeFirst(Predicate&lt;T&gt; predicate);
+
+    /**
+     * Removes the last occurrence that satisfy predicate
+     *
+     * @param predicate an predicate
+     * @return a new Seq
+     */
+    Seq&lt;T&gt; removeLast(Predicate&lt;T&gt; predicate);
+
+
+    /**
+     * Reverses the order of elements.
+     *
+     * @return the reversed elements.
+     */
+    Seq&lt;T&gt; reverse();
+
+    /**
+     * An iterator yielding elements in reversed order.
+     * &lt;p&gt;
+     * Note: {@code xs.reverseIterator()} is the same as {@code xs.reverse().iterator()} but might
+     * be more efficient.
+     *
+     * @return an iterator yielding the elements of this Seq in reversed order
+     */
+    Iterator&lt;T&gt; reverseIterator();
+
+    /**
+     * Computes length of longest segment whose elements all satisfy some predicate.
+     *
+     * Note: may not terminate for infinite-sized collections.
+     *
+     * @param predicate the predicate used to test elements.
+     * @param from      the index where the search starts.
+     * @return the length of the longest segment of this sequence starting from index
+     * from such that every element of the segment satisfies the predicate p.
+     */
+    int segmentLength(Predicate&lt;? super T&gt; predicate, int from);
+
+    /**
+     * Returns a Seq that is a &lt;em&gt;slice&lt;/em&gt; of this. The slice begins with the element at the specified
+     * {@code beginIndex} and extends to the element at index {@code endIndex - 1}.
+     * &lt;p&gt;
+     * Examples:
+     *
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * List.of(1, 2, 3, 4).slice(1, 3); // = (2, 3)
+     * List.of(1, 2, 3, 4).slice(0, 4); // = (1, 2, 3, 4)
+     * List.of(1, 2, 3, 4).slice(2, 2); // = ()
+     * List.of(1, 2).slice(1, 0);       // = ()
+     * List.of(1, 2).slice(-10, 10);    // = (1, 2)
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * See also {@link #subSequence(int, int)} which throws in some cases instead of returning a sequence.
+     *
+     * @param beginIndex the beginning index, inclusive
+     * @param endIndex   the end index, exclusive
+     * @return the specified slice
+     */
+    Seq&lt;T&gt; slice(int beginIndex, int endIndex);
+
+    /**
+     * Sorts this elements according to their natural order. If this elements are not
+     * {@code Comparable}, a {@code java.lang.ClassCastException} may be thrown.
+     *
+     * @return A sorted version of this
+     * @throws ClassCastException if this elements are not {@code Comparable}
+     */
+    Seq&lt;T&gt; sort();
+
+    /**
+     * Sorts this elements according to the provided {@code Comparator}. If this elements are not
+     * {@code Comparable}, a {@code java.lang.ClassCastException} may be thrown.
+     *
+     * @param comparator A comparator
+     * @return a sorted version of this
+     */
+    Seq&lt;T&gt; sort(Comparator&lt;? super T&gt; comparator);
+
+    /**
+     * Sorts this elements by comparing the elements in a different domain, using the given {@code mapper}.
+     *
+     * @param mapper A mapper
+     * @param &lt;U&gt;    The domain where elements are compared
+     * @return a sorted version of this
+     */
+    &lt;U extends Comparable&lt;? super U&gt;&gt; Seq&lt;T&gt; sortBy(Function&lt;? super T, ? extends U&gt; mapper);
+
+    /**
+     * Sorts this elements by comparing the elements in a different domain, using the given {@code mapper}.
+     *
+     * @param comparator A comparator
+     * @param mapper     A mapper
+     * @param &lt;U&gt;        The domain where elements are compared
+     * @return a sorted version of this
+     */
+    &lt;U&gt; Seq&lt;T&gt; sortBy(Comparator&lt;? super U&gt; comparator, Function&lt;? super T, ? extends U&gt; mapper);
+
+    /**
+     * Splits a Seq at the specified index. The result of {@code splitAt(n)} is equivalent to
+     * {@code Tuple.of(take(n), drop(n))}.
+     *
+     * @param n An index.
+     * @return A Tuple containing the first n and the remaining elements.
+     */
+    Tuple2&lt;? extends Seq&lt;T&gt;, ? extends Seq&lt;T&gt;&gt; splitAt(int n);
+
+    /**
+     * Splits a sequence at the first element which satisfies the {@link Predicate}, e.g. Tuple(init, element+tail).
+     *
+     * @param predicate An predicate
+     * @return A {@link Tuple} containing divided sequences
+     */
+    Tuple2&lt;? extends Seq&lt;T&gt;, ? extends Seq&lt;T&gt;&gt; splitAt(Predicate&lt;? super T&gt; predicate);
+
+    /**
+     * Splits a sequence at the first element which satisfies the {@link Predicate}, e.g. Tuple(init+element, tail).
+     *
+     * @param predicate An predicate
+     * @return A {@link Tuple} containing divided sequences
+     */
+    Tuple2&lt;? extends Seq&lt;T&gt;, ? extends Seq&lt;T&gt;&gt; splitAtInclusive(Predicate&lt;? super T&gt; predicate);
+
+    /**
+     * Tests whether this list starts with the given sequence.
+     *
+     * @param that the sequence to test
+     * @return true if that is empty or that is prefix of this collection, false otherwise.
+     */
+    default boolean startsWith(Iterable&lt;? extends T&gt; that) {
+<span class="fc" id="L722">        return startsWith(that, 0);</span>
+    }
+
+    /**
+     * Tests whether this list contains the given sequence at a given index.
+     * &lt;p&gt;
+     * Note: If the both the receiver object this and the argument that are infinite sequences this method may not terminate.
+     *
+     * @param that   the sequence to test
+     * @param offset the index where the sequence is searched.
+     * @return true if that is empty or that is prefix of this collection starting from the given offset, false otherwise.
+     */
+    default boolean startsWith(Iterable&lt;? extends T&gt; that, int offset) {
+<span class="fc" id="L735">        Objects.requireNonNull(that, &quot;that is null&quot;);</span>
+<span class="fc bfc" id="L736" title="All 2 branches covered.">        if (offset &lt; 0) return false;</span>
+<span class="fc" id="L737">        Iterator&lt;T&gt; i = this.iterator().drop(offset);</span>
+<span class="fc" id="L738">        java.util.Iterator&lt;? extends T&gt; j = that.iterator();</span>
+<span class="fc bfc" id="L739" title="All 4 branches covered.">        while (i.hasNext() &amp;&amp; j.hasNext()) {</span>
+<span class="fc bfc" id="L740" title="All 2 branches covered.">            if (!Objects.equals(i.next(), j.next())) {</span>
+<span class="fc" id="L741">                return false;</span>
+            }
+        }
+<span class="fc bfc" id="L744" title="All 2 branches covered.">        return !j.hasNext();</span>
+    }
+
+    /**
+     * Returns a Seq that is a subsequence of this. The subsequence begins with the element at the specified
+     * {@code beginIndex} and extends to the end of this Seq.
+     * &lt;p&gt;
+     * Examples:
+     *
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * List.of(1, 2).subSequence(0);     // = (1, 2)
+     * List.of(1, 2).subSequence(1);     // = (2)
+     * List.of(1, 2).subSequence(2);     // = ()
+     * List.of(1, 2).subSequence(10);    // throws IndexOutOfBoundsException
+     * List.of(1, 2).subSequence(-10);   // throws IndexOutOfBoundsException
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * See also {@link #drop(int)} which is similar but does not throw.
+     *
+     * @param beginIndex the beginning index, inclusive
+     * @return the specified subsequence
+     * @throws IndexOutOfBoundsException if {@code beginIndex} is negative or larger than the length of this
+     *                                   {@code String} object.
+     */
+    Seq&lt;T&gt; subSequence(int beginIndex);
+
+    /**
+     * Returns a Seq that is a subsequence of this. The subsequence begins with the element at the specified
+     * {@code beginIndex} and extends to the element at index {@code endIndex - 1}.
+     * &lt;p&gt;
+     * Examples:
+     *
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * List.of(1, 2, 3, 4).subSequence(1, 3); // = (2, 3)
+     * List.of(1, 2, 3, 4).subSequence(0, 4); // = (1, 2, 3, 4)
+     * List.of(1, 2, 3, 4).subSequence(2, 2); // = ()
+     * List.of(1, 2).subSequence(1, 0);       // throws IndexOutOfBoundsException
+     * List.of(1, 2).subSequence(-10, 1);     // throws IndexOutOfBoundsException
+     * List.of(1, 2).subSequence(0, 10);      // throws IndexOutOfBoundsException
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * See also {@link #slice(int, int)} which returns an empty sequence instead of throwing.
+     *
+     * @param beginIndex the beginning index, inclusive
+     * @param endIndex   the end index, exclusive
+     * @return the specified subsequence
+     * @throws IndexOutOfBoundsException if {@code beginIndex} or {@code endIndex} is negative,
+     *                                   if {@code endIndex} is greater than {@code length()},
+     *                                   or if {@code beginIndex} is greater than {@code endIndex}
+     */
+    Seq&lt;T&gt; subSequence(int beginIndex, int endIndex);
+
+    /**
+     * Transforms this {@code Seq}.
+     *
+     * @param f   A transformation
+     * @param &lt;U&gt; Type of transformation result
+     * @return An instance of type {@code U}
+     * @throws NullPointerException if {@code f} is null
+     */
+    default &lt;U&gt; U transform(Function&lt;? super Seq&lt;? super T&gt;, ? extends U&gt; f) {
+<span class="fc" id="L809">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="fc" id="L810">        return f.apply(this);</span>
+    }
+
+    @Override
+    &lt;U&gt; Seq&lt;U&gt; unit(Iterable&lt;? extends U&gt; iterable);
+
+    /**
+     * Updates the given element at the specified index.
+     *
+     * @param index   an index
+     * @param element an element
+     * @return a new Seq consisting of this elements and the given element is set at the given index
+     * @throws IndexOutOfBoundsException if this is empty, index &amp;lt; 0 or index &amp;gt;= length()
+     */
+    Seq&lt;T&gt; update(int index, T element);
+
+    // -- Adjusted return types of Traversable methods
+
+    @Override
+    Seq&lt;T&gt; clear();
+
+    @Override
+    Seq&lt;T&gt; distinct();
+
+    @Override
+    Seq&lt;T&gt; distinctBy(Comparator&lt;? super T&gt; comparator);
+
+    @Override
+    &lt;U&gt; Seq&lt;T&gt; distinctBy(Function&lt;? super T, ? extends U&gt; keyExtractor);
+
+    @Override
+    Seq&lt;T&gt; drop(int n);
+
+    @Override
+    Seq&lt;T&gt; dropRight(int n);
+
+    @Override
+    Seq&lt;T&gt; dropUntil(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    Seq&lt;T&gt; dropWhile(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    Seq&lt;T&gt; filter(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    Seq&lt;T&gt; filterNot(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    &lt;U&gt; Seq&lt;U&gt; flatMap(Function&lt;? super T, ? extends Iterable&lt;? extends U&gt;&gt; mapper);
+
+    @Override
+    default &lt;U&gt; U foldRight(U zero, BiFunction&lt;? super T, ? super U, ? extends U&gt; f) {
+<span class="fc" id="L863">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="fc" id="L864">        return reverse().foldLeft(zero, (xs, x) -&gt; f.apply(x, xs));</span>
+    }
+
+    @Override
+    &lt;C&gt; Map&lt;C, ? extends Seq&lt;T&gt;&gt; groupBy(Function&lt;? super T, ? extends C&gt; classifier);
+
+    @Override
+    Iterator&lt;? extends Seq&lt;T&gt;&gt; grouped(int size);
+
+    @Override
+    Seq&lt;T&gt; init();
+
+    @Override
+    Option&lt;? extends Seq&lt;T&gt;&gt; initOption();
+
+    @Override
+    &lt;U&gt; Seq&lt;U&gt; map(Function&lt;? super T, ? extends U&gt; mapper);
+
+    @Override
+    Match.MatchMonad.Of&lt;? extends Seq&lt;T&gt;&gt; match();
+
+    @Override
+    Tuple2&lt;? extends Seq&lt;T&gt;, ? extends Seq&lt;T&gt;&gt; partition(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    Seq&lt;T&gt; peek(Consumer&lt;? super T&gt; action);
+
+    @Override
+    Seq&lt;T&gt; replace(T currentElement, T newElement);
+
+    @Override
+    Seq&lt;T&gt; replaceAll(T currentElement, T newElement);
+
+    @Override
+    Seq&lt;T&gt; retainAll(Iterable&lt;? extends T&gt; elements);
+
+    @Override
+    Seq&lt;T&gt; scan(T zero, BiFunction&lt;? super T, ? super T, ? extends T&gt; operation);
+
+    @Override
+    &lt;U&gt; Seq&lt;U&gt; scanLeft(U zero, BiFunction&lt;? super U, ? super T, ? extends U&gt; operation);
+
+    @Override
+    &lt;U&gt; Seq&lt;U&gt; scanRight(U zero, BiFunction&lt;? super T, ? super U, ? extends U&gt; operation);
+
+    @Override
+    Iterator&lt;? extends Seq&lt;T&gt;&gt; sliding(int size);
+
+    @Override
+    Iterator&lt;? extends Seq&lt;T&gt;&gt; sliding(int size, int step);
+
+    @Override
+    Tuple2&lt;? extends Seq&lt;T&gt;, ? extends Seq&lt;T&gt;&gt; span(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    Seq&lt;T&gt; tail();
+
+    @Override
+    Option&lt;? extends Seq&lt;T&gt;&gt; tailOption();
+
+    @Override
+    Seq&lt;T&gt; take(int n);
+
+    @Override
+    Seq&lt;T&gt; takeRight(int n);
+
+    @Override
+    Seq&lt;T&gt; takeUntil(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    Seq&lt;T&gt; takeWhile(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    &lt;T1, T2&gt; Tuple2&lt;? extends Seq&lt;T1&gt;, ? extends Seq&lt;T2&gt;&gt; unzip(Function&lt;? super T, Tuple2&lt;? extends T1, ? extends T2&gt;&gt; unzipper);
+
+    @Override
+    &lt;T1, T2, T3&gt; Tuple3&lt;? extends Seq&lt;T1&gt;, ? extends Seq&lt;T2&gt;, ? extends Seq&lt;T3&gt;&gt; unzip3(Function&lt;? super T, Tuple3&lt;? extends T1, ? extends T2, ? extends T3&gt;&gt; unzipper);
+
+    @Override
+    &lt;U&gt; Seq&lt;Tuple2&lt;T, U&gt;&gt; zip(Iterable&lt;U&gt; that);
+
+    @Override
+    &lt;U&gt; Seq&lt;Tuple2&lt;T, U&gt;&gt; zipAll(Iterable&lt;U&gt; that, T thisElem, U thatElem);
+
+    @Override
+    Seq&lt;Tuple2&lt;T, Integer&gt;&gt; zipWithIndex();
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

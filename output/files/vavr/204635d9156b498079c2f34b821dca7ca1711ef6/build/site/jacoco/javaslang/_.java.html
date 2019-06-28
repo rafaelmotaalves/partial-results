@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>λ.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang</a> &gt; <span class="el_source">λ.java</span></div><h1>λ.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang;
+
+import javaslang.collection.List;
+import javaslang.control.Try;
+import javaslang.λModule.ReflectionUtil;
+
+import java.io.Serializable;
+import java.lang.invoke.MethodType;
+import java.lang.invoke.SerializedLambda;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Objects;
+
+/**
+ * This is a general definition of a (checked/unchecked) function of unknown parameters and a return type R.
+ * &lt;p&gt;
+ * A checked function may throw an exception. The exception type cannot be expressed as a generic type parameter
+ * because Java cannot calculate type bounds on function composition.
+ *
+ * @param &lt;R&gt; Return type of the function.
+ * @author Daniel Dietrich
+ * @since 1.0.0
+ */
+public interface λ&lt;R&gt; extends Serializable {
+
+    /**
+     * The &lt;a href=&quot;https://docs.oracle.com/javase/8/docs/api/index.html&quot;&gt;serial version uid&lt;/a&gt;.
+     */
+    long serialVersionUID = 1L;
+
+    /**
+     * @return the number of function arguments.
+     * @see &lt;a href=&quot;http://en.wikipedia.org/wiki/Arity&quot;&gt;Arity&lt;/a&gt;
+     */
+    int arity();
+
+    /**
+     * Returns a curried version of this function.
+     *
+     * @return a curried function equivalent to this.
+     */
+    // generic argument count varies
+    @SuppressWarnings(&quot;rawtypes&quot;)
+    λ curried();
+
+    /**
+     * Returns a tupled version of this function.
+     *
+     * @return a tupled function equivalent to this.
+     */
+    λ&lt;R&gt; tupled();
+
+    /**
+     * Returns a reversed version of this function. This may be useful in a recursive context.
+     *
+     * @return a reversed function equivalent to this.
+     */
+    λ&lt;R&gt; reversed();
+
+    /**
+     * Returns a memoizing version of this function, which computes the return value for given arguments only one time.
+     * On subsequent calls given the same arguments the memoized value is returned.
+     * &lt;p&gt;
+     * Please note that memoizing functions do not permit {@code null} as single argument or return value.
+     *
+     * @return a memoizing function equivalent to this.
+     */
+    λ&lt;R&gt; memoized();
+
+    /**
+     * Checks if this function is memoizing (= caching) computed values.
+     *
+     * @return true, if this function is memoizing, false otherwise
+     */
+    default boolean isMemoized() {
+<span class="fc" id="L81">        return this instanceof Memoized;</span>
+    }
+
+    /**
+     * Get reflective type information about lambda parameters and return type.
+     *
+     * @return A new instance containing the type information
+     */
+    Type&lt;R&gt; getType();
+
+    /**
+     * Checks if this function is applicable to the given objects,
+     * i.e. each of the given objects is either null or the object type is assignable to the parameter type.
+     * &lt;p&gt;
+     * Please note that it is not checked if this function is defined for the given objects.
+     * &lt;p&gt;
+     * A function is applicable to no objects by definition.
+     *
+     * @param objects Objects, may be null
+     * @return true, if {@code 0 &lt; objects.length &lt;= arity()} and this function is applicable to the given objects, false otherwise.
+     * @throws NullPointerException if {@code objects} is null.
+     */
+    default boolean isApplicableTo(Object... objects) {
+<span class="fc" id="L104">        Objects.requireNonNull(objects, &quot;objects is null&quot;);</span>
+<span class="pc bpc" id="L105" title="2 of 4 branches missed.">        if (objects.length == 0 || objects.length &gt; arity()) {</span>
+<span class="nc" id="L106">            return false;</span>
+        }
+<span class="fc" id="L108">        final Class&lt;?&gt;[] paramTypes = getType().parameterTypes();</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">        for (int i = 0; i &lt; objects.length; i++) {</span>
+<span class="fc" id="L110">            final Object o = objects[i];</span>
+<span class="fc bfc" id="L111" title="All 4 branches covered.">            if (o != null &amp;&amp; !paramTypes[i].isAssignableFrom(o.getClass())) {</span>
+<span class="fc" id="L112">                return false;</span>
+            }
+        }
+<span class="fc" id="L115">        return true;</span>
+    }
+
+    /**
+     * Checks if this function is generally applicable to objects of the given types.
+     * &lt;p&gt;
+     * A function is applicable to no types by definition.
+     *
+     * @param types Argument types
+     * @return true, if {@code 0 &lt;= types.length &lt;= arity()} and this function is applicable to objects of the given types, false otherwise.
+     * @throws NullPointerException if {@code types} or one of the elements of {@code types} is null.
+     */
+    default boolean isApplicableToTypes(Class&lt;?&gt;... types) {
+<span class="fc" id="L128">        Objects.requireNonNull(types, &quot;types is null&quot;);</span>
+<span class="pc bpc" id="L129" title="2 of 4 branches missed.">        if (types.length == 0 || types.length &gt; arity()) {</span>
+<span class="nc" id="L130">            return false;</span>
+        }
+<span class="fc" id="L132">        final Class&lt;?&gt;[] paramTypes = getType().parameterTypes();</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">        for (int i = 0; i &lt; types.length; i++) {</span>
+<span class="fc" id="L134">            final Class&lt;?&gt; type = Objects.requireNonNull(types[i], &quot;types[&quot; + i + &quot;] is null&quot;);</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">            if (!paramTypes[i].isAssignableFrom(type)) {</span>
+<span class="fc" id="L136">                return false;</span>
+            }
+        }
+<span class="fc" id="L139">        return true;</span>
+    }
+
+    /**
+     * Represents the type of a function which consists of &lt;em&gt;parameter types&lt;/em&gt; and a &lt;em&gt;return type&lt;/em&gt;.
+     *
+     * @param &lt;R&gt; the return type of the function
+     * @since 2.0.0
+     */
+    // DEV-NOTE: implicitly static and therefore not leaking implicit this reference of enclosing instance
+    abstract class Type&lt;R&gt; implements Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        private final Class&lt;R&gt; returnType;
+        private final Class&lt;?&gt;[] parameterTypes;
+
+        /**
+         * Internal constructor.
+         *
+         * @param λ the outer function instance of this type
+         */
+        @SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L162">        protected Type(λ&lt;R&gt; λ) {</span>
+<span class="fc" id="L163">            final MethodType methodType = ReflectionUtil.getLambdaSignature(λ);</span>
+<span class="fc" id="L164">            this.returnType = (Class&lt;R&gt;) methodType.returnType();</span>
+<span class="fc" id="L165">            this.parameterTypes = methodType.parameterArray();</span>
+<span class="fc" id="L166">        }</span>
+
+        public Class&lt;R&gt; returnType() {
+<span class="fc" id="L169">            return returnType;</span>
+        }
+
+        public Class&lt;?&gt;[] parameterTypes() {
+<span class="fc" id="L173">            return parameterTypes;</span>
+        }
+
+        @Override
+        public boolean equals(Object o) {
+<span class="fc bfc" id="L178" title="All 2 branches covered.">            if (o == this) {</span>
+<span class="fc" id="L179">                return true;</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">            } else if (o instanceof Type) {</span>
+<span class="fc" id="L181">                final Type&lt;?&gt; that = (Type&lt;?&gt;) o;</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">                return this.hashCode() == that.hashCode()</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">                        &amp;&amp; this.returnType().equals(that.returnType)</span>
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">                        &amp;&amp; Arrays.equals(this.parameterTypes, that.parameterTypes);</span>
+            } else {
+<span class="fc" id="L186">                return false;</span>
+            }
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L192">            return List.of(parameterTypes())</span>
+<span class="fc" id="L193">                    .map(c -&gt; c.getName().hashCode())</span>
+<span class="fc" id="L194">                    .fold(1, (acc, i) -&gt; acc * 31 + i)</span>
+<span class="fc" id="L195">                    * 31 + returnType().getName().hashCode();</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="fc" id="L200">            return List.of(parameterTypes).map(Class::getName).mkString(&quot;(&quot;, &quot;, &quot;, &quot;)&quot;) + &quot; -&gt; &quot; + returnType.getName();</span>
+        }
+    }
+
+    /**
+     * Zero Abstract Method (ZAM) interface for marking functions as memoized using intersection types.
+     */
+    interface Memoized {
+    }
+}
+
+interface λModule {
+
+    // hiding this functionality
+<span class="nc" id="L214">    final class ReflectionUtil {</span>
+
+        static MethodType getLambdaSignature(Serializable lambda) {
+<span class="fc" id="L217">            final String signature = getSerializedLambda(lambda).getInstantiatedMethodType();</span>
+<span class="fc" id="L218">            return MethodType.fromMethodDescriptorString(signature, lambda.getClass().getClassLoader());</span>
+        }
+
+        private static SerializedLambda getSerializedLambda(Serializable lambda) {
+<span class="fc" id="L222">            return Try.of(() -&gt; {</span>
+<span class="fc" id="L223">                final Method method = lambda.getClass().getDeclaredMethod(&quot;writeReplace&quot;);</span>
+<span class="fc" id="L224">                method.setAccessible(true);</span>
+<span class="fc" id="L225">                return (SerializedLambda) method.invoke(lambda);</span>
+<span class="fc" id="L226">            }).get();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

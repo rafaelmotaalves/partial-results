@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Tuple0.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang</a> &gt; <span class="el_source">Tuple0.java</span></div><h1>Tuple0.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang;
+
+/*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*\
+   G E N E R A T O R   C R A F T E D
+\*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*/
+
+import java.io.Serializable;
+import java.util.Comparator;
+import java.util.Objects;
+import java.util.function.Function;
+import javaslang.collection.List;
+import javaslang.collection.Seq;
+
+/**
+ * A tuple of no elements which can be seen as cartesian product of no components.
+ *
+ * @author Daniel Dietrich
+ * @since 1.1.0
+ */
+public final class Tuple0 implements Tuple, Comparable&lt;Tuple0&gt;, Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * The singleton instance of Tuple0.
+     */
+<span class="fc" id="L32">    private static final Tuple0 INSTANCE = new Tuple0 ();</span>
+
+    /**
+     * The singleton Tuple0 comparator.
+     */
+<span class="fc" id="L37">    private static final Comparator&lt;Tuple0&gt; COMPARATOR = (Comparator&lt;Tuple0&gt; &amp; Serializable) (t1, t2) -&gt; 0;</span>
+
+    // hidden constructor, internally called
+<span class="fc" id="L40">    private Tuple0 () {</span>
+<span class="fc" id="L41">    }</span>
+
+    /**
+     * Returns the singleton instance of Tuple0.
+     *
+     * @return The singleton instance of Tuple0.
+     */
+    public static Tuple0 instance() {
+<span class="fc" id="L49">        return INSTANCE;</span>
+    }
+
+    public static  Comparator&lt;Tuple0&gt; comparator() {
+<span class="fc" id="L53">        return COMPARATOR;</span>
+    }
+
+    @Override
+    public int arity() {
+<span class="fc" id="L58">        return 0;</span>
+    }
+
+    @Override
+    public int compareTo(Tuple0 that) {
+<span class="fc" id="L63">        return 0;</span>
+    }
+
+    /**
+     * Transforms this tuple to an arbitrary object (which may be also a tuple of same or different arity).
+     *
+     * @param f Transformation which creates a new object of type U based on this tuple's contents.
+     * @param &lt;U&gt; New type
+     * @return An object of type U
+     * @throws NullPointerException if {@code f} is null
+     */
+    public &lt;U&gt; U transform(Function&lt;Tuple0, ? extends U&gt; f) {
+<span class="fc" id="L75">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="fc" id="L76">        return f.apply(this);</span>
+    }
+
+    @Override
+    public Seq&lt;?&gt; toSeq() {
+<span class="fc" id="L81">        return List.empty();</span>
+    }
+
+    // -- Object
+
+    @Override
+    public boolean equals(Object o) {
+<span class="fc bfc" id="L88" title="All 2 branches covered.">        return o == this;</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="fc" id="L93">        return 1;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L98">        return &quot;()&quot;;</span>
+    }
+
+    // -- Serializable implementation
+
+    /**
+     * Instance control for object serialization.
+     *
+     * @return The singleton instance of Tuple0.
+     * @see java.io.Serializable
+     */
+    private Object readResolve() {
+<span class="fc" id="L110">        return INSTANCE;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

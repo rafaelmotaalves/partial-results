@@ -1,0 +1,487 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuite tests="423" failures="0" name="javaslang.collection.HashMapTest" time="0.266" errors="0" skipped="0">
+  <properties>
+    <property name="java.runtime.name" value="Java(TM) SE Runtime Environment"/>
+    <property name="sun.boot.library.path" value="/usr/lib/jvm/java-8-oracle/jre/lib/amd64"/>
+    <property name="java.vm.version" value="25.151-b12"/>
+    <property name="java.vm.vendor" value="Oracle Corporation"/>
+    <property name="maven.multiModuleProjectDirectory" value="/home/travis/build/rafaresearch/vavr"/>
+    <property name="java.vendor.url" value="http://java.oracle.com/"/>
+    <property name="path.separator" value=":"/>
+    <property name="guice.disable.misplaced.annotation.check" value="true"/>
+    <property name="java.vm.name" value="Java HotSpot(TM) 64-Bit Server VM"/>
+    <property name="file.encoding.pkg" value="sun.io"/>
+    <property name="user.country" value="US"/>
+    <property name="sun.java.launcher" value="SUN_STANDARD"/>
+    <property name="sun.os.patch.level" value="unknown"/>
+    <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
+    <property name="user.dir" value="/home/travis/build/rafaresearch/vavr"/>
+    <property name="java.runtime.version" value="1.8.0_151-b12"/>
+    <property name="java.awt.graphicsenv" value="sun.awt.X11GraphicsEnvironment"/>
+    <property name="java.endorsed.dirs" value="/usr/lib/jvm/java-8-oracle/jre/lib/endorsed"/>
+    <property name="os.arch" value="amd64"/>
+    <property name="java.io.tmpdir" value="/tmp"/>
+    <property name="line.separator" value="
+"/>
+    <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
+    <property name="os.name" value="Linux"/>
+    <property name="classworlds.conf" value="/usr/local/maven-3.5.2/bin/m2.conf"/>
+    <property name="sun.jnu.encoding" value="UTF-8"/>
+    <property name="java.library.path" value="/usr/java/packages/lib/amd64:/usr/lib64:/lib64:/lib:/usr/lib"/>
+    <property name="maven.conf" value="/usr/local/maven-3.5.2/conf"/>
+    <property name="java.specification.name" value="Java Platform API Specification"/>
+    <property name="java.class.version" value="52.0"/>
+    <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
+    <property name="os.version" value="4.4.0-101-generic"/>
+    <property name="library.jansi.path" value="/usr/local/maven-3.5.2/lib/jansi-native"/>
+    <property name="user.home" value="/home/travis"/>
+    <property name="user.timezone" value="UTC"/>
+    <property name="java.awt.printerjob" value="sun.print.PSPrinterJob"/>
+    <property name="java.specification.version" value="1.8"/>
+    <property name="file.encoding" value="UTF-8"/>
+    <property name="user.name" value="travis"/>
+    <property name="java.class.path" value="/usr/local/maven-3.5.2/boot/plexus-classworlds-2.5.2.jar"/>
+    <property name="java.vm.specification.version" value="1.8"/>
+    <property name="sun.arch.data.model" value="64"/>
+    <property name="java.home" value="/usr/lib/jvm/java-8-oracle/jre"/>
+    <property name="sun.java.command" value="org.codehaus.plexus.classworlds.launcher.Launcher package"/>
+    <property name="java.specification.vendor" value="Oracle Corporation"/>
+    <property name="user.language" value="en"/>
+    <property name="awt.toolkit" value="sun.awt.X11.XToolkit"/>
+    <property name="java.vm.info" value="mixed mode"/>
+    <property name="java.version" value="1.8.0_151"/>
+    <property name="java.ext.dirs" value="/usr/lib/jvm/java-8-oracle/jre/lib/ext:/usr/java/packages/lib/ext"/>
+    <property name="securerandom.source" value="file:/dev/./urandom"/>
+    <property name="sun.boot.class.path" value="/usr/lib/jvm/java-8-oracle/jre/lib/resources.jar:/usr/lib/jvm/java-8-oracle/jre/lib/rt.jar:/usr/lib/jvm/java-8-oracle/jre/lib/sunrsasign.jar:/usr/lib/jvm/java-8-oracle/jre/lib/jsse.jar:/usr/lib/jvm/java-8-oracle/jre/lib/jce.jar:/usr/lib/jvm/java-8-oracle/jre/lib/charsets.jar:/usr/lib/jvm/java-8-oracle/jre/lib/jfr.jar:/usr/lib/jvm/java-8-oracle/jre/classes"/>
+    <property name="java.vendor" value="Oracle Corporation"/>
+    <property name="maven.home" value="/usr/local/maven-3.5.2"/>
+    <property name="file.separator" value="/"/>
+    <property name="java.vendor.url.bug" value="http://bugreport.sun.com/bugreport/"/>
+    <property name="sun.cpu.endian" value="little"/>
+    <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
+    <property name="sun.cpu.isalist" value=""/>
+  </properties>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldWrapMap" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldZipAllNils" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="forEachByTuple" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReturnTuple2SetOfANonEmptyMap" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldTabulateTheSeqWith0Elements" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldBeTheSame" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldRecognizeNotContainedKeyValuePair" time="0.011"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldZipNilWithIndex" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldTabulateTheSeqCallingTheFunctionInTheRightOrder" time="0.003"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="mapOfTuplesShouldReturnTheSingletonEmpty" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldUnzip3NonNil" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldRemoveAllKeys" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldApplyNonExistingKey" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldMakeString" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldMapEmpty" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldUnzipNil" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFindKey" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldZipAllNonEmptyAndNil" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldZipAllNonNilsIfThisIsMoreSmaller" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFindValue" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="forEachByKeyValue" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldZipNonNilsOfSameSize" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFlatMapUsingBiFunction" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldApplyExistingKey" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldMerge" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="mapOfPairsShouldReturnTheSingletonEmpty" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldZipNils" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldZipAllNonNilsIfThatIsMoreSmaller" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowIfZipWithThatIsNull" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldZipAllEmptyAndNonNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReturnsKeySet" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldTabulateTheSeqWith0ElementsWhenNIsNegative" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFillTheSeqWith0Elements" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldIgnoreOrderOfEntriesWhenComparingForEquality" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldTransform" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConstructFromPairs" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldUnzipNonNil" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldZipAllNonNilsIfThisIsSmaller" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldRemoveKey" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="mapOfEntriesShouldReturnTheSingletonEmpty" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConstructFromEntries" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldUnzip3Nil" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldZipNonNilsIfThisIsSmaller" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldZipNonEmptyAndNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReturnEmptySetWhenAskedForTuple2SetOfAnEmptyMap" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldPutTuple" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldMergeCollisions" time="0.003"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReturnModifiedValuesMap" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldTabulateTheSeq" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldMapNonEmpty" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldZipEmptyAndNonNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFillTheSeqWith0ElementsWhenNIsNegative" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldZipAllNonNilsOfSameSize" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldZipNonNilWithIndex" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldZipAllNonNilsIfThatIsSmaller" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldRecognizeContainedKeyValuePair" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldZipNonNilsIfThatIsSmaller" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowIfZipAllWithThatIsNull" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReturnListWithMappedValues" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFailConstructFromOddPairsLen" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFillTheSeqCallingTheSupplierInTheRightOrder" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenTailOnNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldDropUntilNoneIfPredicateIsTrue" time="0.003"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenMaxByFunctionOfNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldSplitNonNil" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeAverageOfFloat" time="0.006"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeAverageOfShort" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCreateListOfPrimitiveIntArray" time="0.003"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenMaxByOfNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldSpanNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReplaceAllElementsOfNonNilUsingCurrNonExistingNew" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReduceRightNonNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldSlide4ElementsBySize5AndStep3" time="0.005"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFindFirstOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldScanWithNonComparable" time="0.007"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldScanRightNonEmpty" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldSerializeDeserializeNonNil" time="0.013"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldScanLeftWithNonComparable" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCreateListOfPrimitiveCharArray" time="0.003"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldDropWhileAllIfPredicateIsTrue" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeSumOfBigDecimal" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCreateListOfPrimitiveDoubleArray" time="0.003"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeMaxOfByte" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeMaxOfChar" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeMaxOfLong" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeMaxOfBoolean" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldHaveSizedSpliterator" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldDropRightAllIfCountExceedsSize" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCountWhenSomeSatisfyThePredicate" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldMkStringNonNil" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldHaveImmutableSpliterator" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenGroupedWithSizeZero" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldRecognizeNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFullyIterateNonNil" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeMaxOfInt" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenSlidingNonNilByNegativeSize" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeLengthOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenFoldRightNullOperator" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenMinByWithNullComparator" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldScanRightWithNonComparable" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCalculateDifferentHashCodesForDifferentTraversables" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCountWhenAllSatisfyThePredicate" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReturnSomeHeadWhenCallingHeadOptionOnNonNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldNonNilNotEqualsNull" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldClearNonNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeSumOfBigInteger" time="0.004"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldTakeRightAllIfCountExceedsSize" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReduceRightOptionNonNil" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldTakeRightAsExpectedIfCountIsLessThanSize" time="0.003"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertNonNilToArrayList" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReturnHeadOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenFoldLeftNullOperator" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCreateListOfPrimitiveBooleanArray" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldGroupedTraversableWithRemainder" time="0.003"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldDropNoneIfCountIsNegative" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCalculateHashCodeOfNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldGroupedWhenTraversableLengthIsSmallerThanBlockSize" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReturnNoneWhenComputingMaxOfNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeMinOfBoolean" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldNilGroupBy" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldNotHasNextWhenNilIterator" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldBeAwareOfExistingUniqueElement" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertNilToHashMap" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertNilToHashSet" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldRecognizeNonEqualityOfTraversablesOfSameSize" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFoldRightNil" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCreateListOfPrimitiveByteArray" time="0.003"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReplaceAllElementsOfNilUsingCurrNew" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldPartitionIntsInOddAndEvenHavingOddAndEvenNumbers" time="0.003"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldDropAsExpectedIfCountIsLessThanSize" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCalculateMinByOfInts" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldPartitionIntsInOddAndEvenHavingOnlyEvenNumbers" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeMinOfByte" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeMinOfChar" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeMinOfLong" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReplaceElementOfNilUsingCurrNew" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenGroupedWithNegativeSize" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldWriteToStderr" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldWriteToStdout" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldSlide5ElementsBySize2AndStep3" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldSlide5ElementsBySize2AndStep4" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldSlide5ElementsBySize2AndStep5" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldMkStringWithDelimiterNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldDropRightNoneIfCountIsNegative" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertNonNilToJavaArray" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenReduceNullOperator" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeMinOfBigDecimal" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowOnNextWhenNilIterator" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenMaxByWithNullFunction" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeDistinctByOfNonEmptyTraversableUsingKeyExtractor" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldDropRightNoneOnNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldPreserveSingletonInstanceOnDeserialization" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFoldLeftNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenReduceLeftNullOperator" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenSlidingNilByPositiveStepAndNegativeSize" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReplaceAllElementsOfNonNilUsingCurrNew" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenComputingSumOfStrings" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldTakeNoneOnNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldTakeRightNoneIfCountIsNegative" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReturnSomethingOnHasDefiniteSize" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFoldMapNonNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldSpanNonNil" time="0.003"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReturnNoneWhenCallingHeadOptionOnNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldHandleStdoutIOException" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldGroupedTraversableWithEqualSizedBlocks" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeAverageOfDouble" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCreateNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReturnSomeInitWhenCallingInitOptionOnNonNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldSlideNilBySizeAndStep" time="0.004"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeMinOfDouble" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeSumOfByte" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeSumOfLong" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReturnSomeTailWhenCallingTailOptionOnNonNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCalculateInverseMinByFunctionOfInts" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeMinOfBigInteger" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenReduceOptionNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldClearNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldEmptyNotEqualsDifferentType" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReturnLastOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCalculateInverseMaxByFunctionOfInts" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCreateListOfIterable" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldTakeWhileNoneOnNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCalculateMaxByOfInts" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenMaxByWithNullComparator" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeDistinctByOfEmptyTraversableUsingKeyExtractor" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldMkStringWithDelimiterNonNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldBeAwareOfExistingNonUniqueElement" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldGroupedNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldDropRightAsExpectedIfCountIsLessThanSize" time="0.003"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldNonNilGroupByEqual" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldHandlePrintStreamIOException" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReturnSizeWhenSpliterator" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldMkStringWithDelimiterAndPrefixAndSuffixNonNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldTakeUntilAllOnFalseCondition" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReplaceElementOfNonNilUsingCurrNewWhenOneOccurrenceExists" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenLastOnNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldRecognizeNonNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReturnTailOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenReduceNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReduceLeftNonNil" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldMkStringNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldRecognizeEqualityOfNonNils" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldRetainAllElementsFromNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldScanLeftEmpty" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldTakeUntilAsExpected" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenReduceRightNullOperator" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReturnNoneWhenCallingLastOptionOnNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldTakeUntilNoneOnNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeMinOfFloat" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeProductOfDouble" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeMinOfShort" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeProductOfFloat" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldRecognizeNonNilDoesContainElement" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCreateListOfPrimitiveShortArray" time="0.004"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenMinByWithNullFunction" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeProductOfShort" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCalculateMinByFunctionOfInts" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCalculateMaxByFunctionOfInts" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="ofAllShouldReturnTheSingletonEmpty" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCreateSeqOfSeqUsingCons" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldRecognizeNonEqualityOfTraversablesOfDifferentSize" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="ofShouldReturnTheSingletonEmpty" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReturnSomethingOnIsTraversableAgain" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeMaxOfDouble" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeDistinctOfNonEmptyTraversable" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldTakeWhileAllOnTrueCondition" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldDropWhileCorrect" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCreateInstanceOfElements" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldSlideNilBySize" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeMaxOfBigDecimal" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeProductOfInt" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeProductOfNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldScanNonEmpty" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldTakeAllIfCountExceedsSize" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldTakeUntilAllOnTrueCondition" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenMinByOfNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeDistinctByOfNonEmptyTraversableUsingComparator" time="0.004"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldDropUntilCorrect" time="0.007"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldParallelStreamAndCollectNonNil" time="0.006"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCalculateInverseMinByOfInts" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeAverageOfByte" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeAverageOfLong" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReturnNoneWhenCallingInitOptionOnNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeAverageOfBigDecimal" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCallMinFunctionOncePerElement" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeSumOfInt" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeSumOfNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReturnNoneWhenComputingAverageOfNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeAverageOfInt" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeMaxOfStrings" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCallMaxFunctionOncePerElement" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenPartitionNilAndPredicateIsNull" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFindLastOfNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertNonNilToHashMap" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertNonNilToHashSet" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldStreamAndCollectNil" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeMaxOfBigInteger" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReduceLeftOptionNonNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeDistinctOfEmptyTraversable" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenReduceOptionNullOperator" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldEqualSameTraversableInstance" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldTakeWhileAsExpected" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenReduceLeftOptionNullOperator" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenReduceLeftOptionNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldHandleStderrIOException" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeMinOfInt" time="0.005"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeAverageOfBigInteger" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenMinByFunctionOfNil" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReplaceElementOfNonNilUsingCurrNewWhenNoOccurrenceExists" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldSerializeDeserializeNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenSlidingNilByNegativeStepAndPositiveSize" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenSlidingNilByZeroSize" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeDistinctByOfEmptyTraversableUsingComparator" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCreateListOfPrimitiveLongArray" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldTakeWhileAllOnFalseCondition" time="0.003"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldNonNilGroupByIdentity" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReduceOptionNonNil" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldScanLeftNonEmpty" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeMinOfStrings" time="0.003"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldGetInitOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenReduceRightNil" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldRecognizeNonNilDoesNotContainElement" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldRecognizeNonNilNotContainsAllOverlappingElements" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCalculateInverseMaxByOfInts" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReturnNoneWhenCallingTailOptionOnNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCalculateHashCodeOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeSumOfDouble" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldRecognizeEqualityOfNils" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenSlidingNilByNegativeStepAndNegativeSize" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenComputingAverageOfStrings" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFoldMapFailNullMapper" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldSplitNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldRetainAllElementsFromNonNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFoldMapFailNullMonoid" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldTakeNoneIfCountIsNegative" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReturnNoneWhenComputingMinOfNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFoldMapNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReturnSomeLastWhenCallingLastOptionOnNonNil" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeSumOfFloat" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldHaveOrderedSpliterator" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeSumOfShort" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldDropNoneOnNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldRecognizeNilContainsNoElement" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFoldRightNonNil" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldNotRetainAllNonExistingElementsFromNonNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldTakeAsExpectedIfCountIsLessThanSize" time="0.004"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldNilNotEqualsNull" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldRecognizeNilNotContainsAllElements" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldScanEmpty" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertNilToArrayList" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldStreamAndCollectNonNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReplaceFirstOccurrenceOfNonNilUsingCurrNewWhenMultipleOccurrencesExist" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenReduceRightOptionNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeLengthOfNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldTakeRightNoneOnNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldBeAwareOfNonExistingUniqueElement" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeProductOfBigDecimal" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReduceNonNil" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldDropWhileNoneOnNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldParallelStreamAndCollectNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenSlidingNonNilByZeroSize" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldHandlePrintWriterIOException" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenReduceRightOptionNullOperator" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldNonEmptyNotEqualsDifferentType" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldRetainAllExistingElementsFromNonNil" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCreateListOfPrimitiveFloatArray" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFindFirstOfNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldPartitionIntsInOddAndEvenHavingOnlyOddNumbers" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenReduceLeftNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldIterateFirstElementOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCountWhenIsEmpty" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeMaxOfFloat" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeMaxOfShort" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenInitOfNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldScanRightEmpty" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldDropWhileNoneIfPredicateIsFalse" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldRecognizeNonNilContainsAllOnSelf" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenComputingProductOfStrings" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenHeadOnNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldWriteToPrintStream" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertNilToJavaArray" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFindLastOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFoldLeftNonNil" time="0.002"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFoldMultipleElements" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldDropUntilNoneOnNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeProductOfBigInteger" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeProductOfByte" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldComputeProductOfLong" time="0.005"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldDropUntilAllIfPredicateIsFalse" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldPartitionNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCountWhenNoneSatisfiesThePredicate" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldWriteToPrintWriter" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenSlidingNilByNegativeSize" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldDropAllIfCountExceedsSize" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldSlideNonNilBySize1" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldSlideNonNilBySize2" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldMkStringWithDelimiterAndPrefixAndSuffixNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldGetOptionNonEmpty" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldBeAwareOfPropertyThatHoldsForAll" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCorresponds" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowIfEmpty" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCalculateValIfEmpty" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldBeAwareOfExistingElement" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertToMap" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertToSet" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldNotThrowIfNonEmpty" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCalculateValIfDefined" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertToOption" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertToCharSeq" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldBeAwareOfNonExistingElement" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertEmptyToTry" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertToStream" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCalculateIsDefined" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertToVector" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertNonEmptyValueToMatchMonad" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertToEitherRightFromValue" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertToJavaList" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCalculateSupplierIfDefined" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFilterNotEmptyTraversable" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertToEitherLeftFromValue" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldPeekNil" time="0.001"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFoldNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldBeAwareOfPropertyThatNotHoldsForAll" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldGetNonEmpty" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFilterNonEmptyTraversable" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFilterNonEmptyTraversableAllMatch" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCalculateIsEmpty" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenFoldNullOperator" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldPeekNonNilPerformingAnAction" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFilterNotNonEmptyTraversable" time="0.012"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertToArray" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertToQueue" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertToStack" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldntCorrespondsNonNilNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCalculateOrElseGet" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReturnUnderlyingValueWhenCallingOrElseTryOnNonEmptyValue" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCalculateSupplierIfEmpty" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertToJavaMap" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertToJavaSet" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertToLazy" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertToList" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertToJavaArray" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFilterNotNonEmptyTraversableAllMatch" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFoldSingleElement" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertToEitherRightFromValueSupplier" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldntCorrespondsNilNonNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldGetEmpty" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldFilterEmptyTraversable" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldThrowWhenCallingOrElseTryOnEmptyValueAndTryIsAFailure" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertNonEmptyToTryUsingExceptionSupplier" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldntCorrespondsNilNil" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldReturnAlternateValueWhenCallingOrElseTryOnEmptyValue" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertNonEmptyToTry" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertToJavaStream" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldCalculateOrElse" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldntCorrespondsDifferentLengths" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertEmptyToTryUsingExceptionSupplier" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldPeekSingleValuePerformingAnAction" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertEmptyValueToMatchMonad" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldPeekNonNilPerformingNoAction" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertToJavaOptional" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldGetOptionEmpty" time="0"/>
+  <testcase classname="javaslang.collection.HashMapTest" name="shouldConvertToEitherLeftFromValueSupplier" time="0"/>
+</testsuite>

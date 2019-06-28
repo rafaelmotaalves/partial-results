@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CheckedFunction2.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang</a> &gt; <span class="el_source">CheckedFunction2.java</span></div><h1>CheckedFunction2.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang;
+
+/*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*\
+   G E N E R A T O R   C R A F T E D
+\*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*/
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import javaslang.control.Option;
+import javaslang.control.Try;
+
+/**
+ * Represents a function with two arguments.
+ *
+ * @param &lt;T1&gt; argument 1 of the function
+ * @param &lt;T2&gt; argument 2 of the function
+ * @param &lt;R&gt; return type of the function
+ * @author Daniel Dietrich
+ * @since 1.1.0
+ */
+@FunctionalInterface
+public interface CheckedFunction2&lt;T1, T2, R&gt; extends λ&lt;R&gt; {
+
+    /**
+     * The &lt;a href=&quot;https://docs.oracle.com/javase/8/docs/api/index.html&quot;&gt;serial version uid&lt;/a&gt;.
+     */
+    long serialVersionUID = 1L;
+
+    /**
+     * Creates a {@code CheckedFunction2} based on
+     * &lt;ul&gt;
+     * &lt;li&gt;&lt;a href=&quot;https://docs.oracle.com/javase/tutorial/java/javaOO/methodreferences.html&quot;&gt;method reference&lt;/a&gt;&lt;/li&gt;
+     * &lt;li&gt;&lt;a href=&quot;https://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html#syntax&quot;&gt;lambda expression&lt;/a&gt;&lt;/li&gt;
+     * &lt;/ul&gt;
+     *
+     * Examples (w.l.o.g. referring to Function1):
+     * &lt;pre&gt;&lt;code&gt;// using a lambda expression
+     * Function1&amp;lt;Integer, Integer&amp;gt; add1 = Function1.of(i -&amp;gt; i + 1);
+     *
+     * // using a method reference (, e.g. Integer method(Integer i) { return i + 1; })
+     * Function1&amp;lt;Integer, Integer&amp;gt; add2 = Function1.of(this::method);
+     *
+     * // using a lambda reference
+     * Function1&amp;lt;Integer, Integer&amp;gt; add3 = Function1.of(add1::apply);
+     * &lt;/code&gt;&lt;/pre&gt;
+     * &lt;p&gt;
+     * &lt;strong&gt;Caution:&lt;/strong&gt; Reflection loses type information of lambda references.
+     * &lt;pre&gt;&lt;code&gt;// type of a lambda expression
+     * Type&amp;lt;?, ?&amp;gt; type1 = add1.getType(); // (Integer) -&amp;gt; Integer
+     *
+     * // type of a method reference
+     * Type&amp;lt;?, ?&amp;gt; type2 = add2.getType(); // (Integer) -&amp;gt; Integer
+     *
+     * // type of a lambda reference
+     * Type&amp;lt;?, ?&amp;gt; type3 = add3.getType(); // (Object) -&amp;gt; Object
+     * &lt;/code&gt;&lt;/pre&gt;
+     *
+     * @param methodReference (typically) a method reference, e.g. {@code Type::method}
+     * @param &lt;R&gt; return type
+     * @param &lt;T1&gt; 1st argument
+     * @param &lt;T2&gt; 2nd argument
+     * @return a {@code CheckedFunction2}
+     */
+    static &lt;T1, T2, R&gt; CheckedFunction2&lt;T1, T2, R&gt; of(CheckedFunction2&lt;T1, T2, R&gt; methodReference) {
+<span class="fc" id="L71">        return methodReference;</span>
+    }
+
+    /**
+     * Lifts the given {@code partialFunction} into a total function that returns an {@code Option} result.
+     *
+     * @param partialFunction a function that is not defined for all values of the domain (e.g. by throwing)
+     * @param &lt;R&gt; return type
+     * @param &lt;T1&gt; 1st argument
+     * @param &lt;T2&gt; 2nd argument
+     * @return a function that applies arguments to the given {@code partialFunction} and returns {@code Some(result)}
+     *         if the function is defined for the given arguments, and {@code None} otherwise.
+     */
+    static &lt;T1, T2, R&gt; Function2&lt;T1, T2, Option&lt;R&gt;&gt; lift(CheckedFunction2&lt;T1, T2, R&gt; partialFunction) {
+<span class="pc" id="L85">        return (t1, t2) -&gt; Try.of(() -&gt; partialFunction.apply(t1, t2)).getOption();</span>
+    }
+
+    /**
+     * Applies this function to two arguments and returns the result.
+     *
+     * @param t1 argument 1
+     * @param t2 argument 2
+     * @return the result of function application
+     * @throws Throwable if something goes wrong applying this function to the given arguments
+     */
+    R apply(T1 t1, T2 t2) throws Throwable;
+
+    /**
+     * Applies this function partially to one argument.
+     *
+     * @param t1 argument 1
+     * @return a partial application of this function
+     * @throws Throwable if something goes wrong partially applying this function to the given arguments
+     */
+    default CheckedFunction1&lt;T2, R&gt; apply(T1 t1) throws Throwable {
+<span class="pc" id="L106">        return (T2 t2) -&gt; apply(t1, t2);</span>
+    }
+
+    @Override
+    default int arity() {
+<span class="fc" id="L111">        return 2;</span>
+    }
+
+    @Override
+    default CheckedFunction1&lt;T1, CheckedFunction1&lt;T2, R&gt;&gt; curried() {
+<span class="pc" id="L116">        return t1 -&gt; t2 -&gt; apply(t1, t2);</span>
+    }
+
+    @Override
+    default CheckedFunction1&lt;Tuple2&lt;T1, T2&gt;, R&gt; tupled() {
+<span class="fc" id="L121">        return t -&gt; apply(t._1, t._2);</span>
+    }
+
+    @Override
+    default CheckedFunction2&lt;T2, T1, R&gt; reversed() {
+<span class="pc" id="L126">        return (t2, t1) -&gt; apply(t1, t2);</span>
+    }
+
+    @Override
+    default CheckedFunction2&lt;T1, T2, R&gt; memoized() {
+<span class="fc bfc" id="L131" title="All 2 branches covered.">        if (isMemoized()) {</span>
+<span class="fc" id="L132">            return this;</span>
+        } else {
+<span class="fc" id="L134">            final Object lock = new Object();</span>
+<span class="fc" id="L135">            final Map&lt;Tuple2&lt;T1, T2&gt;, R&gt; cache = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L136">            final CheckedFunction1&lt;Tuple2&lt;T1, T2&gt;, R&gt; tupled = tupled();</span>
+<span class="fc" id="L137">            return (CheckedFunction2&lt;T1, T2, R&gt; &amp; Memoized) (t1, t2) -&gt; {</span>
+                final R result;
+<span class="fc" id="L139">                synchronized (lock) {</span>
+<span class="fc" id="L140">                    result = cache.computeIfAbsent(Tuple.of(t1, t2), t -&gt; Try.of(() -&gt; tupled.apply(t)).get());</span>
+<span class="pc" id="L141">                }</span>
+<span class="fc" id="L142">                return result;</span>
+            };
+        }
+    }
+
+    /**
+     * Returns a composed function that first applies this CheckedFunction2 to the given argument and then applies
+     * {@linkplain CheckedFunction1} {@code after} to the result.
+     *
+     * @param &lt;V&gt; return type of after
+     * @param after the function applied after this
+     * @return a function composed of this and after
+     * @throws NullPointerException if after is null
+     */
+    default &lt;V&gt; CheckedFunction2&lt;T1, T2, V&gt; andThen(CheckedFunction1&lt;? super R, ? extends V&gt; after) {
+<span class="fc" id="L157">        Objects.requireNonNull(after, &quot;after is null&quot;);</span>
+<span class="pc" id="L158">        return (t1, t2) -&gt; after.apply(apply(t1, t2));</span>
+    }
+
+    @Override
+    default Type&lt;T1, T2, R&gt; getType() {
+<span class="fc" id="L163">        return new Type&lt;&gt;(this);</span>
+    }
+
+    /**
+     * Represents the type of a {@code CheckedFunction2} which consists of two parameter types
+     * and a return type.
+     *
+     *
+     * @param &lt;T1&gt; the 1st parameter type of the function
+     * @param &lt;T2&gt; the 2nd parameter type of the function
+     * @param &lt;R&gt; the return type of the function
+     * @author Daniel Dietrich
+     * @since 2.0.0
+     */
+    final class Type&lt;T1, T2, R&gt; extends λ.Type&lt;R&gt; {
+
+        private static final long serialVersionUID = 1L;
+
+        private Type(CheckedFunction2&lt;T1, T2, R&gt; λ) {
+<span class="fc" id="L182">            super(λ);</span>
+<span class="fc" id="L183">        }</span>
+
+        @SuppressWarnings(&quot;unchecked&quot;)
+        public Class&lt;T1&gt; parameterType1() {
+<span class="fc" id="L187">            return (Class&lt;T1&gt;) parameterTypes()[0];</span>
+        }
+
+        @SuppressWarnings(&quot;unchecked&quot;)
+        public Class&lt;T2&gt; parameterType2() {
+<span class="fc" id="L192">            return (Class&lt;T2&gt;) parameterTypes()[1];</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

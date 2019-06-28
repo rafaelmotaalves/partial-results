@@ -1,0 +1,458 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Option.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang.control</a> &gt; <span class="el_source">Option.java</span></div><h1>Option.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang.control;
+
+import javaslang.Value;
+import javaslang.algebra.Monad;
+import javaslang.collection.Iterator;
+import javaslang.collection.List;
+import javaslang.collection.Seq;
+
+import java.io.Serializable;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
+/**
+ * Replacement for {@link java.util.Optional}.
+ * &lt;p&gt;
+ * Option is a &lt;a href=&quot;http://stackoverflow.com/questions/13454347/monads-with-java-8&quot;&gt;monadic&lt;/a&gt; container type which
+ * represents an optional value. Instances of Option are either an instance of {@link Some} or the
+ * singleton {@link None}.
+ * &lt;p&gt;
+ * Most of the API is taken from {@link java.util.Optional}. A similar type can be found in &lt;a
+ * href=&quot;http://hackage.haskell.org/package/base-4.6.0.1/docs/Data-Maybe.html&quot;&gt;Haskell&lt;/a&gt; and &lt;a
+ * href=&quot;http://www.scala-lang.org/api/current/#scala.Option&quot;&gt;Scala&lt;/a&gt;.
+ *
+ * @param &lt;T&gt; The type of the optional value.
+ * @author Daniel Dietrich
+ * @since 1.0.0
+ */
+public interface Option&lt;T&gt; extends Monad&lt;T&gt;, Value&lt;T&gt; {
+
+    /**
+     * Creates a new {@code Option} of a given value.
+     *
+     * @param value A value
+     * @param &lt;T&gt;   type of the value
+     * @return {@code Some(value)} if value is not {@code null}, {@code None} otherwise
+     */
+    static &lt;T&gt; Option&lt;T&gt; of(T value) {
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        return (value == null) ? none() : some(value);</span>
+    }
+
+    /**
+     * Reduces many {@code Option}s into a single {@code Option} by transforming an
+     * {@code Iterable&lt;Option&lt;? extends T&gt;&gt;} into a {@code Option&lt;Seq&lt;T&gt;&gt;}. If any of
+     * the Options are {@link Option.None}, then this returns {@link Option.None}.
+     *
+     * @param values An {@code Iterable} of {@code Option}s
+     * @param &lt;T&gt;    type of the Options
+     * @return An {@code Option} of a {@link Seq} of results
+     * @throws NullPointerException if {@code values} is null
+     */
+    static &lt;T&gt; Option&lt;Seq&lt;T&gt;&gt; sequence(Iterable&lt;? extends Option&lt;? extends T&gt;&gt; values) {
+<span class="fc" id="L62">        Objects.requireNonNull(values, &quot;values is null&quot;);</span>
+<span class="fc" id="L63">        List&lt;T&gt; list = List.empty();</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        for (Option&lt;? extends T&gt; value : values) {</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">            if (value.isEmpty()) {</span>
+<span class="fc" id="L66">                return Option.none();</span>
+            }
+<span class="fc" id="L68">            list = list.prepend(value.get());</span>
+<span class="fc" id="L69">        }</span>
+
+<span class="fc" id="L71">        return Option.some(list.reverse());</span>
+    }
+
+    /**
+     * Creates a new {@code Some} of a given value.
+     * &lt;p&gt;
+     * The only difference to {@link Option#of(Object)} is, when called with argument {@code null}.
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * Option.of(null);   // = None
+     * Option.some(null); // = Some(null)
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param value A value
+     * @param &lt;T&gt;   type of the value
+     * @return {@code Some(value)}
+     */
+    static &lt;T&gt; Option&lt;T&gt; some(T value) {
+<span class="fc" id="L90">        return new Some&lt;&gt;(value);</span>
+    }
+
+    /**
+     * Returns the single instance of {@code None}
+     *
+     * @param &lt;T&gt; component type
+     * @return the single instance of {@code None}
+     */
+    static &lt;T&gt; Option&lt;T&gt; none() {
+        @SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L101">        final None&lt;T&gt; none = (None&lt;T&gt;) None.INSTANCE;</span>
+<span class="fc" id="L102">        return none;</span>
+    }
+
+    /**
+     * Return the singleton instance of {@code Some&lt;Void&gt;}.
+     *
+     * @return {@code Some&lt;Void&gt;}
+     */
+    static Option&lt;Void&gt; nothing() {
+<span class="fc" id="L111">        return Some.NOTHING;</span>
+    }
+
+    /**
+     * Creates {@code Some} of suppliers value if condition is true, or {@code None} in other case
+     *
+     * @param &lt;T&gt;       type of the optional value
+     * @param condition A boolean value
+     * @param supplier  An optional value supplier, may supply {@code null}
+     * @return return {@code Some} of supplier's value if condition is true, or {@code None} in other case
+     * @throws NullPointerException if the given {@code supplier} is null
+     */
+    static &lt;T&gt; Option&lt;T&gt; when(boolean condition, Supplier&lt;? extends T&gt; supplier) {
+<span class="fc" id="L124">        Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">        return condition ? of(supplier.get()) : none();</span>
+    }
+
+    /**
+     * Wraps a Java Optional to a new Option
+     *
+     * @param optional a given optional to wrap in {@code Option}
+     * @param &lt;T&gt;      type of the value
+     * @return {@code Some(optional.get())} if value is Java {@code Optional} is present, {@code None} otherwise
+     */
+    static &lt;T&gt; Option&lt;T&gt; ofOptional(Optional&lt;? extends T&gt; optional) {
+<span class="fc" id="L136">        Objects.requireNonNull(optional, &quot;optional is null&quot;);</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        return optional.isPresent() ? of(optional.get()) : none();</span>
+    }
+
+
+    /**
+     * Returns true, if this is {@code None}, otherwise false, if this is {@code Some}.
+     *
+     * @return true, if this {@code Option} is empty, false otherwise
+     */
+    boolean isEmpty();
+
+    /**
+     * Returns true, if this is {@code Some}, otherwise false, if this is {@code None}.
+     * &lt;p&gt;
+     * Please note that it is possible to create {@code new Some(null)}, which is defined.
+     *
+     * @return true, if this {@code Option} has a defined value, false otherwise
+     */
+    default boolean isDefined() {
+<span class="fc bfc" id="L156" title="All 2 branches covered.">        return !isEmpty();</span>
+    }
+
+    /**
+     * An {@code Option} is single-valued.
+     *
+     * @return {@code true}
+     */
+    @Override
+    default boolean isSingleValued() {
+<span class="nc" id="L166">        return true;</span>
+    }
+
+    T get();
+
+    @Override
+    default Option&lt;T&gt; getOption() {
+<span class="nc" id="L173">        return this;</span>
+    }
+
+    /**
+     * Returns the value if this is a {@code Some} or the {@code other} value if this is a {@code None}.
+     * &lt;p&gt;
+     * Please note, that the other value is eagerly evaluated.
+     *
+     * @param other An alternative value
+     * @return This value, if this Option is defined or the {@code other} value, if this Option is empty.
+     */
+    default T orElse(T other) {
+<span class="fc bfc" id="L185" title="All 2 branches covered.">        return isEmpty() ? other : get();</span>
+    }
+
+    /**
+     * Returns the value if this is a {@code Some}, otherwise the {@code other} value is returned,
+     * if this is a {@code None}.
+     * &lt;p&gt;
+     * Please note, that the other value is lazily evaluated.
+     *
+     * @param supplier An alternative value supplier
+     * @return This value, if this Option is defined or the {@code other} value, if this Option is empty.
+     */
+    default T orElseGet(Supplier&lt;? extends T&gt; supplier) {
+<span class="fc" id="L198">        Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">        return isEmpty() ? supplier.get() : get();</span>
+    }
+
+    /**
+     * Returns the value if this is a {@code Some}, otherwise throws an exception.
+     *
+     * @param exceptionSupplier An exception supplier
+     * @param &lt;X&gt;               A throwable
+     * @return This value, if this Option is defined, otherwise throws X
+     * @throws X a throwable
+     */
+    default &lt;X extends Throwable&gt; T orElseThrow(Supplier&lt;X&gt; exceptionSupplier) throws X {
+<span class="fc" id="L211">        Objects.requireNonNull(exceptionSupplier, &quot;exceptionSupplier is null&quot;);</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L213">            throw exceptionSupplier.get();</span>
+        } else {
+<span class="fc" id="L215">            return get();</span>
+        }
+    }
+
+    /**
+     * Returns {@code Some(value)} if this is a {@code Some} and the value satisfies the given predicate.
+     * Otherwise {@code None} is returned.
+     *
+     * @param predicate A predicate which is used to test an optional value
+     * @return {@code Some(value)} or {@code None} as specified
+     */
+    @Override
+    default Option&lt;T&gt; filter(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L228">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc bfc" id="L229" title="All 4 branches covered.">        return (isEmpty() || predicate.test(get())) ? this : none();</span>
+    }
+
+    @Override
+    default Option&lt;T&gt; filterNot(Predicate&lt;? super T&gt; predicate) {
+<span class="nc" id="L234">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="nc" id="L235">        return filter(predicate.negate());</span>
+    }
+
+    /**
+     * Maps the value to a new {@code Option} if this is a {@code Some}, otherwise returns {@code None}.
+     *
+     * @param mapper A mapper
+     * @param &lt;U&gt;    Component type of the resulting Option
+     * @return a new {@code Option}
+     */
+    @Override
+    default &lt;U&gt; Option&lt;U&gt; flatMap(Function&lt;? super T, ? extends Iterable&lt;? extends U&gt;&gt; mapper) {
+<span class="fc" id="L247">        Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+<span class="fc bfc" id="L248" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L249">            return none();</span>
+        } else {
+<span class="fc" id="L251">            return unit(mapper.apply(get()));</span>
+        }
+    }
+
+    /**
+     * Maps the value and wraps it in a new {@code Some} if this is a {@code Some}, returns {@code None}.
+     *
+     * @param mapper A value mapper
+     * @param &lt;U&gt;    The new value type
+     * @return a new {@code Some} containing the mapped value if this Option is defined, otherwise {@code None}, if this is empty.
+     */
+    @Override
+    default &lt;U&gt; Option&lt;U&gt; map(Function&lt;? super T, ? extends U&gt; mapper) {
+<span class="fc" id="L264">        Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+<span class="fc bfc" id="L265" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L266">            return none();</span>
+        } else {
+<span class="fc" id="L268">            return some(mapper.apply(get()));</span>
+        }
+    }
+
+    @Override
+    default Match.MatchMonad.Of&lt;Option&lt;T&gt;&gt; match() {
+<span class="nc" id="L274">        return Match.of(this);</span>
+    }
+
+    /**
+     * Applies an action to this value, if this option is defined, otherwise does nothing.
+     *
+     * @param action An action which can be applied to an optional value
+     * @return this {@code Option}
+     */
+    @Override
+    default Option&lt;T&gt; peek(Consumer&lt;? super T&gt; action) {
+<span class="fc" id="L285">        Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="fc bfc" id="L286" title="All 2 branches covered.">        if (isDefined()) {</span>
+<span class="fc" id="L287">            action.accept(get());</span>
+        }
+<span class="fc" id="L289">        return this;</span>
+    }
+
+    /**
+     * Transforms this {@code Option}.
+     *
+     * @param f   A transformation
+     * @param &lt;U&gt; Type of transformation result
+     * @return An instance of type {@code U}
+     * @throws NullPointerException if {@code f} is null
+     */
+    default &lt;U&gt; U transform(Function&lt;? super Option&lt;? super T&gt;, ? extends U&gt; f) {
+<span class="nc" id="L301">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="nc" id="L302">        return f.apply(this);</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override
+    default &lt;U&gt; Option&lt;U&gt; unit(Iterable&lt;? extends U&gt; iterable) {
+<span class="pc bpc" id="L308" title="1 of 2 branches missed.">        if (iterable instanceof Option) {</span>
+<span class="fc" id="L309">            return (Option&lt;U&gt;) iterable;</span>
+<span class="nc bnc" id="L310" title="All 2 branches missed.">        } else if (iterable instanceof Value) {</span>
+<span class="nc" id="L311">            final Value&lt;U&gt; value = (Value&lt;U&gt;) iterable;</span>
+<span class="nc bnc" id="L312" title="All 2 branches missed.">            return value.isEmpty() ? Option.none() : Option.some(value.get());</span>
+        } else {
+<span class="nc" id="L314">            final java.util.Iterator&lt;? extends U&gt; iterator = iterable.iterator();</span>
+<span class="nc bnc" id="L315" title="All 2 branches missed.">            return iterator.hasNext() ? Option.none() : Option.some(iterator.next());</span>
+        }
+    }
+
+    @Override
+    default Iterator&lt;T&gt; iterator() {
+<span class="fc bfc" id="L321" title="All 2 branches covered.">        return isEmpty() ? Iterator.empty() : Iterator.of(get());</span>
+    }
+
+    @Override
+    boolean equals(Object o);
+
+    @Override
+    int hashCode();
+
+    @Override
+    String toString();
+
+    /**
+     * Some represents a defined {@link Option}. It contains a value which may be null. However, to
+     * create an Option containing null, {@code new Some(null)} has to be called. In all other cases
+     * {@link Option#of(Object)} is sufficient.
+     *
+     * @param &lt;T&gt; The type of the optional value.
+     * @author Daniel Dietrich
+     * @since 1.0.0
+     */
+    final class Some&lt;T&gt; implements Option&lt;T&gt;, Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        /**
+         * The singleton instance of {@code Some&lt;Void&gt;}.
+         */
+<span class="fc" id="L349">        private static final Some&lt;Void&gt; NOTHING = new Some&lt;&gt;(null);</span>
+
+        private final T value;
+
+        /**
+         * Creates a new Some containing the given value.
+         *
+         * @param value A value, may be null
+         */
+<span class="fc" id="L358">        private Some(T value) {</span>
+<span class="fc" id="L359">            this.value = value;</span>
+<span class="fc" id="L360">        }</span>
+
+        @Override
+        public T get() {
+<span class="fc" id="L364">            return value;</span>
+        }
+
+        @Override
+        public boolean isEmpty() {
+<span class="fc" id="L369">            return false;</span>
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+<span class="pc bpc" id="L374" title="1 of 6 branches missed.">            return (obj == this) || (obj instanceof Some &amp;&amp; Objects.equals(value, ((Some&lt;?&gt;) obj).value));</span>
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L379">            return Objects.hashCode(value);</span>
+        }
+
+        @Override
+        public String stringPrefix() {
+<span class="fc" id="L384">            return &quot;Some&quot;;</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="fc" id="L389">            return stringPrefix() + &quot;(&quot; + value + &quot;)&quot;;</span>
+        }
+    }
+
+    /**
+     * None is a singleton representation of the undefined {@link Option}.
+     *
+     * @param &lt;T&gt; The type of the optional value.
+     * @author Daniel Dietrich
+     * @since 1.0.0
+     */
+    final class None&lt;T&gt; implements Option&lt;T&gt;, Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        /**
+         * The singleton instance of None.
+         */
+<span class="fc" id="L407">        private static final None&lt;?&gt; INSTANCE = new None&lt;&gt;();</span>
+
+        /**
+         * Hidden constructor.
+         */
+<span class="fc" id="L412">        private None() {</span>
+<span class="fc" id="L413">        }</span>
+
+        @Override
+        public T get() {
+<span class="fc" id="L417">            throw new NoSuchElementException(&quot;No value present&quot;);</span>
+        }
+
+        @Override
+        public boolean isEmpty() {
+<span class="fc" id="L422">            return true;</span>
+        }
+
+        @Override
+        public boolean equals(Object o) {
+<span class="fc bfc" id="L427" title="All 2 branches covered.">            return o == this;</span>
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L432">            return 1;</span>
+        }
+
+        @Override
+        public String stringPrefix() {
+<span class="fc" id="L437">            return &quot;None&quot;;</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="fc" id="L442">            return stringPrefix();</span>
+        }
+
+        // -- Serializable implementation
+
+        /**
+         * Instance control for object serialization.
+         *
+         * @return The singleton instance of None.
+         * @see Serializable
+         */
+        private Object readResolve() {
+<span class="fc" id="L454">            return INSTANCE;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

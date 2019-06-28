@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>SortedSet.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang.collection</a> &gt; <span class="el_source">SortedSet.java</span></div><h1>SortedSet.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang.collection;
+
+import javaslang.Tuple2;
+import javaslang.control.Match;
+import javaslang.control.Option;
+
+import java.util.Comparator;
+import java.util.NoSuchElementException;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+
+/**
+ * An immutable {@code SortedSet} interface.
+ *
+ * @param &lt;T&gt; Component type
+ * @author Daniel Dietrich
+ * @since 2.0.0
+ */
+public interface SortedSet&lt;T&gt; extends Set&lt;T&gt; {
+
+    long serialVersionUID = 1L;
+
+    /**
+     * Returns the underlying comparator which defines the order of the elements contained in this set.
+     *
+     * @return This set's comparator.
+     */
+    Comparator&lt;T&gt; comparator();
+
+    /**
+     * Same as {@link #flatMap(Function)} but using a specific comparator for values of the codomain of the given
+     * {@code mapper}.
+     *
+     * @param comparator A comparator for values of type U
+     * @param mapper     A function which maps values of type T to Iterables of values of type U
+     * @param &lt;U&gt;        Type of flat-mapped values
+     * @return A new Set instance containing mapped values
+     */
+    &lt;U&gt; SortedSet&lt;U&gt; flatMap(Comparator&lt;? super U&gt; comparator, Function&lt;? super T, ? extends Iterable&lt;? extends U&gt;&gt; mapper);
+
+    /**
+     * Same as {@link #map(Function)} but using a specific comparator for values of the codomain of the given
+     * {@code mapper}.
+     *
+     * @param comparator A comparator for values of type U
+     * @param mapper     A function which maps values of type T to values of type U
+     * @param &lt;U&gt;        Type of mapped values
+     * @return A new Set instance containing mapped values
+     */
+    &lt;U&gt; SortedSet&lt;U&gt; map(Comparator&lt;? super U&gt; comparator, Function&lt;? super T, ? extends U&gt; mapper);
+
+    // -- Adjusted return types of Set methods
+
+    @Override
+    SortedSet&lt;T&gt; add(T element);
+
+    @Override
+    SortedSet&lt;T&gt; addAll(Iterable&lt;? extends T&gt; elements);
+
+    @Override
+    SortedSet&lt;T&gt; clear();
+
+    @Override
+    SortedSet&lt;T&gt; diff(Set&lt;? extends T&gt; elements);
+
+    @Override
+    SortedSet&lt;T&gt; distinct();
+
+    @Override
+    SortedSet&lt;T&gt; distinctBy(Comparator&lt;? super T&gt; comparator);
+
+    @Override
+    &lt;U&gt; SortedSet&lt;T&gt; distinctBy(Function&lt;? super T, ? extends U&gt; keyExtractor);
+
+    @Override
+    SortedSet&lt;T&gt; drop(int n);
+
+    @Override
+    SortedSet&lt;T&gt; dropRight(int n);
+
+    @Override
+    SortedSet&lt;T&gt; dropUntil(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    SortedSet&lt;T&gt; dropWhile(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    SortedSet&lt;T&gt; filter(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    SortedSet&lt;T&gt; filterNot(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    &lt;U&gt; SortedSet&lt;U&gt; flatMap(Function&lt;? super T, ? extends Iterable&lt;? extends U&gt;&gt; mapper);
+
+    @Override
+    &lt;C&gt; Map&lt;C, ? extends SortedSet&lt;T&gt;&gt; groupBy(Function&lt;? super T, ? extends C&gt; classifier);
+
+    @Override
+    Iterator&lt;? extends SortedSet&lt;T&gt;&gt; grouped(int size);
+
+    @Override
+    SortedSet&lt;T&gt; init();
+
+    @Override
+    Option&lt;? extends SortedSet&lt;T&gt;&gt; initOption();
+
+    @Override
+    SortedSet&lt;T&gt; intersect(Set&lt;? extends T&gt; elements);
+
+    @Override
+    default T last() {
+<span class="fc" id="L120">        return max().orElseThrow(() -&gt; new NoSuchElementException(&quot;last on empty SortedSet&quot;));</span>
+    }
+
+    @Override
+    &lt;U&gt; SortedSet&lt;U&gt; map(Function&lt;? super T, ? extends U&gt; mapper);
+
+    @Override
+    Match.MatchMonad.Of&lt;? extends SortedSet&lt;T&gt;&gt; match();
+
+    @Override
+    Tuple2&lt;? extends SortedSet&lt;T&gt;, ? extends SortedSet&lt;T&gt;&gt; partition(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    SortedSet&lt;T&gt; peek(Consumer&lt;? super T&gt; action);
+
+    @Override
+    SortedSet&lt;T&gt; remove(T element);
+
+    @Override
+    SortedSet&lt;T&gt; removeAll(Iterable&lt;? extends T&gt; elements);
+
+    @Override
+    SortedSet&lt;T&gt; replace(T currentElement, T newElement);
+
+    @Override
+    SortedSet&lt;T&gt; replaceAll(T currentElement, T newElement);
+
+    @Override
+    SortedSet&lt;T&gt; retainAll(Iterable&lt;? extends T&gt; elements);
+
+    @Override
+    SortedSet&lt;T&gt; scan(T zero, BiFunction&lt;? super T, ? super T, ? extends T&gt; operation);
+
+    // DEV-NOTE: The return type is either Set or SortedSet, depending whether U is Comparable
+    @Override
+    &lt;U&gt; Set&lt;U&gt; scanLeft(U zero, BiFunction&lt;? super U, ? super T, ? extends U&gt; operation);
+
+    // DEV-NOTE: The return type is either Set or SortedSet, depending whether U is Comparable
+    @Override
+    &lt;U&gt; Set&lt;U&gt; scanRight(U zero, BiFunction&lt;? super T, ? super U, ? extends U&gt; operation);
+
+    @Override
+    Iterator&lt;? extends SortedSet&lt;T&gt;&gt; sliding(int size);
+
+    @Override
+    Iterator&lt;? extends SortedSet&lt;T&gt;&gt; sliding(int size, int step);
+
+    @Override
+    Tuple2&lt;? extends SortedSet&lt;T&gt;, ? extends SortedSet&lt;T&gt;&gt; span(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    SortedSet&lt;T&gt; tail();
+
+    @Override
+    Option&lt;? extends SortedSet&lt;T&gt;&gt; tailOption();
+
+    @Override
+    SortedSet&lt;T&gt; take(int n);
+
+    @Override
+    SortedSet&lt;T&gt; takeRight(int n);
+
+    @Override
+    SortedSet&lt;T&gt; takeUntil(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    SortedSet&lt;T&gt; takeWhile(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    SortedSet&lt;T&gt; union(Set&lt;? extends T&gt; elements);
+    
+    @Override
+    &lt;U&gt; SortedSet&lt;U&gt; unit(Iterable&lt;? extends U&gt; iterable);
+
+    @Override
+    &lt;T1, T2&gt; Tuple2&lt;? extends SortedSet&lt;T1&gt;, ? extends SortedSet&lt;T2&gt;&gt; unzip(Function&lt;? super T, Tuple2&lt;? extends T1, ? extends T2&gt;&gt; unzipper);
+
+    @Override
+    &lt;U&gt; SortedSet&lt;Tuple2&lt;T, U&gt;&gt; zip(Iterable&lt;U&gt; that);
+
+    @Override
+    &lt;U&gt; SortedSet&lt;Tuple2&lt;T, U&gt;&gt; zipAll(Iterable&lt;U&gt; that, T thisElem, U thatElem);
+
+    @Override
+    SortedSet&lt;Tuple2&lt;T, Integer&gt;&gt; zipWithIndex();
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

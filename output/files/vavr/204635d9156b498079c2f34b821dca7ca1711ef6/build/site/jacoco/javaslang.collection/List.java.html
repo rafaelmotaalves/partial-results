@@ -1,0 +1,1677 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>List.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang.collection</a> &gt; <span class="el_source">List.java</span></div><h1>List.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang.collection;
+
+import javaslang.*;
+import javaslang.collection.List.Nil;
+import javaslang.collection.ListModule.Combinations;
+import javaslang.collection.ListModule.SplitAt;
+import javaslang.control.Match;
+import javaslang.control.Option;
+
+import java.io.*;
+import java.util.*;
+import java.util.function.*;
+import java.util.stream.Collector;
+
+/**
+ * An immutable {@code List} is an eager sequence of elements. Its immutability makes it suitable for concurrent programming.
+ * &lt;p&gt;
+ * A {@code List} is composed of a {@code head} element and a {@code tail} {@code List}.
+ * &lt;p&gt;
+ * There are two implementations of the {@code List} interface:
+ * &lt;ul&gt;
+ * &lt;li&gt;{@link Nil}, which represents the empty {@code List}.&lt;/li&gt;
+ * &lt;li&gt;{@link Cons}, which represents a {@code List} containing one or more elements.&lt;/li&gt;
+ * &lt;/ul&gt;
+ * Methods to obtain a {@code List}:
+ * &lt;pre&gt;
+ * &lt;code&gt;
+ * // factory methods
+ * List.empty()                        // = List.of() = Nil.instance()
+ * List.of(x)                          // = new Cons&amp;lt;&amp;gt;(x, Nil.instance())
+ * List.of(Object...)                  // e.g. List.of(1, 2, 3)
+ * List.ofAll(Iterable)                // e.g. List.ofAll(Stream.of(1, 2, 3)) = 1, 2, 3
+ * List.ofAll(&amp;lt;primitive array&amp;gt;) // e.g. List.of(new int[] {1, 2, 3}) = 1, 2, 3
+ *
+ * // int sequences
+ * List.range(0, 3)              // = 0, 1, 2
+ * List.rangeClosed(0, 3)        // = 0, 1, 2, 3
+ * &lt;/code&gt;
+ * &lt;/pre&gt;
+ *
+ * Note: A {@code List} is primary a {@code Seq} and extends {@code Stack} for technical reasons (so {@code Stack} does not need to wrap {@code List}).
+ *
+ *
+ * Factory method applications:
+ *
+ * &lt;pre&gt;
+ * &lt;code&gt;
+ * List&amp;lt;Integer&amp;gt;       s1 = List.of(1);
+ * List&amp;lt;Integer&amp;gt;       s2 = List.of(1, 2, 3);
+ *                           // = List.of(new Integer[] {1, 2, 3});
+ *
+ * List&amp;lt;int[]&amp;gt;         s3 = List.ofAll(new int[] {1, 2, 3});
+ * List&amp;lt;List&amp;lt;Integer&amp;gt;&amp;gt; s4 = List.ofAll(List.of(1, 2, 3));
+ *
+ * List&amp;lt;Integer&amp;gt;       s5 = List.ofAll(new int[] {1, 2, 3});
+ * List&amp;lt;Integer&amp;gt;       s6 = List.ofAll(List.of(1, 2, 3));
+ *
+ * // cuckoo's egg
+ * List&amp;lt;Integer[]&amp;gt;     s7 = List.&amp;lt;Integer[]&amp;gt; of(new Integer[] {1, 2, 3});
+ * &lt;/code&gt;
+ * &lt;/pre&gt;
+ *
+ * Example: Converting a String to digits
+ *
+ * &lt;pre&gt;
+ * &lt;code&gt;
+ * // = List(1, 2, 3)
+ * List.of(&quot;123&quot;.toCharArray()).map(c -&amp;gt; Character.digit(c, 10))
+ * &lt;/code&gt;
+ * &lt;/pre&gt;
+ *
+ * See Okasaki, Chris: &lt;em&gt;Purely Functional Data Structures&lt;/em&gt; (p. 7 ff.). Cambridge, 2003.
+ *
+ * @param &lt;T&gt; Component type of the List
+ * @author Daniel Dietrich
+ * @since 1.1.0
+ */
+public interface List&lt;T&gt; extends LinearSeq&lt;T&gt;, Stack&lt;T&gt; {
+
+    long serialVersionUID = 1L;
+
+    /**
+     * Returns a {@link java.util.stream.Collector} which may be used in conjunction with
+     * {@link java.util.stream.Stream#collect(java.util.stream.Collector)} to obtain a {@link javaslang.collection.List}.
+     *
+     * @param &lt;T&gt; Component type of the List.
+     * @return A javaslang.collection.List Collector.
+     */
+    static &lt;T&gt; Collector&lt;T, ArrayList&lt;T&gt;, List&lt;T&gt;&gt; collector() {
+<span class="fc" id="L95">        final Supplier&lt;ArrayList&lt;T&gt;&gt; supplier = ArrayList::new;</span>
+<span class="fc" id="L96">        final BiConsumer&lt;ArrayList&lt;T&gt;, T&gt; accumulator = ArrayList::add;</span>
+<span class="fc" id="L97">        final BinaryOperator&lt;ArrayList&lt;T&gt;&gt; combiner = (left, right) -&gt; {</span>
+<span class="fc" id="L98">            left.addAll(right);</span>
+<span class="fc" id="L99">            return left;</span>
+        };
+<span class="fc" id="L101">        final Function&lt;ArrayList&lt;T&gt;, List&lt;T&gt;&gt; finisher = List::ofAll;</span>
+<span class="fc" id="L102">        return Collector.of(supplier, accumulator, combiner, finisher);</span>
+    }
+
+    /**
+     * Returns the single instance of Nil. Convenience method for {@code Nil.instance()} .
+     * &lt;p&gt;
+     * Note: this method intentionally returns type {@code List} and not {@code Nil}. This comes handy when folding.
+     * If you explicitly need type {@code Nil} use {@linkplain Nil#instance()}.
+     *
+     * @param &lt;T&gt; Component type of Nil, determined by type inference in the particular context.
+     * @return The empty list.
+     */
+    static &lt;T&gt; List&lt;T&gt; empty() {
+<span class="fc" id="L115">        return Nil.instance();</span>
+    }
+
+    /**
+     * Returns a singleton {@code List}, i.e. a {@code List} of one element.
+     *
+     * @param element An element.
+     * @param &lt;T&gt;     The component type
+     * @return A new List instance containing the given element
+     */
+    static &lt;T&gt; List&lt;T&gt; of(T element) {
+<span class="fc" id="L126">        return new Cons&lt;&gt;(element, Nil.instance());</span>
+    }
+
+    /**
+     * Creates a List of the given elements.
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     *   List.of(1, 2, 3, 4)
+     * = Nil.instance().prepend(4).prepend(3).prepend(2).prepend(1)
+     * = new Cons(1, new Cons(2, new Cons(3, new Cons(4, Nil.instance()))))
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param &lt;T&gt;      Component type of the List.
+     * @param elements Zero or more elements.
+     * @return A list containing the given elements in the same order.
+     * @throws NullPointerException if {@code elements} is null
+     */
+    @SafeVarargs
+    static &lt;T&gt; List&lt;T&gt; of(T... elements) {
+<span class="fc" id="L146">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc" id="L147">        List&lt;T&gt; result = Nil.&lt;T&gt; instance();</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">        for (int i = elements.length - 1; i &gt;= 0; i--) {</span>
+<span class="fc" id="L149">            result = result.prepend(elements[i]);</span>
+        }
+<span class="fc" id="L151">        return result;</span>
+    }
+
+    /**
+     * Creates a List of the given elements.
+     * &lt;p&gt;
+     * The resulting list has the same iteration order as the given iterable of elements
+     * if the iteration order of the elements is stable.
+     *
+     * @param &lt;T&gt;      Component type of the List.
+     * @param elements An Iterable of elements.
+     * @return A list containing the given elements in the same order.
+     * @throws NullPointerException if {@code elements} is null
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    static &lt;T&gt; List&lt;T&gt; ofAll(Iterable&lt;? extends T&gt; elements) {
+<span class="fc" id="L167">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">        if (elements instanceof List) {</span>
+<span class="fc" id="L169">            return (List&lt;T&gt;) elements;</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">        } else if (elements instanceof java.util.List) {</span>
+<span class="fc" id="L171">            List&lt;T&gt; result = Nil.instance();</span>
+<span class="fc" id="L172">            final java.util.List&lt;T&gt; list = (java.util.List&lt;T&gt;) elements;</span>
+<span class="fc" id="L173">            final ListIterator&lt;T&gt; iterator = list.listIterator(list.size());</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">            while (iterator.hasPrevious()) {</span>
+<span class="fc" id="L175">                result = result.prepend(iterator.previous());</span>
+            }
+<span class="fc" id="L177">            return result;</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">        } else if (elements instanceof NavigableSet) {</span>
+<span class="fc" id="L179">            List&lt;T&gt; result = Nil.instance();</span>
+<span class="fc" id="L180">            final java.util.Iterator&lt;T&gt; iterator = ((NavigableSet&lt;T&gt;) elements).descendingIterator();</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">            while (iterator.hasNext()) {</span>
+<span class="fc" id="L182">                result = result.prepend(iterator.next());</span>
+            }
+<span class="fc" id="L184">            return result;</span>
+        } else {
+<span class="fc" id="L186">            List&lt;T&gt; result = Nil.instance();</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">            for (T element : elements) {</span>
+<span class="fc" id="L188">                result = result.prepend(element);</span>
+<span class="fc" id="L189">            }</span>
+<span class="fc" id="L190">            return result.reverse();</span>
+        }
+    }
+
+    /**
+     * Creates a List based on the elements of a boolean array.
+     *
+     * @param array a boolean array
+     * @return A new List of Boolean values
+     */
+    static List&lt;Boolean&gt; ofAll(boolean[] array) {
+<span class="fc" id="L201">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L202">        return List.ofAll(Iterator.ofAll(array));</span>
+    }
+
+    /**
+     * Creates a List based on the elements of a byte array.
+     *
+     * @param array a byte array
+     * @return A new List of Byte values
+     */
+    static List&lt;Byte&gt; ofAll(byte[] array) {
+<span class="fc" id="L212">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L213">        return List.ofAll(Iterator.ofAll(array));</span>
+    }
+
+    /**
+     * Creates a List based on the elements of a char array.
+     *
+     * @param array a char array
+     * @return A new List of Character values
+     */
+    static List&lt;Character&gt; ofAll(char[] array) {
+<span class="fc" id="L223">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L224">        return List.ofAll(Iterator.ofAll(array));</span>
+    }
+
+    /**
+     * Creates a List based on the elements of a double array.
+     *
+     * @param array a double array
+     * @return A new List of Double values
+     */
+    static List&lt;Double&gt; ofAll(double[] array) {
+<span class="fc" id="L234">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L235">        return List.ofAll(Iterator.ofAll(array));</span>
+    }
+
+    /**
+     * Creates a List based on the elements of a float array.
+     *
+     * @param array a float array
+     * @return A new List of Float values
+     */
+    static List&lt;Float&gt; ofAll(float[] array) {
+<span class="fc" id="L245">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L246">        return List.ofAll(Iterator.ofAll(array));</span>
+    }
+
+    /**
+     * Creates a List based on the elements of an int array.
+     *
+     * @param array an int array
+     * @return A new List of Integer values
+     */
+    static List&lt;Integer&gt; ofAll(int[] array) {
+<span class="fc" id="L256">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L257">        return List.ofAll(Iterator.ofAll(array));</span>
+    }
+
+    /**
+     * Creates a List based on the elements of a long array.
+     *
+     * @param array a long array
+     * @return A new List of Long values
+     */
+    static List&lt;Long&gt; ofAll(long[] array) {
+<span class="fc" id="L267">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L268">        return List.ofAll(Iterator.ofAll(array));</span>
+    }
+
+    /**
+     * Creates a List based on the elements of a short array.
+     *
+     * @param array a short array
+     * @return A new List of Short values
+     */
+    static List&lt;Short&gt; ofAll(short[] array) {
+<span class="fc" id="L278">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L279">        return List.ofAll(Iterator.ofAll(array));</span>
+    }
+
+    /**
+     * Returns a List containing {@code n} values of a given Function {@code f}
+     * over a range of integer values from 0 to {@code n - 1}.
+     *
+     * @param &lt;T&gt; Component type of the List
+     * @param n The number of elements in the List
+     * @param f The Function computing element values
+     * @return A List consisting of elements {@code f(0),f(1), ..., f(n - 1)}
+     * @throws NullPointerException if {@code f} is null
+     */
+    static &lt;T&gt; List&lt;T&gt; tabulate(int n, Function&lt;? super Integer, ? extends T&gt; f) {
+<span class="fc" id="L293">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="fc" id="L294">        return Collections.tabulate(n, f, List.empty(), List::of);</span>
+    }
+
+    /**
+     * Returns a List containing {@code n} values supplied by a given Supplier {@code s}.
+     *
+     * @param &lt;T&gt; Component type of the List
+     * @param n The number of elements in the List
+     * @param s The Supplier computing element values
+     * @return A List of size {@code n}, where each element contains the result supplied by {@code s}.
+     * @throws NullPointerException if {@code s} is null
+     */
+    static &lt;T&gt; List&lt;T&gt; fill(int n, Supplier&lt;? extends T&gt; s) {
+<span class="fc" id="L307">        Objects.requireNonNull(s, &quot;s is null&quot;);</span>
+<span class="fc" id="L308">        return Collections.fill(n, s, List.empty(), List::of);</span>
+    }
+
+    static List&lt;Character&gt; range(char from, char toExclusive) {
+<span class="fc" id="L312">        return List.ofAll(Iterator.range(from, toExclusive));</span>
+    }
+
+    static List&lt;Character&gt; rangeBy(char from, char toExclusive, int step) {
+<span class="fc" id="L316">        return List.ofAll(Iterator.rangeBy(from, toExclusive, step));</span>
+    }
+
+    static List&lt;Double&gt; rangeBy(double from, double toExclusive, double step) {
+<span class="fc" id="L320">        return List.ofAll(Iterator.rangeBy(from, toExclusive, step));</span>
+    }
+
+    /**
+     * Creates a List of int numbers starting from {@code from}, extending to {@code toExclusive - 1}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * List.range(0, 0)  // = List()
+     * List.range(2, 0)  // = List()
+     * List.range(-2, 2) // = List(-2, -1, 0, 1)
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toExclusive the last number + 1
+     * @return a range of int values as specified or the empty range if {@code from &gt;= toExclusive}
+     */
+    static List&lt;Integer&gt; range(int from, int toExclusive) {
+<span class="fc" id="L340">        return List.ofAll(Iterator.range(from, toExclusive));</span>
+    }
+
+    /**
+     * Creates a List of int numbers starting from {@code from}, extending to {@code toExclusive - 1},
+     * with {@code step}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * List.rangeBy(1, 3, 1)  // = List(1, 2)
+     * List.rangeBy(1, 4, 2)  // = List(1, 3)
+     * List.rangeBy(4, 1, -2) // = List(4, 2)
+     * List.rangeBy(4, 1, 2)  // = List()
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toExclusive the last number + 1
+     * @param step        the step
+     * @return a range of long values as specified or the empty range if&lt;br&gt;
+     * {@code from &gt;= toInclusive} and {@code step &gt; 0} or&lt;br&gt;
+     * {@code from &lt;= toInclusive} and {@code step &lt; 0}
+     * @throws IllegalArgumentException if {@code step} is zero
+     */
+    static List&lt;Integer&gt; rangeBy(int from, int toExclusive, int step) {
+<span class="fc" id="L366">        return List.ofAll(Iterator.rangeBy(from, toExclusive, step));</span>
+    }
+
+    /**
+     * Creates a List of long numbers starting from {@code from}, extending to {@code toExclusive - 1}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * List.range(0L, 0L)  // = List()
+     * List.range(2L, 0L)  // = List()
+     * List.range(-2L, 2L) // = List(-2L, -1L, 0L, 1L)
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toExclusive the last number + 1
+     * @return a range of long values as specified or the empty range if {@code from &gt;= toExclusive}
+     */
+    static List&lt;Long&gt; range(long from, long toExclusive) {
+<span class="fc" id="L386">        return List.ofAll(Iterator.range(from, toExclusive));</span>
+    }
+
+    /**
+     * Creates a List of long numbers starting from {@code from}, extending to {@code toExclusive - 1},
+     * with {@code step}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * List.rangeBy(1L, 3L, 1L)  // = List(1L, 2L)
+     * List.rangeBy(1L, 4L, 2L)  // = List(1L, 3L)
+     * List.rangeBy(4L, 1L, -2L) // = List(4L, 2L)
+     * List.rangeBy(4L, 1L, 2L)  // = List()
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toExclusive the last number + 1
+     * @param step        the step
+     * @return a range of long values as specified or the empty range if&lt;br&gt;
+     * {@code from &gt;= toInclusive} and {@code step &gt; 0} or&lt;br&gt;
+     * {@code from &lt;= toInclusive} and {@code step &lt; 0}
+     * @throws IllegalArgumentException if {@code step} is zero
+     */
+    static List&lt;Long&gt; rangeBy(long from, long toExclusive, long step) {
+<span class="fc" id="L412">        return List.ofAll(Iterator.rangeBy(from, toExclusive, step));</span>
+    }
+
+    static List&lt;Character&gt; rangeClosed(char from, char toInclusive) {
+<span class="fc" id="L416">        return List.ofAll(Iterator.rangeClosed(from, toInclusive));</span>
+    }
+
+    static List&lt;Character&gt; rangeClosedBy(char from, char toInclusive, int step) {
+<span class="fc" id="L420">        return List.ofAll(Iterator.rangeClosedBy(from, toInclusive, step));</span>
+    }
+
+    static List&lt;Double&gt; rangeClosedBy(double from, double toInclusive, double step) {
+<span class="fc" id="L424">        return List.ofAll(Iterator.rangeClosedBy(from, toInclusive, step));</span>
+    }
+
+    /**
+     * Creates a List of int numbers starting from {@code from}, extending to {@code toInclusive}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * List.rangeClosed(0, 0)  // = List(0)
+     * List.rangeClosed(2, 0)  // = List()
+     * List.rangeClosed(-2, 2) // = List(-2, -1, 0, 1, 2)
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toInclusive the last number
+     * @return a range of int values as specified or the empty range if {@code from &gt; toInclusive}
+     */
+    static List&lt;Integer&gt; rangeClosed(int from, int toInclusive) {
+<span class="fc" id="L444">        return List.ofAll(Iterator.rangeClosed(from, toInclusive));</span>
+    }
+
+    /**
+     * Creates a List of int numbers starting from {@code from}, extending to {@code toInclusive},
+     * with {@code step}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * List.rangeClosedBy(1, 3, 1)  // = List(1, 2, 3)
+     * List.rangeClosedBy(1, 4, 2)  // = List(1, 3)
+     * List.rangeClosedBy(4, 1, -2) // = List(4, 2)
+     * List.rangeClosedBy(4, 1, 2)  // = List()
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toInclusive the last number
+     * @param step        the step
+     * @return a range of int values as specified or the empty range if&lt;br&gt;
+     * {@code from &gt; toInclusive} and {@code step &gt; 0} or&lt;br&gt;
+     * {@code from &lt; toInclusive} and {@code step &lt; 0}
+     * @throws IllegalArgumentException if {@code step} is zero
+     */
+    static List&lt;Integer&gt; rangeClosedBy(int from, int toInclusive, int step) {
+<span class="fc" id="L470">        return List.ofAll(Iterator.rangeClosedBy(from, toInclusive, step));</span>
+    }
+
+    /**
+     * Creates a List of long numbers starting from {@code from}, extending to {@code toInclusive}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * List.rangeClosed(0L, 0L)  // = List(0L)
+     * List.rangeClosed(2L, 0L)  // = List()
+     * List.rangeClosed(-2L, 2L) // = List(-2L, -1L, 0L, 1L, 2L)
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toInclusive the last number
+     * @return a range of long values as specified or the empty range if {@code from &gt; toInclusive}
+     */
+    static List&lt;Long&gt; rangeClosed(long from, long toInclusive) {
+<span class="fc" id="L490">        return List.ofAll(Iterator.rangeClosed(from, toInclusive));</span>
+    }
+
+    /**
+     * Creates a List of long numbers starting from {@code from}, extending to {@code toInclusive},
+     * with {@code step}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * List.rangeClosedBy(1L, 3L, 1L)  // = List(1L, 2L, 3L)
+     * List.rangeClosedBy(1L, 4L, 2L)  // = List(1L, 3L)
+     * List.rangeClosedBy(4L, 1L, -2L) // = List(4L, 2L)
+     * List.rangeClosedBy(4L, 1L, 2L)  // = List()
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toInclusive the last number
+     * @param step        the step
+     * @return a range of int values as specified or the empty range if&lt;br&gt;
+     * {@code from &gt; toInclusive} and {@code step &gt; 0} or&lt;br&gt;
+     * {@code from &lt; toInclusive} and {@code step &lt; 0}
+     * @throws IllegalArgumentException if {@code step} is zero
+     */
+    static List&lt;Long&gt; rangeClosedBy(long from, long toInclusive, long step) {
+<span class="fc" id="L516">        return List.ofAll(Iterator.rangeClosedBy(from, toInclusive, step));</span>
+    }
+
+    @Override
+    default List&lt;T&gt; append(T element) {
+<span class="fc" id="L521">        return foldRight(List.of(element), (x, xs) -&gt; xs.prepend(x));</span>
+    }
+
+    @Override
+    default List&lt;T&gt; appendAll(Iterable&lt;? extends T&gt; elements) {
+<span class="fc" id="L526">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc" id="L527">        return foldRight(List.ofAll(elements), (x, xs) -&gt; xs.prepend(x));</span>
+    }
+
+    @Override
+    default List&lt;T&gt; clear() {
+<span class="fc" id="L532">        return Nil.instance();</span>
+    }
+
+    @Override
+    default List&lt;List&lt;T&gt;&gt; combinations() {
+<span class="fc" id="L537">        return List.rangeClosed(0, length()).map(this::combinations).flatMap(Function.identity());</span>
+    }
+
+    @Override
+    default List&lt;List&lt;T&gt;&gt; combinations(int k) {
+<span class="fc" id="L542">        return Combinations.apply(this, Math.max(k, 0));</span>
+    }
+
+    @Override
+    default List&lt;Tuple2&lt;T, T&gt;&gt; crossProduct() {
+<span class="fc" id="L547">        return crossProduct(this);</span>
+    }
+
+    @Override
+    default List&lt;List&lt;T&gt;&gt; crossProduct(int power) {
+<span class="fc" id="L552">        return Collections.crossProduct(this, power).map(List::ofAll).toList();</span>
+    }
+
+    @Override
+    default &lt;U&gt; List&lt;Tuple2&lt;T, U&gt;&gt; crossProduct(Iterable&lt;? extends U&gt; that) {
+<span class="fc" id="L557">        Objects.requireNonNull(that, &quot;that is null&quot;);</span>
+<span class="fc" id="L558">        final List&lt;U&gt; other = unit(that);</span>
+<span class="fc" id="L559">        return flatMap(a -&gt; other.map((Function&lt;U, Tuple2&lt;T, U&gt;&gt;) b -&gt; Tuple.of(a, b)));</span>
+    }
+
+    @Override
+    default List&lt;T&gt; distinct() {
+<span class="fc" id="L564">        return distinctBy(Function.identity());</span>
+    }
+
+    @Override
+    default List&lt;T&gt; distinctBy(Comparator&lt;? super T&gt; comparator) {
+<span class="fc" id="L569">        Objects.requireNonNull(comparator, &quot;comparator is null&quot;);</span>
+<span class="fc" id="L570">        final java.util.Set&lt;T&gt; seen = new java.util.TreeSet&lt;&gt;(comparator);</span>
+<span class="fc" id="L571">        return filter(seen::add);</span>
+    }
+
+    @Override
+    default &lt;U&gt; List&lt;T&gt; distinctBy(Function&lt;? super T, ? extends U&gt; keyExtractor) {
+<span class="fc" id="L576">        Objects.requireNonNull(keyExtractor, &quot;keyExtractor is null&quot;);</span>
+<span class="fc" id="L577">        final java.util.Set&lt;U&gt; seen = new java.util.HashSet&lt;&gt;();</span>
+<span class="fc" id="L578">        return filter(t -&gt; seen.add(keyExtractor.apply(t)));</span>
+    }
+
+    @Override
+    default List&lt;T&gt; drop(int n) {
+<span class="fc" id="L583">        List&lt;T&gt; list = this;</span>
+<span class="fc bfc" id="L584" title="All 4 branches covered.">        for (int i = n; i &gt; 0 &amp;&amp; !list.isEmpty(); i--) {</span>
+<span class="fc" id="L585">            list = list.tail();</span>
+        }
+<span class="fc" id="L587">        return list;</span>
+    }
+
+    @Override
+    default List&lt;T&gt; dropRight(int n) {
+<span class="fc bfc" id="L592" title="All 2 branches covered.">        if (n &lt;= 0) {</span>
+<span class="fc" id="L593">            return this;</span>
+        }
+<span class="fc bfc" id="L595" title="All 2 branches covered.">        if (n &gt;= length()) {</span>
+<span class="fc" id="L596">            return empty();</span>
+        }
+<span class="fc" id="L598">        return List.ofAll(iterator().dropRight(n));</span>
+    }
+
+    @Override
+    default List&lt;T&gt; dropUntil(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L603">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L604">        return dropWhile(predicate.negate());</span>
+    }
+
+    @Override
+    default List&lt;T&gt; dropWhile(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L609">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L610">        List&lt;T&gt; list = this;</span>
+<span class="fc bfc" id="L611" title="All 4 branches covered.">        while (!list.isEmpty() &amp;&amp; predicate.test(list.head())) {</span>
+<span class="fc" id="L612">            list = list.tail();</span>
+        }
+<span class="fc" id="L614">        return list;</span>
+    }
+
+    @Override
+    default List&lt;T&gt; filter(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L619">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc bfc" id="L620" title="All 2 branches covered.">        final List&lt;T&gt; filtered = foldLeft(List.&lt;T&gt; empty(), (xs, x) -&gt; predicate.test(x) ? xs.prepend(x) : xs);</span>
+<span class="fc bfc" id="L621" title="All 2 branches covered.">        return this.length() == filtered.length() ? this : filtered.reverse();</span>
+    }
+
+    @Override
+    default List&lt;T&gt; filterNot(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L626">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L627">        return filter(predicate.negate());</span>
+    }
+
+    @Override
+    default &lt;U&gt; List&lt;U&gt; flatMap(Function&lt;? super T, ? extends Iterable&lt;? extends U&gt;&gt; mapper) {
+<span class="fc" id="L632">        Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+<span class="fc bfc" id="L633" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L634">            return empty();</span>
+        } else {
+<span class="fc" id="L636">            List&lt;U&gt; list = empty();</span>
+<span class="fc bfc" id="L637" title="All 2 branches covered.">            for (T t : this) {</span>
+<span class="fc bfc" id="L638" title="All 2 branches covered.">                for (U u : mapper.apply(t)) {</span>
+<span class="fc" id="L639">                    list = list.prepend(u);</span>
+<span class="fc" id="L640">                }</span>
+<span class="fc" id="L641">            }</span>
+<span class="fc" id="L642">            return list.reverse();</span>
+        }
+    }
+
+    @Override
+    default void forEach(Consumer&lt;? super T&gt; action) {
+<span class="fc" id="L648">        Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="fc" id="L649">        Stack.super.forEach(action);</span>
+<span class="fc" id="L650">    }</span>
+
+    @Override
+    default boolean forAll(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L654">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L655">        return Stack.super.forAll(predicate);</span>
+    }
+
+    @Override
+    default T get(int index) {
+<span class="fc bfc" id="L660" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L661">            throw new IndexOutOfBoundsException(&quot;get(&quot; + index + &quot;) on Nil&quot;);</span>
+        }
+<span class="fc bfc" id="L663" title="All 2 branches covered.">        if (index &lt; 0) {</span>
+<span class="fc" id="L664">            throw new IndexOutOfBoundsException(&quot;get(&quot; + index + &quot;)&quot;);</span>
+        }
+<span class="fc" id="L666">        List&lt;T&gt; list = this;</span>
+<span class="fc bfc" id="L667" title="All 2 branches covered.">        for (int i = index - 1; i &gt;= 0; i--) {</span>
+<span class="fc" id="L668">            list = list.tail();</span>
+<span class="fc bfc" id="L669" title="All 2 branches covered.">            if (list.isEmpty()) {</span>
+<span class="fc" id="L670">                throw new IndexOutOfBoundsException(String.format(&quot;get(%s) on List of length %s&quot;, index, index - i));</span>
+            }
+        }
+<span class="fc" id="L673">        return list.head();</span>
+    }
+
+    @Override
+    default &lt;C&gt; Map&lt;C, List&lt;T&gt;&gt; groupBy(Function&lt;? super T, ? extends C&gt; classifier) {
+<span class="fc" id="L678">        Objects.requireNonNull(classifier, &quot;classifier is null&quot;);</span>
+<span class="fc" id="L679">        return iterator().groupBy(classifier).map((c, it) -&gt; Tuple.of(c, List.ofAll(it)));</span>
+    }
+
+    @Override
+    default Iterator&lt;List&lt;T&gt;&gt; grouped(int size) {
+<span class="fc" id="L684">        return sliding(size, size);</span>
+    }
+
+    @Override
+    default boolean hasDefiniteSize() {
+<span class="fc" id="L689">        return true;</span>
+    }
+
+    @Override
+    default Option&lt;T&gt; headOption() {
+<span class="fc bfc" id="L694" title="All 2 branches covered.">        return isEmpty() ? Option.none() : Option.some(head());</span>
+    }
+
+    @Override
+    default int indexOf(T element, int from) {
+<span class="fc" id="L699">        int index = 0;</span>
+<span class="fc bfc" id="L700" title="All 2 branches covered.">        for (List&lt;T&gt; list = this; !list.isEmpty(); list = list.tail(), index++) {</span>
+<span class="fc bfc" id="L701" title="All 4 branches covered.">            if (index &gt;= from &amp;&amp; Objects.equals(list.head(), element)) {</span>
+<span class="fc" id="L702">                return index;</span>
+            }
+        }
+<span class="fc" id="L705">        return -1;</span>
+    }
+
+    @Override
+    default List&lt;T&gt; init() {
+<span class="fc bfc" id="L710" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L711">            throw new UnsupportedOperationException(&quot;init of empty list&quot;);</span>
+        } else {
+<span class="fc" id="L713">            return dropRight(1);</span>
+        }
+    }
+
+    @Override
+    default Option&lt;List&lt;T&gt;&gt; initOption() {
+<span class="fc bfc" id="L719" title="All 2 branches covered.">        return isEmpty() ? Option.none() : Option.some(init());</span>
+    }
+
+    @Override
+    int length();
+
+    @Override
+    default List&lt;T&gt; insert(int index, T element) {
+<span class="fc bfc" id="L727" title="All 2 branches covered.">        if (index &lt; 0) {</span>
+<span class="fc" id="L728">            throw new IndexOutOfBoundsException(&quot;insert(&quot; + index + &quot;, e)&quot;);</span>
+        }
+<span class="fc" id="L730">        List&lt;T&gt; preceding = Nil.instance();</span>
+<span class="fc" id="L731">        List&lt;T&gt; tail = this;</span>
+<span class="fc bfc" id="L732" title="All 2 branches covered.">        for (int i = index; i &gt; 0; i--, tail = tail.tail()) {</span>
+<span class="fc bfc" id="L733" title="All 2 branches covered.">            if (tail.isEmpty()) {</span>
+<span class="fc" id="L734">                throw new IndexOutOfBoundsException(&quot;insert(&quot; + index + &quot;, e) on List of length &quot; + length());</span>
+            }
+<span class="fc" id="L736">            preceding = preceding.prepend(tail.head());</span>
+        }
+<span class="fc" id="L738">        List&lt;T&gt; result = tail.prepend(element);</span>
+<span class="fc bfc" id="L739" title="All 2 branches covered.">        for (T next : preceding) {</span>
+<span class="fc" id="L740">            result = result.prepend(next);</span>
+<span class="fc" id="L741">        }</span>
+<span class="fc" id="L742">        return result;</span>
+    }
+
+    @Override
+    default List&lt;T&gt; insertAll(int index, Iterable&lt;? extends T&gt; elements) {
+<span class="fc" id="L747">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc bfc" id="L748" title="All 2 branches covered.">        if (index &lt; 0) {</span>
+<span class="fc" id="L749">            throw new IndexOutOfBoundsException(&quot;insertAll(&quot; + index + &quot;, elements)&quot;);</span>
+        }
+<span class="fc" id="L751">        List&lt;T&gt; preceding = Nil.instance();</span>
+<span class="fc" id="L752">        List&lt;T&gt; tail = this;</span>
+<span class="fc bfc" id="L753" title="All 2 branches covered.">        for (int i = index; i &gt; 0; i--, tail = tail.tail()) {</span>
+<span class="fc bfc" id="L754" title="All 2 branches covered.">            if (tail.isEmpty()) {</span>
+<span class="fc" id="L755">                throw new IndexOutOfBoundsException(&quot;insertAll(&quot; + index + &quot;, elements) on List of length &quot; + length());</span>
+            }
+<span class="fc" id="L757">            preceding = preceding.prepend(tail.head());</span>
+        }
+<span class="fc" id="L759">        List&lt;T&gt; result = tail.prependAll(elements);</span>
+<span class="fc bfc" id="L760" title="All 2 branches covered.">        for (T next : preceding) {</span>
+<span class="fc" id="L761">            result = result.prepend(next);</span>
+<span class="fc" id="L762">        }</span>
+<span class="fc" id="L763">        return result;</span>
+    }
+
+    @Override
+    default List&lt;T&gt; intersperse(T element) {
+<span class="fc bfc" id="L768" title="All 2 branches covered.">        return isEmpty()</span>
+<span class="fc" id="L769">                ? Nil.instance()</span>
+<span class="fc bfc" id="L770" title="All 2 branches covered.">                : foldRight(empty(), (x, xs) -&gt; xs.isEmpty() ? xs.prepend(x) : xs.prepend(element).prepend(x));</span>
+    }
+
+    @Override
+    default boolean isTraversableAgain() {
+<span class="fc" id="L775">        return true;</span>
+    }
+
+    @Override
+    default int lastIndexOf(T element, int end) {
+<span class="fc" id="L780">        int result = -1, index = 0;</span>
+<span class="fc bfc" id="L781" title="All 4 branches covered.">        for (List&lt;T&gt; list = this; index &lt;= end &amp;&amp; !list.isEmpty(); list = list.tail(), index++) {</span>
+<span class="fc bfc" id="L782" title="All 2 branches covered.">            if (Objects.equals(list.head(), element)) {</span>
+<span class="fc" id="L783">                result = index;</span>
+            }
+        }
+<span class="fc" id="L786">        return result;</span>
+    }
+
+    @Override
+    default &lt;U&gt; List&lt;U&gt; map(Function&lt;? super T, ? extends U&gt; mapper) {
+<span class="fc" id="L791">        Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+<span class="fc" id="L792">        List&lt;U&gt; list = empty();</span>
+<span class="fc bfc" id="L793" title="All 2 branches covered.">        for (T t : this) {</span>
+<span class="fc" id="L794">            list = list.prepend(mapper.apply(t));</span>
+<span class="fc" id="L795">        }</span>
+<span class="fc" id="L796">        return list.reverse();</span>
+    }
+
+    @Override
+    default Match.MatchMonad.Of&lt;List&lt;T&gt;&gt; match() {
+<span class="fc" id="L801">        return Match.of(this);</span>
+    }
+
+    @Override
+    default List&lt;T&gt; padTo(int length, T element) {
+<span class="fc bfc" id="L806" title="All 2 branches covered.">        if (length &lt;= length()) {</span>
+<span class="fc" id="L807">            return this;</span>
+        } else {
+<span class="fc" id="L809">            return appendAll(Iterator.gen(() -&gt; element).take(length - length()));</span>
+        }
+    }
+
+    @Override
+    default List&lt;T&gt; patch(int from, Iterable&lt;? extends T&gt; that, int replaced) {
+<span class="fc bfc" id="L815" title="All 2 branches covered.">        from = from &lt; 0 ? 0 : from;</span>
+<span class="fc bfc" id="L816" title="All 2 branches covered.">        replaced = replaced &lt; 0 ? 0 : replaced;</span>
+<span class="fc" id="L817">        List&lt;T&gt; result = take(from).appendAll(that);</span>
+<span class="fc" id="L818">        from += replaced;</span>
+<span class="fc" id="L819">        result = result.appendAll(drop(from));</span>
+<span class="fc" id="L820">        return result;</span>
+    }
+
+    @Override
+    default Tuple2&lt;List&lt;T&gt;, List&lt;T&gt;&gt; partition(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L825">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L826">        final java.util.List&lt;T&gt; left = new ArrayList&lt;&gt;(), right = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L827" title="All 2 branches covered.">        for (T t : this) {</span>
+<span class="fc bfc" id="L828" title="All 2 branches covered.">            (predicate.test(t) ? left : right).add(t);</span>
+<span class="fc" id="L829">        }</span>
+<span class="fc" id="L830">        return Tuple.of(List.ofAll(left), List.ofAll(right));</span>
+    }
+
+    @Override
+    default T peek() {
+<span class="fc bfc" id="L835" title="All 2 branches covered.">        if(isEmpty()) {</span>
+<span class="fc" id="L836">            throw new NoSuchElementException(&quot;peek of empty list&quot;);</span>
+        }
+<span class="fc" id="L838">        return head();</span>
+    }
+
+    @Override
+    default Option&lt;T&gt; peekOption() {
+<span class="fc bfc" id="L843" title="All 2 branches covered.">        return isEmpty() ? Option.none() : Option.some(head());</span>
+    }
+
+    /**
+     * Performs an action on the head element of this {@code List}.
+     *
+     * @param action A {@code Consumer}
+     * @return this {@code List}
+     */
+    @Override
+    default List&lt;T&gt; peek(Consumer&lt;? super T&gt; action) {
+<span class="fc" id="L854">        Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="fc bfc" id="L855" title="All 2 branches covered.">        if (!isEmpty()) {</span>
+<span class="fc" id="L856">            action.accept(head());</span>
+        }
+<span class="fc" id="L858">        return this;</span>
+    }
+
+    @Override
+    default List&lt;List&lt;T&gt;&gt; permutations() {
+<span class="fc bfc" id="L863" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L864">            return Nil.instance();</span>
+        } else {
+<span class="fc" id="L866">            final List&lt;T&gt; tail = tail();</span>
+<span class="fc bfc" id="L867" title="All 2 branches covered.">            if (tail.isEmpty()) {</span>
+<span class="fc" id="L868">                return List.of(this);</span>
+            } else {
+<span class="fc" id="L870">                final List&lt;List&lt;T&gt;&gt; zero = Nil.instance();</span>
+<span class="fc" id="L871">                return distinct().foldLeft(zero, (xs, x) -&gt; {</span>
+<span class="fc" id="L872">                    final Function&lt;List&lt;T&gt;, List&lt;T&gt;&gt; prepend = l -&gt; l.prepend(x);</span>
+<span class="fc" id="L873">                    return xs.appendAll(remove(x).permutations().map(prepend));</span>
+                });
+            }
+        }
+    }
+
+    @Override
+    default List&lt;T&gt; pop() {
+<span class="fc bfc" id="L881" title="All 2 branches covered.">        if(isEmpty()) {</span>
+<span class="fc" id="L882">            throw new NoSuchElementException(&quot;pop of empty list&quot;);</span>
+        }
+<span class="fc" id="L884">        return tail();</span>
+    }
+
+    @Override
+    default Option&lt;List&lt;T&gt;&gt; popOption() {
+<span class="fc bfc" id="L889" title="All 2 branches covered.">        return isEmpty() ? Option.none() : Option.some(tail());</span>
+    }
+
+    @Override
+    default Tuple2&lt;T, List&lt;T&gt;&gt; pop2() {
+<span class="fc bfc" id="L894" title="All 2 branches covered.">        if(isEmpty()) {</span>
+<span class="fc" id="L895">            throw new NoSuchElementException(&quot;pop2 of empty list&quot;);</span>
+        }
+<span class="fc" id="L897">        return Tuple.of(head(), tail());</span>
+    }
+
+    @Override
+    default Option&lt;Tuple2&lt;T, List&lt;T&gt;&gt;&gt; pop2Option() {
+<span class="fc bfc" id="L902" title="All 2 branches covered.">        return isEmpty() ? Option.none() : Option.some(Tuple.of(head(), tail()));</span>
+    }
+
+    @Override
+    default List&lt;T&gt; prepend(T element) {
+<span class="fc" id="L907">        return new Cons&lt;&gt;(element, this);</span>
+    }
+
+    @Override
+    default List&lt;T&gt; prependAll(Iterable&lt;? extends T&gt; elements) {
+<span class="fc" id="L912">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc bfc" id="L913" title="All 2 branches covered.">        return isEmpty() ? List.ofAll(elements) : List.ofAll(elements).reverse().foldLeft(this, List::prepend);</span>
+    }
+
+    @Override
+    default List&lt;T&gt; push(T element) {
+<span class="fc" id="L918">        return new Cons&lt;&gt;(element, this);</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override
+    default List&lt;T&gt; push(T... elements) {
+<span class="fc" id="L924">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc" id="L925">        List&lt;T&gt; result = this;</span>
+<span class="fc bfc" id="L926" title="All 2 branches covered.">        for (T element : elements) {</span>
+<span class="fc" id="L927">            result = result.prepend(element);</span>
+        }
+<span class="fc" id="L929">        return result;</span>
+    }
+
+    @Override
+    default List&lt;T&gt; pushAll(Iterable&lt;T&gt; elements) {
+<span class="fc" id="L934">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc" id="L935">        List&lt;T&gt; result = this;</span>
+<span class="fc bfc" id="L936" title="All 2 branches covered.">        for (T element : elements) {</span>
+<span class="fc" id="L937">            result = result.prepend(element);</span>
+<span class="fc" id="L938">        }</span>
+<span class="fc" id="L939">        return result;</span>
+    }
+
+    @Override
+    default List&lt;T&gt; remove(T element) {
+<span class="fc" id="L944">        List&lt;T&gt; preceding = Nil.instance();</span>
+<span class="fc" id="L945">        List&lt;T&gt; tail = this;</span>
+<span class="fc" id="L946">        boolean found = false;</span>
+<span class="fc bfc" id="L947" title="All 4 branches covered.">        while (!found &amp;&amp; !tail.isEmpty()) {</span>
+<span class="fc" id="L948">            final T head = tail.head();</span>
+<span class="fc bfc" id="L949" title="All 2 branches covered.">            if (head.equals(element)) {</span>
+<span class="fc" id="L950">                found = true;</span>
+            } else {
+<span class="fc" id="L952">                preceding = preceding.prepend(head);</span>
+            }
+<span class="fc" id="L954">            tail = tail.tail();</span>
+<span class="fc" id="L955">        }</span>
+<span class="fc bfc" id="L956" title="All 2 branches covered.">        if (!found) {</span>
+<span class="fc" id="L957">            return this;</span>
+        }
+<span class="fc" id="L959">        List&lt;T&gt; result = tail;</span>
+<span class="fc bfc" id="L960" title="All 2 branches covered.">        for (T next : preceding) {</span>
+<span class="fc" id="L961">            result = result.prepend(next);</span>
+<span class="fc" id="L962">        }</span>
+<span class="fc" id="L963">        return result;</span>
+    }
+
+    @Override
+    default List&lt;T&gt; removeFirst(Predicate&lt;T&gt; predicate) {
+<span class="fc" id="L968">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L969">        List&lt;T&gt; init = List.empty();</span>
+<span class="fc" id="L970">        List&lt;T&gt; tail = this;</span>
+<span class="fc bfc" id="L971" title="All 4 branches covered.">        while (!tail.isEmpty() &amp;&amp; !predicate.test(tail.head())) {</span>
+<span class="fc" id="L972">            init = init.prepend(tail.head());</span>
+<span class="fc" id="L973">            tail = tail.tail();</span>
+        }
+<span class="fc bfc" id="L975" title="All 2 branches covered.">        if (tail.isEmpty()) {</span>
+<span class="fc" id="L976">            return this;</span>
+        } else {
+<span class="fc" id="L978">            return init.foldLeft(tail.tail(), List::prepend);</span>
+        }
+    }
+
+    @Override
+    default List&lt;T&gt; removeLast(Predicate&lt;T&gt; predicate) {
+<span class="fc" id="L984">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L985">        final List&lt;T&gt; removedAndReversed = reverse().removeFirst(predicate);</span>
+<span class="fc bfc" id="L986" title="All 2 branches covered.">        return removedAndReversed.length() == length() ? this : removedAndReversed.reverse();</span>
+    }
+
+    @Override
+    default List&lt;T&gt; removeAt(int index) {
+<span class="fc bfc" id="L991" title="All 2 branches covered.">        if (index &lt; 0) {</span>
+<span class="fc" id="L992">            throw new IndexOutOfBoundsException(&quot;removeAt(&quot; + index + &quot;)&quot;);</span>
+        }
+<span class="fc bfc" id="L994" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L995">            throw new IndexOutOfBoundsException(&quot;removeAt(&quot; + index + &quot;) on Nil&quot;);</span>
+        }
+<span class="fc" id="L997">        List&lt;T&gt; init = Nil.instance();</span>
+<span class="fc" id="L998">        List&lt;T&gt; tail = this;</span>
+<span class="fc bfc" id="L999" title="All 4 branches covered.">        while (index &gt; 0 &amp;&amp; !tail.isEmpty()) {</span>
+<span class="fc" id="L1000">            init = init.prepend(tail.head());</span>
+<span class="fc" id="L1001">            tail = tail.tail();</span>
+<span class="fc" id="L1002">            index--;</span>
+        }
+<span class="fc bfc" id="L1004" title="All 2 branches covered.">        if (index &gt; 0) {</span>
+<span class="fc" id="L1005">            throw new IndexOutOfBoundsException(&quot;removeAt() on Nil&quot;);</span>
+        }
+<span class="fc" id="L1007">        return init.reverse().appendAll(tail.tail());</span>
+    }
+
+    @Override
+    default List&lt;T&gt; removeAll(T removed) {
+<span class="fc" id="L1012">        List&lt;T&gt; result = Nil.instance();</span>
+<span class="fc" id="L1013">        boolean found = false;</span>
+<span class="fc bfc" id="L1014" title="All 2 branches covered.">        for (T element : this) {</span>
+<span class="fc bfc" id="L1015" title="All 2 branches covered.">            if (element.equals(removed)) {</span>
+<span class="fc" id="L1016">                found = true;</span>
+            } else {
+<span class="fc" id="L1018">                result = result.prepend(element);</span>
+            }
+<span class="fc" id="L1020">        }</span>
+<span class="fc bfc" id="L1021" title="All 2 branches covered.">        return found ? result.reverse() : this;</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override
+    default List&lt;T&gt; removeAll(Iterable&lt;? extends T&gt; elements) {
+<span class="fc" id="L1027">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc" id="L1028">        final List&lt;T&gt; removed = List.ofAll(elements).distinct();</span>
+<span class="fc" id="L1029">        List&lt;T&gt; result = Nil.instance();</span>
+<span class="fc" id="L1030">        boolean found = false;</span>
+<span class="fc bfc" id="L1031" title="All 2 branches covered.">        for (T element : this) {</span>
+<span class="fc bfc" id="L1032" title="All 2 branches covered.">            if (removed.contains(element)) {</span>
+<span class="fc" id="L1033">                found = true;</span>
+            } else {
+<span class="fc" id="L1035">                result = result.prepend(element);</span>
+            }
+<span class="fc" id="L1037">        }</span>
+<span class="fc bfc" id="L1038" title="All 2 branches covered.">        return found ? result.reverse() : this;</span>
+    }
+
+    @Override
+    default List&lt;T&gt; replace(T currentElement, T newElement) {
+<span class="fc" id="L1043">        List&lt;T&gt; preceding = Nil.instance();</span>
+<span class="fc" id="L1044">        List&lt;T&gt; tail = this;</span>
+<span class="fc bfc" id="L1045" title="All 4 branches covered.">        while (!tail.isEmpty() &amp;&amp; !Objects.equals(tail.head(), currentElement)) {</span>
+<span class="fc" id="L1046">            preceding = preceding.prepend(tail.head());</span>
+<span class="fc" id="L1047">            tail = tail.tail();</span>
+        }
+<span class="fc bfc" id="L1049" title="All 2 branches covered.">        if (tail.isEmpty()) {</span>
+<span class="fc" id="L1050">            return this;</span>
+        }
+        // skip the current head element because it is replaced
+<span class="fc" id="L1053">        List&lt;T&gt; result = tail.tail().prepend(newElement);</span>
+<span class="fc bfc" id="L1054" title="All 2 branches covered.">        for (T next : preceding) {</span>
+<span class="fc" id="L1055">            result = result.prepend(next);</span>
+<span class="fc" id="L1056">        }</span>
+<span class="fc" id="L1057">        return result;</span>
+    }
+
+    @Override
+    default List&lt;T&gt; replaceAll(T currentElement, T newElement) {
+<span class="fc" id="L1062">        List&lt;T&gt; result = Nil.instance();</span>
+<span class="fc" id="L1063">        boolean changed = false;</span>
+<span class="fc bfc" id="L1064" title="All 2 branches covered.">        for (List&lt;T&gt; list = this; !list.isEmpty(); list = list.tail()) {</span>
+<span class="fc" id="L1065">            final T head = list.head();</span>
+<span class="fc bfc" id="L1066" title="All 2 branches covered.">            if(Objects.equals(head, currentElement)) {</span>
+<span class="fc" id="L1067">                result = result.prepend(newElement);</span>
+<span class="fc" id="L1068">                changed = true;</span>
+            } else {
+<span class="fc" id="L1070">                result = result.prepend(head);</span>
+            }
+        }
+<span class="fc bfc" id="L1073" title="All 2 branches covered.">        return changed ? result.reverse() : this;</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override
+    default List&lt;T&gt; retainAll(Iterable&lt;? extends T&gt; elements) {
+<span class="fc" id="L1079">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc" id="L1080">        final List&lt;T&gt; kept = List.ofAll(elements).distinct();</span>
+<span class="fc" id="L1081">        List&lt;T&gt; result = Nil.instance();</span>
+<span class="fc bfc" id="L1082" title="All 2 branches covered.">        for (T element : this) {</span>
+<span class="fc bfc" id="L1083" title="All 2 branches covered.">            if (kept.contains(element)) {</span>
+<span class="fc" id="L1084">                result = result.prepend(element);</span>
+            }
+<span class="fc" id="L1086">        }</span>
+<span class="fc bfc" id="L1087" title="All 2 branches covered.">        return result.size() == size() ? this : result.reverse();</span>
+    }
+
+    @Override
+    default List&lt;T&gt; reverse() {
+<span class="fc bfc" id="L1092" title="All 2 branches covered.">        return isEmpty() ? this : foldLeft(empty(), List::prepend);</span>
+    }
+
+    @Override
+    default List&lt;T&gt; scan(T zero, BiFunction&lt;? super T, ? super T, ? extends T&gt; operation) {
+<span class="fc" id="L1097">        return scanLeft(zero, operation);</span>
+    }
+
+    @Override
+    default &lt;U&gt; List&lt;U&gt; scanLeft(U zero, BiFunction&lt;? super U, ? super T, ? extends U&gt; operation) {
+<span class="fc" id="L1102">        Objects.requireNonNull(operation, &quot;operation is null&quot;);</span>
+<span class="fc" id="L1103">        return Collections.scanLeft(this, zero, operation, List.empty(), List::prepend, List::reverse);</span>
+    }
+
+    @Override
+    default &lt;U&gt; List&lt;U&gt; scanRight(U zero, BiFunction&lt;? super T, ? super U, ? extends U&gt; operation) {
+<span class="fc" id="L1108">        Objects.requireNonNull(operation, &quot;operation is null&quot;);</span>
+<span class="fc" id="L1109">        return Collections.scanRight(this, zero, operation, List.empty(), List::prepend, Function.identity());</span>
+    }
+
+    @Override
+    default List&lt;T&gt; slice(int beginIndex, int endIndex) {
+<span class="fc bfc" id="L1114" title="All 6 branches covered.">        if (beginIndex &gt;= endIndex || beginIndex &gt;= length() || isEmpty()) {</span>
+<span class="fc" id="L1115">            return empty();</span>
+        } else {
+<span class="fc" id="L1117">            List&lt;T&gt; result = Nil.instance();</span>
+<span class="fc" id="L1118">            List&lt;T&gt; list = this;</span>
+<span class="fc" id="L1119">            final int lowerBound = Math.max(beginIndex, 0);</span>
+<span class="fc" id="L1120">            final int upperBound = Math.min(endIndex, length());</span>
+<span class="fc bfc" id="L1121" title="All 2 branches covered.">            for (int i = 0; i &lt; upperBound; i++) {</span>
+<span class="fc bfc" id="L1122" title="All 2 branches covered.">                if (i &gt;= lowerBound) {</span>
+<span class="fc" id="L1123">                    result = result.prepend(list.head());</span>
+                }
+<span class="fc" id="L1125">                list = list.tail();</span>
+            }
+<span class="fc" id="L1127">            return result.reverse();</span>
+        }
+    }
+
+    @Override
+    default Iterator&lt;List&lt;T&gt;&gt; sliding(int size) {
+<span class="fc" id="L1133">        return sliding(size, 1);</span>
+    }
+
+    @Override
+    default Iterator&lt;List&lt;T&gt;&gt; sliding(int size, int step) {
+<span class="fc" id="L1138">        return iterator().sliding(size, step).map(List::ofAll);</span>
+    }
+
+    @Override
+    default List&lt;T&gt; sort() {
+<span class="fc bfc" id="L1143" title="All 2 branches covered.">        return isEmpty() ? this : toJavaStream().sorted().collect(List.collector());</span>
+    }
+
+    @Override
+    default List&lt;T&gt; sort(Comparator&lt;? super T&gt; comparator) {
+<span class="fc" id="L1148">        Objects.requireNonNull(comparator, &quot;comparator is null&quot;);</span>
+<span class="fc bfc" id="L1149" title="All 2 branches covered.">        return isEmpty() ? this : toJavaStream().sorted(comparator).collect(List.collector());</span>
+    }
+
+    @Override
+    default &lt;U extends Comparable&lt;? super U&gt;&gt; List&lt;T&gt; sortBy(Function&lt;? super T, ? extends U&gt; mapper) {
+<span class="fc" id="L1154">        return sortBy(U::compareTo, mapper);</span>
+    }
+
+    @Override
+    default &lt;U&gt; List&lt;T&gt; sortBy(Comparator&lt;? super U&gt; comparator, Function&lt;? super T, ? extends U&gt; mapper) {
+<span class="fc" id="L1159">        final Function&lt;? super T, ? extends U&gt; domain = Function1.of(mapper::apply).memoized();</span>
+<span class="fc" id="L1160">        return toJavaStream()</span>
+<span class="fc" id="L1161">                .sorted((e1, e2) -&gt; comparator.compare(domain.apply(e1), domain.apply(e2)))</span>
+<span class="fc" id="L1162">                .collect(collector());</span>
+    }
+
+    @Override
+    default Tuple2&lt;List&lt;T&gt;, List&lt;T&gt;&gt; span(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L1167">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L1168">        final Tuple2&lt;Iterator&lt;T&gt;, Iterator&lt;T&gt;&gt; itt = iterator().span(predicate);</span>
+<span class="fc" id="L1169">        return Tuple.of(List.ofAll(itt._1), List.ofAll(itt._2));</span>
+    }
+
+    @Override
+    default Tuple2&lt;List&lt;T&gt;, List&lt;T&gt;&gt; splitAt(int n) {
+<span class="fc bfc" id="L1174" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L1175">            return Tuple.of(empty(), empty());</span>
+        } else {
+<span class="fc" id="L1177">            List&lt;T&gt; init = Nil.instance();</span>
+<span class="fc" id="L1178">            List&lt;T&gt; tail = this;</span>
+<span class="fc bfc" id="L1179" title="All 4 branches covered.">            while (n &gt; 0 &amp;&amp; !tail.isEmpty()) {</span>
+<span class="fc" id="L1180">                init = init.prepend(tail.head());</span>
+<span class="fc" id="L1181">                tail = tail.tail();</span>
+<span class="fc" id="L1182">                n--;</span>
+            }
+<span class="fc" id="L1184">            return Tuple.of(init.reverse(), tail);</span>
+        }
+    }
+
+    @Override
+    default Tuple2&lt;List&lt;T&gt;, List&lt;T&gt;&gt; splitAt(Predicate&lt;? super T&gt; predicate) {
+<span class="fc bfc" id="L1190" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L1191">            return Tuple.of(empty(), empty());</span>
+        } else {
+<span class="fc" id="L1193">            final Tuple2&lt;List&lt;T&gt;, List&lt;T&gt;&gt; t = SplitAt.splitByPredicateReversed(this, predicate);</span>
+<span class="fc bfc" id="L1194" title="All 2 branches covered.">            if (t._2.isEmpty()) {</span>
+<span class="fc" id="L1195">                return Tuple.of(this, empty());</span>
+            } else {
+<span class="fc" id="L1197">                return Tuple.of(t._1.reverse(), t._2);</span>
+            }
+        }
+    }
+
+    @Override
+    default Tuple2&lt;List&lt;T&gt;, List&lt;T&gt;&gt; splitAtInclusive(Predicate&lt;? super T&gt; predicate) {
+<span class="fc bfc" id="L1204" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L1205">            return Tuple.of(empty(), empty());</span>
+        } else {
+<span class="fc" id="L1207">            final Tuple2&lt;List&lt;T&gt;, List&lt;T&gt;&gt; t = SplitAt.splitByPredicateReversed(this, predicate);</span>
+<span class="fc bfc" id="L1208" title="All 4 branches covered.">            if (t._2.isEmpty() || t._2.tail().isEmpty()) {</span>
+<span class="fc" id="L1209">                return Tuple.of(this, empty());</span>
+            } else {
+<span class="fc" id="L1211">                return Tuple.of(t._1.prepend(t._2.head()).reverse(), t._2.tail());</span>
+            }
+        }
+    }
+
+    @Override
+    default Spliterator&lt;T&gt; spliterator() {
+<span class="fc" id="L1218">        return Spliterators.spliterator(iterator(), length(), Spliterator.ORDERED | Spliterator.IMMUTABLE);</span>
+    }
+
+    @Override
+    default String stringPrefix() {
+<span class="fc" id="L1223">        return &quot;List&quot;;</span>
+    }
+
+    @Override
+    default List&lt;T&gt; subSequence(int beginIndex) {
+<span class="fc bfc" id="L1228" title="All 2 branches covered.">        if (beginIndex &lt; 0) {</span>
+<span class="fc" id="L1229">            throw new IndexOutOfBoundsException(&quot;subSequence(&quot; + beginIndex + &quot;)&quot;);</span>
+        }
+<span class="fc" id="L1231">        List&lt;T&gt; result = this;</span>
+<span class="fc bfc" id="L1232" title="All 2 branches covered.">        for (int i = 0; i &lt; beginIndex; i++, result = result.tail()) {</span>
+<span class="fc bfc" id="L1233" title="All 2 branches covered.">            if (result.isEmpty()) {</span>
+<span class="fc" id="L1234">                throw new IndexOutOfBoundsException(</span>
+<span class="fc" id="L1235">                        String.format(&quot;subSequence(%s) on List of length %s&quot;, beginIndex, i));</span>
+            }
+        }
+<span class="fc" id="L1238">        return result;</span>
+    }
+
+    @Override
+    default List&lt;T&gt; subSequence(int beginIndex, int endIndex) {
+<span class="fc bfc" id="L1243" title="All 4 branches covered.">        if (beginIndex &lt; 0 || beginIndex &gt; endIndex) {</span>
+<span class="fc" id="L1244">            throw new IndexOutOfBoundsException(</span>
+<span class="fc" id="L1245">                    String.format(&quot;subSequence(%s, %s) on List of length %s&quot;, beginIndex, endIndex, length()));</span>
+        }
+<span class="fc" id="L1247">        List&lt;T&gt; result = Nil.instance();</span>
+<span class="fc" id="L1248">        List&lt;T&gt; list = this;</span>
+<span class="fc bfc" id="L1249" title="All 2 branches covered.">        for (int i = 0; i &lt; endIndex; i++, list = list.tail()) {</span>
+<span class="fc bfc" id="L1250" title="All 2 branches covered.">            if (list.isEmpty()) {</span>
+<span class="fc" id="L1251">                throw new IndexOutOfBoundsException(</span>
+<span class="fc" id="L1252">                        String.format(&quot;subSequence(%s, %s) on List of length %s&quot;, beginIndex, endIndex, i));</span>
+            }
+<span class="fc bfc" id="L1254" title="All 2 branches covered.">            if (i &gt;= beginIndex) {</span>
+<span class="fc" id="L1255">                result = result.prepend(list.head());</span>
+            }
+        }
+<span class="fc" id="L1258">        return result.reverse();</span>
+    }
+
+    @Override
+    List&lt;T&gt; tail();
+
+    @Override
+    default Option&lt;List&lt;T&gt;&gt; tailOption() {
+<span class="fc bfc" id="L1266" title="All 2 branches covered.">        return isEmpty() ? Option.none() : Option.some(tail());</span>
+    }
+
+    @Override
+    default List&lt;T&gt; take(int n) {
+<span class="fc bfc" id="L1271" title="All 2 branches covered.">        if (n &gt;= length()) {</span>
+<span class="fc" id="L1272">            return this;</span>
+        }
+<span class="fc bfc" id="L1274" title="All 2 branches covered.">        if (n &lt;= 0) {</span>
+<span class="fc" id="L1275">            return empty();</span>
+        }
+<span class="fc" id="L1277">        List&lt;T&gt; result = Nil.instance();</span>
+<span class="fc" id="L1278">        List&lt;T&gt; list = this;</span>
+<span class="fc bfc" id="L1279" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++, list = list.tail()) {</span>
+<span class="fc" id="L1280">            result = result.prepend(list.head());</span>
+        }
+<span class="fc" id="L1282">        return result.reverse();</span>
+    }
+
+    @Override
+    default List&lt;T&gt; takeRight(int n) {
+<span class="fc bfc" id="L1287" title="All 2 branches covered.">        if (n &gt;= length()) {</span>
+<span class="fc" id="L1288">            return this;</span>
+        }
+<span class="fc bfc" id="L1290" title="All 2 branches covered.">        if (n &lt;= 0) {</span>
+<span class="fc" id="L1291">            return empty();</span>
+        }
+<span class="fc" id="L1293">        return reverse().take(n).reverse();</span>
+    }
+
+    @Override
+    default List&lt;T&gt; takeUntil(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L1298">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L1299">        return takeWhile(predicate.negate());</span>
+    }
+
+    @Override
+    default List&lt;T&gt; takeWhile(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L1304">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L1305">        List&lt;T&gt; result = Nil.instance();</span>
+<span class="fc bfc" id="L1306" title="All 4 branches covered.">        for (List&lt;T&gt; list = this; !list.isEmpty() &amp;&amp; predicate.test(list.head()); list = list.tail()) {</span>
+<span class="fc" id="L1307">            result = result.prepend(list.head());</span>
+        }
+<span class="fc bfc" id="L1309" title="All 2 branches covered.">        return result.length() == length() ? this : result.reverse();</span>
+    }
+
+    @Override
+    default &lt;U&gt; List&lt;U&gt; unit(Iterable&lt;? extends U&gt; iterable) {
+<span class="fc" id="L1314">        return List.ofAll(iterable);</span>
+    }
+
+    @Override
+    default &lt;T1, T2&gt; Tuple2&lt;List&lt;T1&gt;, List&lt;T2&gt;&gt; unzip(
+            Function&lt;? super T, Tuple2&lt;? extends T1, ? extends T2&gt;&gt; unzipper) {
+<span class="fc" id="L1320">        Objects.requireNonNull(unzipper, &quot;unzipper is null&quot;);</span>
+<span class="fc" id="L1321">        List&lt;T1&gt; xs = Nil.instance();</span>
+<span class="fc" id="L1322">        List&lt;T2&gt; ys = Nil.instance();</span>
+<span class="fc bfc" id="L1323" title="All 2 branches covered.">        for (T element : this) {</span>
+<span class="fc" id="L1324">            final Tuple2&lt;? extends T1, ? extends T2&gt; t = unzipper.apply(element);</span>
+<span class="fc" id="L1325">            xs = xs.prepend(t._1);</span>
+<span class="fc" id="L1326">            ys = ys.prepend(t._2);</span>
+<span class="fc" id="L1327">        }</span>
+<span class="fc" id="L1328">        return Tuple.of(xs.reverse(), ys.reverse());</span>
+    }
+
+    @Override
+    default &lt;T1, T2, T3&gt; Tuple3&lt;List&lt;T1&gt;, List&lt;T2&gt;, List&lt;T3&gt;&gt; unzip3(
+            Function&lt;? super T, Tuple3&lt;? extends T1, ? extends T2, ? extends T3&gt;&gt; unzipper) {
+<span class="fc" id="L1334">        Objects.requireNonNull(unzipper, &quot;unzipper is null&quot;);</span>
+<span class="fc" id="L1335">        List&lt;T1&gt; xs = Nil.instance();</span>
+<span class="fc" id="L1336">        List&lt;T2&gt; ys = Nil.instance();</span>
+<span class="fc" id="L1337">        List&lt;T3&gt; zs = Nil.instance();</span>
+<span class="fc bfc" id="L1338" title="All 2 branches covered.">        for (T element : this) {</span>
+<span class="fc" id="L1339">            final Tuple3&lt;? extends T1, ? extends T2, ? extends T3&gt; t = unzipper.apply(element);</span>
+<span class="fc" id="L1340">            xs = xs.prepend(t._1);</span>
+<span class="fc" id="L1341">            ys = ys.prepend(t._2);</span>
+<span class="fc" id="L1342">            zs = zs.prepend(t._3);</span>
+<span class="fc" id="L1343">        }</span>
+<span class="fc" id="L1344">        return Tuple.of(xs.reverse(), ys.reverse(), zs.reverse());</span>
+    }
+
+    @Override
+    default List&lt;T&gt; update(int index, T element) {
+<span class="fc bfc" id="L1349" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L1350">            throw new IndexOutOfBoundsException(&quot;update(&quot; + index + &quot;, e) on Nil&quot;);</span>
+        }
+<span class="fc bfc" id="L1352" title="All 2 branches covered.">        if (index &lt; 0) {</span>
+<span class="fc" id="L1353">            throw new IndexOutOfBoundsException(&quot;update(&quot; + index + &quot;, e)&quot;);</span>
+        }
+<span class="fc" id="L1355">        List&lt;T&gt; preceding = Nil.instance();</span>
+<span class="fc" id="L1356">        List&lt;T&gt; tail = this;</span>
+<span class="fc bfc" id="L1357" title="All 2 branches covered.">        for (int i = index; i &gt; 0; i--, tail = tail.tail()) {</span>
+<span class="fc bfc" id="L1358" title="All 2 branches covered.">            if (tail.isEmpty()) {</span>
+<span class="fc" id="L1359">                throw new IndexOutOfBoundsException(&quot;update(&quot; + index + &quot;, e) on List of length &quot; + length());</span>
+            }
+<span class="fc" id="L1361">            preceding = preceding.prepend(tail.head());</span>
+        }
+<span class="fc bfc" id="L1363" title="All 2 branches covered.">        if (tail.isEmpty()) {</span>
+<span class="fc" id="L1364">            throw new IndexOutOfBoundsException(&quot;update(&quot; + index + &quot;, e) on List of length &quot; + length());</span>
+        }
+        // skip the current head element because it is replaced
+<span class="fc" id="L1367">        List&lt;T&gt; result = tail.tail().prepend(element);</span>
+<span class="fc bfc" id="L1368" title="All 2 branches covered.">        for (T next : preceding) {</span>
+<span class="fc" id="L1369">            result = result.prepend(next);</span>
+<span class="fc" id="L1370">        }</span>
+<span class="fc" id="L1371">        return result;</span>
+    }
+
+    @Override
+    default &lt;U&gt; List&lt;Tuple2&lt;T, U&gt;&gt; zip(Iterable&lt;U&gt; that) {
+<span class="fc" id="L1376">        Objects.requireNonNull(that, &quot;that is null&quot;);</span>
+<span class="fc" id="L1377">        return List.ofAll(iterator().zip(that));</span>
+    }
+
+    @Override
+    default &lt;U&gt; List&lt;Tuple2&lt;T, U&gt;&gt; zipAll(Iterable&lt;U&gt; that, T thisElem, U thatElem) {
+<span class="fc" id="L1382">        Objects.requireNonNull(that, &quot;that is null&quot;);</span>
+<span class="fc" id="L1383">        return List.ofAll(iterator().zipAll(that, thisElem, thatElem));</span>
+    }
+
+    @Override
+    default List&lt;Tuple2&lt;T, Integer&gt;&gt; zipWithIndex() {
+<span class="fc" id="L1388">        return List.ofAll(iterator().zipWithIndex());</span>
+    }
+
+    /**
+     * Representation of the singleton empty {@code List}.
+     *
+     * @param &lt;T&gt; Component type of the List.
+     * @since 1.1.0
+     */
+    final class Nil&lt;T&gt; implements List&lt;T&gt;, Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+<span class="fc" id="L1401">        private static final Nil&lt;?&gt; INSTANCE = new Nil&lt;&gt;();</span>
+
+        // hidden
+<span class="fc" id="L1404">        private Nil() {</span>
+<span class="fc" id="L1405">        }</span>
+
+        /**
+         * Returns the singleton instance of the liked list.
+         *
+         * @param &lt;T&gt; Component type of the List
+         * @return the singleton instance of the linked list.
+         */
+        @SuppressWarnings(&quot;unchecked&quot;)
+        public static &lt;T&gt; Nil&lt;T&gt; instance() {
+<span class="fc" id="L1415">            return (Nil&lt;T&gt;) INSTANCE;</span>
+        }
+
+        @Override
+        public T head() {
+<span class="fc" id="L1420">            throw new NoSuchElementException(&quot;head of empty list&quot;);</span>
+        }
+
+        @Override
+        public int length() {
+<span class="fc" id="L1425">            return 0;</span>
+        }
+
+        @Override
+        public List&lt;T&gt; tail() {
+<span class="fc" id="L1430">            throw new UnsupportedOperationException(&quot;tail of empty list&quot;);</span>
+        }
+
+        @Override
+        public boolean isEmpty() {
+<span class="fc" id="L1435">            return true;</span>
+        }
+
+        @Override
+        public boolean equals(Object o) {
+<span class="fc bfc" id="L1440" title="All 2 branches covered.">            return o == this;</span>
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L1445">            return 1;</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="fc" id="L1450">            return stringPrefix() + &quot;()&quot;;</span>
+        }
+
+        /**
+         * Instance control for object serialization.
+         *
+         * @return The singleton instance of Nil.
+         * @see java.io.Serializable
+         */
+        private Object readResolve() {
+<span class="fc" id="L1460">            return INSTANCE;</span>
+        }
+    }
+
+    /**
+     * Non-empty {@code List}, consisting of a {@code head} and a {@code tail}.
+     *
+     * @param &lt;T&gt; Component type of the List.
+     * @since 1.1.0
+     */
+    // DEV NOTE: class declared final because of serialization proxy pattern (see Effective Java, 2nd ed., p. 315)
+    final class Cons&lt;T&gt; implements List&lt;T&gt;, Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        private final T head;
+        private final List&lt;T&gt; tail;
+        private final int length;
+        private final int hashCode;
+
+        /**
+         * Creates a List consisting of a head value and a trailing List.
+         *
+         * @param head The head
+         * @param tail The tail
+         */
+<span class="fc" id="L1486">        private Cons(T head, List&lt;T&gt; tail) {</span>
+<span class="fc" id="L1487">            this.head = head;</span>
+<span class="fc" id="L1488">            this.tail = tail;</span>
+<span class="fc" id="L1489">            this.length = 1 + tail.length();</span>
+<span class="fc" id="L1490">            this.hashCode = 31 * Objects.hashCode(head) + Objects.hashCode(tail);</span>
+<span class="fc" id="L1491">        }</span>
+
+        @Override
+        public T head() {
+<span class="fc" id="L1495">            return head;</span>
+        }
+
+        @Override
+        public int length() {
+<span class="fc" id="L1500">            return length;</span>
+        }
+
+        @Override
+        public List&lt;T&gt; tail() {
+<span class="fc" id="L1505">            return tail;</span>
+        }
+
+        @Override
+        public boolean isEmpty() {
+<span class="fc" id="L1510">            return false;</span>
+        }
+
+        @Override
+        public boolean equals(Object o) {
+<span class="fc bfc" id="L1515" title="All 2 branches covered.">            if (o == this) {</span>
+<span class="fc" id="L1516">                return true;</span>
+<span class="fc bfc" id="L1517" title="All 2 branches covered.">            } else if (o instanceof List) {</span>
+<span class="fc" id="L1518">                List&lt;?&gt; list1 = this;</span>
+<span class="fc" id="L1519">                List&lt;?&gt; list2 = (List&lt;?&gt;) o;</span>
+<span class="fc bfc" id="L1520" title="All 4 branches covered.">                while (!list1.isEmpty() &amp;&amp; !list2.isEmpty()) {</span>
+<span class="fc" id="L1521">                    final boolean isEqual = Objects.equals(list1.head(), list2.head());</span>
+<span class="fc bfc" id="L1522" title="All 2 branches covered.">                    if (!isEqual) {</span>
+<span class="fc" id="L1523">                        return false;</span>
+                    }
+<span class="fc" id="L1525">                    list1 = list1.tail();</span>
+<span class="fc" id="L1526">                    list2 = list2.tail();</span>
+<span class="fc" id="L1527">                }</span>
+<span class="fc bfc" id="L1528" title="All 4 branches covered.">                return list1.isEmpty() &amp;&amp; list2.isEmpty();</span>
+            } else {
+<span class="fc" id="L1530">                return false;</span>
+            }
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L1536">            return hashCode;</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="fc" id="L1541">            return mkString(stringPrefix() + &quot;(&quot;, &quot;, &quot;, &quot;)&quot;);</span>
+        }
+
+        /**
+         * {@code writeReplace} method for the serialization proxy pattern.
+         * &lt;p&gt;
+         * The presence of this method causes the serialization system to emit a SerializationProxy instance instead of
+         * an instance of the enclosing class.
+         *
+         * @return A SerialiationProxy for this enclosing class.
+         */
+        private Object writeReplace() {
+<span class="fc" id="L1553">            return new SerializationProxy&lt;&gt;(this);</span>
+        }
+
+        /**
+         * {@code readObject} method for the serialization proxy pattern.
+         * &lt;p&gt;
+         * Guarantees that the serialization system will never generate a serialized instance of the enclosing class.
+         *
+         * @param stream An object serialization stream.
+         * @throws java.io.InvalidObjectException This method will throw with the message &quot;Proxy required&quot;.
+         */
+        private void readObject(ObjectInputStream stream) throws InvalidObjectException {
+<span class="fc" id="L1565">            throw new InvalidObjectException(&quot;Proxy required&quot;);</span>
+        }
+
+        /**
+         * A serialization proxy which, in this context, is used to deserialize immutable, linked Lists with final
+         * instance fields.
+         *
+         * @param &lt;T&gt; The component type of the underlying list.
+         */
+        // DEV NOTE: The serialization proxy pattern is not compatible with non-final, i.e. extendable,
+        // classes. Also, it may not be compatible with circular object graphs.
+        private static final class SerializationProxy&lt;T&gt; implements Serializable {
+
+            private static final long serialVersionUID = 1L;
+
+            // the instance to be serialized/deserialized
+            private transient Cons&lt;T&gt; list;
+
+            /**
+             * Constructor for the case of serialization, called by {@link Cons#writeReplace()}.
+             * &lt;p/&gt;
+             * The constructor of a SerializationProxy takes an argument that concisely represents the logical state of
+             * an instance of the enclosing class.
+             *
+             * @param list a Cons
+             */
+<span class="fc" id="L1591">            SerializationProxy(Cons&lt;T&gt; list) {</span>
+<span class="fc" id="L1592">                this.list = list;</span>
+<span class="fc" id="L1593">            }</span>
+
+            /**
+             * Write an object to a serialization stream.
+             *
+             * @param s An object serialization stream.
+             * @throws java.io.IOException If an error occurs writing to the stream.
+             */
+            private void writeObject(ObjectOutputStream s) throws IOException {
+<span class="fc" id="L1602">                s.defaultWriteObject();</span>
+<span class="fc" id="L1603">                s.writeInt(list.length());</span>
+<span class="fc bfc" id="L1604" title="All 2 branches covered.">                for (List&lt;T&gt; l = list; !l.isEmpty(); l = l.tail()) {</span>
+<span class="fc" id="L1605">                    s.writeObject(l.head());</span>
+                }
+<span class="fc" id="L1607">            }</span>
+
+            /**
+             * Read an object from a deserialization stream.
+             *
+             * @param s An object deserialization stream.
+             * @throws ClassNotFoundException If the object's class read from the stream cannot be found.
+             * @throws InvalidObjectException If the stream contains no list elements.
+             * @throws IOException            If an error occurs reading from the stream.
+             */
+            private void readObject(ObjectInputStream s) throws ClassNotFoundException, IOException {
+<span class="fc" id="L1618">                s.defaultReadObject();</span>
+<span class="fc" id="L1619">                final int size = s.readInt();</span>
+<span class="fc bfc" id="L1620" title="All 2 branches covered.">                if (size &lt;= 0) {</span>
+<span class="fc" id="L1621">                    throw new InvalidObjectException(&quot;No elements&quot;);</span>
+                }
+<span class="fc" id="L1623">                List&lt;T&gt; temp = Nil.instance();</span>
+<span class="fc bfc" id="L1624" title="All 2 branches covered.">                for (int i = 0; i &lt; size; i++) {</span>
+                    @SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L1626">                    final T element = (T) s.readObject();</span>
+<span class="fc" id="L1627">                    temp = temp.prepend(element);</span>
+                }
+<span class="fc" id="L1629">                list = (Cons&lt;T&gt;) temp.reverse();</span>
+<span class="fc" id="L1630">            }</span>
+
+            /**
+             * {@code readResolve} method for the serialization proxy pattern.
+             * &lt;p&gt;
+             * Returns a logically equivalent instance of the enclosing class. The presence of this method causes the
+             * serialization system to translate the serialization proxy back into an instance of the enclosing class
+             * upon deserialization.
+             *
+             * @return A deserialized instance of the enclosing class.
+             */
+            private Object readResolve() {
+<span class="fc" id="L1642">                return list;</span>
+            }
+        }
+    }
+}
+
+interface ListModule {
+
+    interface Combinations {
+
+        static &lt;T&gt; List&lt;List&lt;T&gt;&gt; apply(List&lt;T&gt; elements, int k) {
+<span class="fc bfc" id="L1653" title="All 2 branches covered.">            if (k == 0) {</span>
+<span class="fc" id="L1654">                return List.of(List.empty());</span>
+            } else {
+<span class="fc" id="L1656">                return elements.zipWithIndex().flatMap(</span>
+<span class="fc" id="L1657">                        t -&gt; apply(elements.drop(t._2 + 1), (k - 1)).map(c -&gt; c.prepend(t._1))</span>
+                );
+            }
+        }
+    }
+
+    interface SplitAt {
+
+        static &lt;T&gt; Tuple2&lt;List&lt;T&gt;, List&lt;T&gt;&gt; splitByPredicateReversed(List&lt;T&gt; source, Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L1666">            Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L1667">            List&lt;T&gt; init = Nil.instance();</span>
+<span class="fc" id="L1668">            List&lt;T&gt; tail = source;</span>
+<span class="fc bfc" id="L1669" title="All 4 branches covered.">            while (!tail.isEmpty() &amp;&amp; !predicate.test(tail.head())) {</span>
+<span class="fc" id="L1670">                init = init.prepend(tail.head());</span>
+<span class="fc" id="L1671">                tail = tail.tail();</span>
+            }
+<span class="fc" id="L1673">            return Tuple.of(init, tail);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

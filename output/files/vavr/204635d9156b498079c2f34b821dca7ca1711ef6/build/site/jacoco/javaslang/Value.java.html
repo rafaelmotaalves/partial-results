@@ -1,0 +1,1013 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Value.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang</a> &gt; <span class="el_source">Value.java</span></div><h1>Value.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang;
+
+import javaslang.algebra.Foldable;
+import javaslang.algebra.Functor;
+import javaslang.algebra.Monoid;
+import javaslang.collection.*;
+import javaslang.control.Either;
+import javaslang.control.Match;
+import javaslang.control.Option;
+import javaslang.control.Try;
+
+import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.*;
+import java.util.stream.StreamSupport;
+
+/**
+ * Functional programming is all about values and transformation of values using functions. The {@code Value}
+ * type reflects the values in a functional setting. It can be seen as the result of a partial function application.
+ * Hence the result may be undefined. If a value is undefined, we say it is empty.
+ * &lt;p&gt;
+ * How the empty state is interpreted depends on the context, i.e. it may be &lt;em&gt;undefined&lt;/em&gt;, &lt;em&gt;failed&lt;/em&gt;,
+ * &lt;em&gt;no elements&lt;/em&gt;, etc.
+ * &lt;p&gt;
+ *
+ * Basic operations:
+ *
+ * &lt;ul&gt;
+ * &lt;li&gt;{@link #get()}&lt;/li&gt;
+ * &lt;li&gt;{@link #getOption()}&lt;/li&gt;
+ * &lt;li&gt;{@link #ifDefined(Supplier, Supplier)}&lt;/li&gt;
+ * &lt;li&gt;{@link #ifDefined(Object, Object)}&lt;/li&gt;
+ * &lt;li&gt;{@link #ifEmpty(Supplier, Supplier)}&lt;/li&gt;
+ * &lt;li&gt;{@link #ifEmpty(Object, Object)}&lt;/li&gt;
+ * &lt;li&gt;{@link #orElse(Object)}&lt;/li&gt;
+ * &lt;li&gt;{@link #orElseGet(Supplier)}&lt;/li&gt;
+ * &lt;li&gt;{@link #orElseThrow(Supplier)}&lt;/li&gt;
+ * &lt;li&gt;{@link #stringPrefix()}&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * Checks:
+ *
+ * &lt;ul&gt;
+ * &lt;li&gt;{@link #isDefined()}&lt;/li&gt;
+ * &lt;li&gt;{@link #isEmpty()}&lt;/li&gt;
+ * &lt;li&gt;{@link #isSingleValued()}&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * Equality checks:
+ *
+ * &lt;ul&gt;
+ * &lt;li&gt;{@link #corresponds(Iterable, BiPredicate)}&lt;/li&gt;
+ * &lt;li&gt;{@link #eq(Object)}&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * Filtering and transformation:
+ * &lt;ul&gt;
+ * &lt;li&gt;{@link #filter(Predicate)}&lt;/li&gt;
+ * &lt;li&gt;{@link #filterNot(Predicate)}&lt;/li&gt;
+ * &lt;li&gt;{@link #flatMap(Function)}&lt;/li&gt;
+ * &lt;li&gt;{@link #map(Function)}&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * Folding:
+ * &lt;ul&gt;
+ * &lt;li&gt;{@link #fold(Monoid)}&lt;/li&gt;
+ * &lt;li&gt;{@link #fold(Object, BiFunction)}&lt;/li&gt;
+ * &lt;li&gt;{@link #foldLeft(Monoid)}&lt;/li&gt;
+ * &lt;li&gt;{@link #foldLeft(Object, BiFunction)}&lt;/li&gt;
+ * &lt;li&gt;{@link #foldMap(Monoid, Function)}&lt;/li&gt;
+ * &lt;li&gt;{@link #foldRight(Object, BiFunction)}&lt;/li&gt;
+ * &lt;li&gt;{@link #foldRight(Monoid)}&lt;/li&gt;
+ * &lt;li&gt;{@link #reduce(BiFunction)}&lt;/li&gt;
+ * &lt;li&gt;{@link #reduceOption(BiFunction)}&lt;/li&gt;
+ * &lt;li&gt;{@link #reduceLeft(BiFunction)}&lt;/li&gt;
+ * &lt;li&gt;{@link #reduceLeftOption(BiFunction)}&lt;/li&gt;
+ * &lt;li&gt;{@link #reduceRight(BiFunction)}&lt;/li&gt;
+ * &lt;li&gt;{@link #reduceRightOption(BiFunction)}&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * Iterable extensions:
+ *
+ * &lt;ul&gt;
+ * &lt;li&gt;{@link #contains(Object)}&lt;/li&gt;
+ * &lt;li&gt;{@link #exists(Predicate)}&lt;/li&gt;
+ * &lt;li&gt;{@link #forAll(Predicate)}&lt;/li&gt;
+ * &lt;li&gt;{@link #forEach(Consumer)}&lt;/li&gt;
+ * &lt;li&gt;{@link #iterator()}&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * Side-effects:
+ *
+ * &lt;ul&gt;
+ * &lt;li&gt;{@link #out(PrintStream)}&lt;/li&gt;
+ * &lt;li&gt;{@link #out(PrintWriter)}&lt;/li&gt;
+ * &lt;li&gt;{@link #peek(Consumer)}&lt;/li&gt;
+ * &lt;li&gt;{@link #stderr()}&lt;/li&gt;
+ * &lt;li&gt;{@link #stdout()}&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * Tests:
+ *
+ * &lt;ul&gt;
+ * &lt;li&gt;{@link #isSingleValued()}&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * Type conversion:
+ *
+ * &lt;ul&gt;
+ * &lt;li&gt;{@link #toArray()}&lt;/li&gt;
+ * &lt;li&gt;{@link #toCharSeq()}&lt;/li&gt;
+ * &lt;li&gt;{@link #toJavaArray()}&lt;/li&gt;
+ * &lt;li&gt;{@link #toJavaArray(Class)}&lt;/li&gt;
+ * &lt;li&gt;{@link #toJavaList()}&lt;/li&gt;
+ * &lt;li&gt;{@link #toJavaMap(Function)}&lt;/li&gt;
+ * &lt;li&gt;{@link #toJavaOptional()}&lt;/li&gt;
+ * &lt;li&gt;{@link #toJavaSet()}&lt;/li&gt;
+ * &lt;li&gt;{@link #toJavaStream()}&lt;/li&gt;
+ * &lt;li&gt;{@link #toLazy()}&lt;/li&gt;
+ * &lt;li&gt;{@link #toLeft(Object)}&lt;/li&gt;
+ * &lt;li&gt;{@link #toLeft(Supplier)}&lt;/li&gt;
+ * &lt;li&gt;{@link #toList()}&lt;/li&gt;
+ * &lt;li&gt;{@link #toMap(Function)}&lt;/li&gt;
+ * &lt;li&gt;{@link #toOption()}&lt;/li&gt;
+ * &lt;li&gt;{@link #toQueue()}&lt;/li&gt;
+ * &lt;li&gt;{@link #toRight(Object)}&lt;/li&gt;
+ * &lt;li&gt;{@link #toRight(Supplier)}&lt;/li&gt;
+ * &lt;li&gt;{@link #toSet()}&lt;/li&gt;
+ * &lt;li&gt;{@link #toStack()}&lt;/li&gt;
+ * &lt;li&gt;{@link #toStream()}&lt;/li&gt;
+ * &lt;li&gt;{@link #toString()}&lt;/li&gt;
+ * &lt;li&gt;{@link #toTree()}&lt;/li&gt;
+ * &lt;li&gt;{@link #toTry()}&lt;/li&gt;
+ * &lt;li&gt;{@link #toTry(Supplier)}&lt;/li&gt;
+ * &lt;li&gt;{@link #toVector()}&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * &lt;strong&gt;Please note:&lt;/strong&gt; flatMap signatures are manifold and have to be declared by subclasses of Value.
+ *
+ * @param &lt;T&gt; The type of the wrapped value.
+ * @author Daniel Dietrich
+ * @since 2.0.0
+ */
+public interface Value&lt;T&gt; extends Foldable&lt;T&gt;, Functor&lt;T&gt;, Iterable&lt;T&gt; {
+
+    /**
+     * Shortcut for {@code exists(e -&gt; Objects.equals(e, element))}, tests if the given {@code element} is contained.
+     *
+     * @param element An Object of type A, may be null.
+     * @return true, if element is contained, false otherwise.
+     */
+    default boolean contains(T element) {
+<span class="fc" id="L161">        return exists(e -&gt; Objects.equals(e, element));</span>
+    }
+
+    /**
+     * Tests whether every element of this iterable relates to the corresponding element of another iterable by
+     * satisfying a test predicate.
+     *
+     * @param &lt;U&gt;       Component type of that iterable
+     * @param that      the other iterable
+     * @param predicate the test predicate, which relates elements from both iterables
+     * @return {@code true} if both iterables have the same length and {@code predicate(x, y)}
+     * is {@code true} for all corresponding elements {@code x} of this iterable and {@code y} of {@code that},
+     * otherwise {@code false}.
+     */
+    default &lt;U&gt; boolean corresponds(Iterable&lt;U&gt; that, BiPredicate&lt;? super T, ? super U&gt; predicate) {
+<span class="fc" id="L176">        final java.util.Iterator&lt;T&gt; it1 = iterator();</span>
+<span class="fc" id="L177">        final java.util.Iterator&lt;U&gt; it2 = that.iterator();</span>
+<span class="fc bfc" id="L178" title="All 4 branches covered.">        while (it1.hasNext() &amp;&amp; it2.hasNext()) {</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">            if (!predicate.test(it1.next(), it2.next())) {</span>
+<span class="fc" id="L180">                return false;</span>
+            }
+        }
+<span class="fc bfc" id="L183" title="All 4 branches covered.">        return !it1.hasNext() &amp;&amp; !it2.hasNext();</span>
+    }
+
+    /**
+     * A &lt;em&gt;smoothing&lt;/em&gt; replacement for {@code equals}. It is similar to Scala's {@code ==} but better in the way
+     * that it is not limited to collection types, e.g. {@code Some(1) eq List(1)}, {@code None eq Failure(x)} etc.
+     * &lt;p&gt;
+     * In a nutshell: eq checks &lt;strong&gt;congruence of structures&lt;/strong&gt; and &lt;strong&gt;equality of contained values&lt;/strong&gt;.
+     * &lt;p&gt;
+     * Example:
+     *
+     * &lt;pre&gt;&lt;code&gt;
+     * // ((1, 2), ((3))) =&amp;gt; structure: (()(())) values: 1, 2, 3
+     * final Value&amp;lt;?&amp;gt; i1 = List.of(List.of(1, 2), Arrays.asList(List.of(3)));
+     * final Value&amp;lt;?&amp;gt; i2 = Queue.of(Stream.of(1, 2), List.of(Lazy.of(() -&amp;gt; 3)));
+     * assertThat(i1.eq(i2)).isTrue();
+     * &lt;/code&gt;&lt;/pre&gt;
+     *
+     * Semantics:
+     *
+     * &lt;pre&gt;&lt;code&gt;
+     * o == this             : true
+     * o instanceof Value    : iterable elements are eq, non-iterable elements equals, for all (o1, o2) in (this, o)
+     * o instanceof Iterable : this eq Iterator.of((Iterable&amp;lt;?&amp;gt;) o);
+     * otherwise             : false
+     * &lt;/code&gt;&lt;/pre&gt;
+     *
+     * @param o An object
+     * @return true, if this equals o according to the rules defined above, otherwise false.
+     */
+    default boolean eq(Object o) {
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">        if (o == this) {</span>
+<span class="nc" id="L215">            return true;</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">        } else if (o instanceof Value) {</span>
+<span class="fc" id="L217">            final Value&lt;?&gt; that = (Value&lt;?&gt;) o;</span>
+<span class="fc" id="L218">            return this.iterator().corresponds(that.iterator(), (o1, o2) -&gt; {</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">                if (o1 instanceof Value) {</span>
+<span class="fc" id="L220">                    return ((Value&lt;?&gt;) o1).eq(o2);</span>
+<span class="fc bfc" id="L221" title="All 2 branches covered.">                } else if (o2 instanceof Value) {</span>
+<span class="fc" id="L222">                    return ((Value&lt;?&gt;) o2).eq(o1);</span>
+                } else {
+<span class="fc" id="L224">                    return Objects.equals(o1, o2);</span>
+                }
+            });
+<span class="pc bpc" id="L227" title="1 of 2 branches missed.">        } else if (o instanceof Iterable) {</span>
+<span class="fc" id="L228">            final Value&lt;?&gt; that = Iterator.ofAll((Iterable&lt;?&gt;) o);</span>
+<span class="fc" id="L229">            return this.eq(that);</span>
+        } else {
+<span class="nc" id="L231">            return false;</span>
+        }
+    }
+
+    /**
+     * Checks, if an element exists such that the predicate holds.
+     *
+     * @param predicate A Predicate
+     * @return true, if predicate holds for one or more elements, false otherwise
+     * @throws NullPointerException if {@code predicate} is null
+     */
+    default boolean exists(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L243">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">        for (T t : this) {</span>
+<span class="fc bfc" id="L245" title="All 2 branches covered.">            if (predicate.test(t)) {</span>
+<span class="fc" id="L246">                return true;</span>
+            }
+<span class="fc" id="L248">        }</span>
+<span class="fc" id="L249">        return false;</span>
+    }
+
+    /**
+     * Filters this {@code Value} by testing a predicate.
+     * &lt;p&gt;
+     * The semantics may vary from class to class, e.g. for single-valued types (like {@code Option})
+     * and multi-valued types (like {@link Traversable}).
+     * The commonality is that filtered.isEmpty() will return true, if no element satisfied the given predicate.
+     *
+     * @param predicate A predicate
+     * @return a new {@code Value} instance
+     * @throws NullPointerException if {@code predicate} is null
+     */
+    Value&lt;T&gt; filter(Predicate&lt;? super T&gt; predicate);
+
+    /**
+     * Filters this {@code Value} by testing the negation of a predicate.
+     * &lt;p&gt;
+     * Shortcut for {@code filter(predicate.negate()}.
+     *
+     * @param predicate A predicate
+     * @return a new {@code Value} instance
+     * @throws NullPointerException if {@code predicate} is null
+     */
+    Value&lt;T&gt; filterNot(Predicate&lt;? super T&gt; predicate);
+
+    /**
+     * FlatMaps this {@code Value}. The behavior depends on {@link #isSingleValued()}.
+     * &lt;p&gt;
+     * Examples:
+     *
+     * &lt;pre&gt;&lt;code&gt;
+     * // = Option(2)
+     * Option.some(1).flatMap(i -&amp;gt; List.of(2, 3, 4))
+     *
+     * // = List(1, 2)
+     * List.of(0, 1, 2).flatMap(i -&amp;gt; Try.of(() -&amp;gt; 1.0 / i))
+     * &lt;/code&gt;&lt;/pre&gt;
+     *
+     * @param mapper A {@code Function} which maps elements to {@code Iterable}s.
+     * @param &lt;U&gt; Resulting component type
+     * @return A new {@code Value}
+     */
+    &lt;U&gt; Value&lt;U&gt; flatMap(Function&lt;? super T, ? extends Iterable&lt;? extends U&gt;&gt; mapper);
+
+    /**
+     * Checks, if the given predicate holds for all elements.
+     *
+     * @param predicate A Predicate
+     * @return true, if the predicate holds for all elements, false otherwise
+     * @throws NullPointerException if {@code predicate} is null
+     */
+    default boolean forAll(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L303">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">        return !exists(predicate.negate());</span>
+    }
+
+    /**
+     * Performs an action on each element.
+     *
+     * @param action A {@code Consumer}
+     * @throws NullPointerException if {@code action} is null
+     */
+    default void forEach(Consumer&lt;? super T&gt; action) {
+<span class="fc" id="L314">        Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="fc bfc" id="L315" title="All 2 branches covered.">        for (T t : this) {</span>
+<span class="fc" id="L316">            action.accept(t);</span>
+<span class="fc" id="L317">        }</span>
+<span class="fc" id="L318">    }</span>
+
+    /**
+     * Gets the underlying value or throws if no value is present.
+     *
+     * @return the underlying value
+     * @throws java.util.NoSuchElementException if no value is defined
+     */
+    T get();
+
+    /**
+     * Gets the underlying value as Option.
+     *
+     * @return Some(value) if a value is present, None otherwise
+     */
+    default Option&lt;T&gt; getOption() {
+<span class="fc bfc" id="L334" title="All 2 branches covered.">        return isEmpty() ? Option.none() : Option.some(get());</span>
+    }
+
+    /**
+     * A fluent if-expression for this value. If this is defined (i.e. not empty) trueVal is returned,
+     * otherwise falseVal is returned.
+     *
+     * @param trueVal  The result, if this is defined.
+     * @param falseVal The result, if this is not defined.
+     * @return trueVal if this.isDefined(), otherwise falseVal.
+     */
+    default T ifDefined(T trueVal, T falseVal) {
+<span class="fc bfc" id="L346" title="All 2 branches covered.">        return isDefined() ? trueVal : falseVal;</span>
+    }
+
+    /**
+     * A fluent if-expression for this value. If this is defined (i.e. not empty) trueSupplier.get() is returned,
+     * otherwise falseSupplier.get() is returned.
+     *
+     * @param trueSupplier  The result, if this is defined.
+     * @param falseSupplier The result, if this is not defined.
+     * @return trueSupplier.get() if this.isDefined(), otherwise falseSupplier.get().
+     */
+    default T ifDefined(Supplier&lt;? extends T&gt; trueSupplier, Supplier&lt;? extends T&gt; falseSupplier) {
+<span class="fc bfc" id="L358" title="All 2 branches covered.">        return isDefined() ? trueSupplier.get() : falseSupplier.get();</span>
+    }
+
+    /**
+     * A fluent if-expression for this value. If this is empty (i.e. not defined) trueVal is returned,
+     * otherwise falseVal is returned.
+     *
+     * @param trueVal  The result, if this is empty.
+     * @param falseVal The result, if this is not empty.
+     * @return trueVal if this.isEmpty(), otherwise falseVal.
+     */
+    default T ifEmpty(T trueVal, T falseVal) {
+<span class="fc bfc" id="L370" title="All 2 branches covered.">        return isEmpty() ? trueVal : falseVal;</span>
+    }
+
+    /**
+     * A fluent if-expression for this value. If this is empty (i.e. not defined) trueSupplier.get() is returned,
+     * otherwise falseSupplier.get() is returned.
+     *
+     * @param trueSupplier  The result, if this is defined.
+     * @param falseSupplier The result, if this is not defined.
+     * @return trueSupplier.get() if this.isEmpty(), otherwise falseSupplier.get().
+     */
+    default T ifEmpty(Supplier&lt;? extends T&gt; trueSupplier, Supplier&lt;? extends T&gt; falseSupplier) {
+<span class="fc bfc" id="L382" title="All 2 branches covered.">        return isEmpty() ? trueSupplier.get() : falseSupplier.get();</span>
+    }
+
+    /**
+     * Checks, this {@code Value} is empty, i.e. if the underlying value is absent.
+     *
+     * @return false, if no underlying value is present, true otherwise.
+     */
+    boolean isEmpty();
+
+    /**
+     * Checks, this {@code Value} is defined, i.e. if the underlying value is present.
+     *
+     * @return true, if an underlying value is present, false otherwise.
+     */
+    default boolean isDefined() {
+<span class="fc bfc" id="L398" title="All 2 branches covered.">        return !isEmpty();</span>
+    }
+
+    /**
+     * States, if this {@code Value} may contain (at most) one element or more than one element, like collections.
+     *
+     * @return {@code true} if this is single-valued, otherwise {@code false}.
+     */
+    boolean isSingleValued();
+
+    /**
+     * Returns the underlying value if present, otherwise {@code other}.
+     *
+     * @param other An alternative value.
+     * @return A value of type {@code T}
+     */
+    default T orElse(T other) {
+<span class="fc bfc" id="L415" title="All 2 branches covered.">        return isEmpty() ? other : get();</span>
+    }
+
+    /**
+     * Returns the underlying value if present, otherwise {@code other}.
+     *
+     * @param supplier An alternative value supplier.
+     * @return A value of type {@code T}
+     * @throws NullPointerException if supplier is null
+     */
+    default T orElseGet(Supplier&lt;? extends T&gt; supplier) {
+<span class="fc" id="L426">        Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="fc bfc" id="L427" title="All 2 branches covered.">        return isEmpty() ? supplier.get() : get();</span>
+    }
+
+    /**
+     * Returns the underlying value if present, otherwise throws {@code supplier.get()}.
+     *
+     * @param &lt;X&gt;      a Throwable type
+     * @param supplier An exception supplier.
+     * @return A value of type {@code T}.
+     * @throws NullPointerException if supplier is null
+     * @throws X                    if no value is present
+     */
+    default &lt;X extends Throwable&gt; T orElseThrow(Supplier&lt;X&gt; supplier) throws X {
+<span class="fc" id="L440">        Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="fc bfc" id="L441" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L442">            throw supplier.get();</span>
+        } else {
+<span class="fc" id="L444">            return get();</span>
+        }
+    }
+
+    /**
+     * Returns the underlying value if present, otherwise returns the result of {@code Try.of(supplier).get()}.
+     *
+     * @param supplier An alternative value supplier.
+     * @return A value of type {@code T}.
+     * @throws NullPointerException  if supplier is null
+     * @throws Try.NonFatalException containing the original exception if this Value was empty and the Try failed.
+     */
+    default T orElseTry(Try.CheckedSupplier&lt;? extends T&gt; supplier) {
+<span class="fc" id="L457">        Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="fc bfc" id="L458" title="All 2 branches covered.">        return isEmpty() ? Try.of(supplier).get() : get();</span>
+    }
+
+    /**
+     * Performs the given {@code action} on the first element if this is an &lt;em&gt;eager&lt;/em&gt; implementation.
+     * Performs the given {@code action} on all elements (the first immediately, successive deferred),
+     * if this is a &lt;em&gt;lazy&lt;/em&gt; implementation.
+     *
+     * @param action The action that will be performed on the element(s).
+     * @return this instance
+     */
+    Value&lt;T&gt; peek(Consumer&lt;? super T&gt; action);
+
+    /**
+     * Returns the name of this Value type, which is used by toString().
+     *
+     * @return This type name.
+     */
+    String stringPrefix();
+
+    /**
+     * Clarifies that values have a proper equals() method implemented.
+     * &lt;p&gt;
+     * See &lt;a href=&quot;https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html#equals-java.lang.Object-&quot;&gt;Object.equals(Object)&lt;/a&gt;.
+     *
+     * @param o An object
+     * @return true, if this equals o, false otherwise
+     */
+    @Override
+    boolean equals(Object o);
+
+    /**
+     * Clarifies that values have a proper hashCode() method implemented.
+     * &lt;p&gt;
+     * See &lt;a href=&quot;https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html#hashCode--&quot;&gt;Object.hashCode()&lt;/a&gt;.
+     *
+     * @return The hashcode of this object
+     */
+    @Override
+    int hashCode();
+
+    /**
+     * Clarifies that values have a proper toString() method implemented.
+     * &lt;p&gt;
+     * See &lt;a href=&quot;https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html#toString--&quot;&gt;Object.toString()&lt;/a&gt;.
+     *
+     * @return A String representation of this object
+     */
+    @Override
+    String toString();
+
+    // -- Adjusted return types of Iterable
+
+    /**
+     * Returns a rich {@code javaslang.collection.Iterator}.
+     *
+     * @return A new Iterator
+     */
+    @Override
+    Iterator&lt;T&gt; iterator();
+
+    // -- Default implementation of Foldable
+
+    /**
+     * Default implementation of {@link Foldable#foldLeft(Object, BiFunction)}
+     * &lt;strong&gt;for single-valued types only&lt;/strong&gt;, needs to be overridden for multi-valued types.
+     *
+     * @param &lt;U&gt;     the type to fold over
+     * @param zero    A zero element to start with.
+     * @param combine A function which combines elements.
+     * @return a folded value
+     * @throws NullPointerException if {@code combine} is null
+     */
+    @Override
+    default &lt;U&gt; U foldLeft(U zero, BiFunction&lt;? super U, ? super T, ? extends U&gt; combine) {
+<span class="fc" id="L533">        Objects.requireNonNull(combine, &quot;combine is null&quot;);</span>
+<span class="fc bfc" id="L534" title="All 2 branches covered.">        return isEmpty() ? zero : combine.apply(zero, get());</span>
+    }
+
+    /**
+     * Default implementation of {@link Foldable#foldRight(Object, BiFunction)}
+     * &lt;strong&gt;for single-valued types only&lt;/strong&gt;, needs to be overridden for multi-valued types.
+     *
+     * @param zero    A zero element to start with.
+     * @param combine A function which combines elements.
+     * @param &lt;U&gt;     the  type to fold over
+     * @return a folded value
+     * @throws NullPointerException if {@code combine} is null
+     */
+    @Override
+    default &lt;U&gt; U foldRight(U zero, BiFunction&lt;? super T, ? super U, ? extends U&gt; combine) {
+<span class="nc" id="L549">        Objects.requireNonNull(combine, &quot;combine is null&quot;);</span>
+<span class="nc bnc" id="L550" title="All 2 branches missed.">        return isEmpty() ? zero : combine.apply(get(), zero);</span>
+    }
+
+    /**
+     * Default implementation of {@link Foldable#reduceLeft(BiFunction)}
+     * &lt;strong&gt;for single-valued types only&lt;/strong&gt;, needs to be overridden for multi-valued types.
+     *
+     * @param op A BiFunction of type T
+     * @return a reduced value
+     * @throws NullPointerException if {@code op} is null
+     */
+    @Override
+    default T reduceLeft(BiFunction&lt;? super T, ? super T, ? extends T&gt; op) {
+<span class="fc" id="L563">        Objects.requireNonNull(op, &quot;op is null&quot;);</span>
+<span class="fc" id="L564">        return get();</span>
+    }
+
+    /**
+     * Shortcut for {@code isEmpty() ? Option.none() : Option.some(reduceLeft(op))}, does not need to be
+     * overridden by subclasses.
+     *
+     * @param op A BiFunction of type T
+     * @return a reduced value
+     * @throws NullPointerException if {@code op} is null
+     */
+    @Override
+    default Option&lt;T&gt; reduceLeftOption(BiFunction&lt;? super T, ? super T, ? extends T&gt; op) {
+<span class="fc" id="L577">        Objects.requireNonNull(op, &quot;op is null&quot;);</span>
+<span class="fc bfc" id="L578" title="All 2 branches covered.">        return isEmpty() ? Option.none() : Option.some(reduceLeft(op));</span>
+    }
+
+    /**
+     * Default implementation of {@link Foldable#reduceRight(BiFunction)}
+     * &lt;strong&gt;for single-valued types only&lt;/strong&gt;, needs to be overridden for multi-valued types.
+     *
+     * @param op A BiFunction of type T
+     * @return a reduced value
+     * @throws NullPointerException if {@code op} is null
+     */
+    @Override
+    default T reduceRight(BiFunction&lt;? super T, ? super T, ? extends T&gt; op) {
+<span class="fc" id="L591">        Objects.requireNonNull(op, &quot;op is null&quot;);</span>
+<span class="fc" id="L592">        return get();</span>
+    }
+
+    /**
+     * Shortcut for {@code isEmpty() ? Option.none() : Option.some(reduceRight(op))}, does not need to be
+     * overridden by subclasses.
+     *
+     * @param op An operation of type T
+     * @return a reduced value
+     * @throws NullPointerException if {@code op} is null
+     */
+    @Override
+    default Option&lt;T&gt; reduceRightOption(BiFunction&lt;? super T, ? super T, ? extends T&gt; op) {
+<span class="fc" id="L605">        Objects.requireNonNull(op, &quot;op is null&quot;);</span>
+<span class="fc bfc" id="L606" title="All 2 branches covered.">        return isEmpty() ? Option.none() : Option.some(reduceRight(op));</span>
+    }
+
+    // -- Adjusted return types of Functor
+
+    @Override
+    &lt;U&gt; Value&lt;U&gt; map(Function&lt;? super T, ? extends U&gt; mapper);
+
+    // -- conversion methods
+
+    /**
+     * Provides syntactic sugar for {@link javaslang.control.Match.MatchMonad.Of}.
+     * &lt;p&gt;
+     * We write
+     *
+     * &lt;pre&gt;&lt;code&gt;
+     * value.match()
+     *      .when(...).then(...)
+     *      .get();
+     * &lt;/code&gt;&lt;/pre&gt;
+     *
+     * instead of
+     *
+     * &lt;pre&gt;&lt;code&gt;
+     * Match.of(value)
+     *      .when(...).then(...)
+     *      .get();
+     * &lt;/code&gt;&lt;/pre&gt;
+     *
+     * @return a new type-safe match builder.
+     */
+    Match.MatchMonad.Of&lt;? extends Value&lt;T&gt;&gt; match();
+
+    /**
+     * Converts this value to a {@link Array}.
+     *
+     * @return A new {@link Array}.
+     */
+    default Array&lt;T&gt; toArray() {
+<span class="fc" id="L645">        return ValueModule.toTraversable(this, Array.empty(), Array::of, Array::ofAll);</span>
+    }
+
+    /**
+     * Converts this value to a {@link CharSeq}.
+     *
+     * @return A new {@link CharSeq}.
+     */
+    default CharSeq toCharSeq() {
+<span class="fc" id="L654">        return CharSeq.of(toString());</span>
+    }
+
+    /**
+     * Converts this value to an untyped Java array.
+     *
+     * @return A new Java array.
+     */
+    default Object[] toJavaArray() {
+<span class="fc" id="L663">        return toJavaList().toArray();</span>
+    }
+
+    /**
+     * Converts this value to a typed Java array.
+     *
+     * @param componentType Component type of the array
+     * @return A new Java array.
+     * @throws NullPointerException if componentType is null
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    default T[] toJavaArray(Class&lt;T&gt; componentType) {
+<span class="fc" id="L675">        Objects.requireNonNull(componentType, &quot;componentType is null&quot;);</span>
+<span class="fc" id="L676">        final java.util.List&lt;T&gt; list = toJavaList();</span>
+<span class="fc" id="L677">        return list.toArray((T[]) java.lang.reflect.Array.newInstance(componentType, list.size()));</span>
+    }
+
+    /**
+     * Converts this value to an {@link java.util.List}.
+     *
+     * @return A new {@link java.util.ArrayList}.
+     */
+    default java.util.List&lt;T&gt; toJavaList() {
+<span class="fc" id="L686">        return ValueModule.toJavaCollection(this, new ArrayList&lt;&gt;());</span>
+    }
+
+    /**
+     * Converts this value to a {@link java.util.Map}.
+     *
+     * @param f   A function that maps an element to a key/value pair represented by Tuple2
+     * @param &lt;K&gt; The key type
+     * @param &lt;V&gt; The value type
+     * @return A new {@link java.util.HashMap}.
+     */
+    default &lt;K, V&gt; java.util.Map&lt;K, V&gt; toJavaMap(Function&lt;? super T, ? extends Tuple2&lt;? extends K, ? extends V&gt;&gt; f) {
+<span class="fc" id="L698">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="fc" id="L699">        final java.util.Map&lt;K, V&gt; map = new java.util.HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L700" title="All 2 branches covered.">        if (isDefined()) {</span>
+<span class="pc bpc" id="L701" title="1 of 2 branches missed.">            if (isSingleValued()) {</span>
+<span class="nc" id="L702">                final Tuple2&lt;? extends K, ? extends V&gt; entry = f.apply(get());</span>
+<span class="nc" id="L703">                map.put(entry._1, entry._2);</span>
+<span class="nc" id="L704">            } else {</span>
+<span class="fc bfc" id="L705" title="All 2 branches covered.">                for (T a : this) {</span>
+<span class="fc" id="L706">                    final Tuple2&lt;? extends K, ? extends V&gt; entry = f.apply(a);</span>
+<span class="fc" id="L707">                    map.put(entry._1, entry._2);</span>
+<span class="fc" id="L708">                }</span>
+            }
+        }
+<span class="fc" id="L711">        return map;</span>
+    }
+
+    /**
+     * Converts this value to an {@link java.util.Optional}.
+     *
+     * @return A new {@link java.util.Optional}.
+     */
+    default Optional&lt;T&gt; toJavaOptional() {
+<span class="fc bfc" id="L720" title="All 2 branches covered.">        return isEmpty() ? Optional.empty() : Optional.ofNullable(get());</span>
+    }
+
+    /**
+     * Converts this value to a {@link java.util.Set}.
+     *
+     * @return A new {@link java.util.HashSet}.
+     */
+    default java.util.Set&lt;T&gt; toJavaSet() {
+<span class="fc" id="L729">        return ValueModule.toJavaCollection(this, new java.util.HashSet&lt;&gt;());</span>
+    }
+
+    /**
+     * Converts this value to a {@link java.util.stream.Stream}.
+     *
+     * @return A new {@link java.util.stream.Stream}.
+     */
+    default java.util.stream.Stream&lt;T&gt; toJavaStream() {
+<span class="fc" id="L738">        return StreamSupport.stream(spliterator(), false);</span>
+    }
+
+    /**
+     * Converts this value to a {@link Lazy}.
+     *
+     * @return A new {@link Lazy}.
+     */
+    default Lazy&lt;T&gt; toLazy() {
+<span class="pc bpc" id="L747" title="1 of 2 branches missed.">        if (this instanceof Lazy) {</span>
+<span class="nc" id="L748">            return (Lazy&lt;T&gt;) this;</span>
+        } else {
+<span class="fc bfc" id="L750" title="All 2 branches covered.">            return isEmpty() ? Lazy.undefined() : Lazy.of(this::get);</span>
+        }
+    }
+
+    /**
+     * Converts this value to a {@link Either}.
+     *
+     * @param &lt;R&gt;   right type
+     * @param right A supplier of a right value
+     * @return A new {@link Either.Right} containing the result of {@code right} if this is empty, otherwise
+     * a new {@link Either.Left} containing this value.
+     * @throws NullPointerException if {@code right} is null
+     */
+    default &lt;R&gt; Either&lt;T, R&gt; toLeft(Supplier&lt;? extends R&gt; right) {
+<span class="fc" id="L764">        Objects.requireNonNull(right, &quot;right is null&quot;);</span>
+<span class="fc bfc" id="L765" title="All 2 branches covered.">        return isEmpty() ? Either.right(right.get()) : Either.left(get());</span>
+    }
+
+    /**
+     * Converts this value to a {@link Either}.
+     *
+     * @param &lt;R&gt;   right type
+     * @param right An instance of a right value
+     * @return A new {@link Either.Right} containing the value of {@code right} if this is empty, otherwise
+     * a new {@link Either.Left} containing this value.
+     * @throws NullPointerException if {@code right} is null
+     */
+    default &lt;R&gt; Either&lt;T, R&gt; toLeft(R right) {
+<span class="fc bfc" id="L778" title="All 2 branches covered.">        return isEmpty() ? Either.right(right) : Either.left(get());</span>
+    }
+
+    /**
+     * Converts this value to a {@link List}.
+     *
+     * @return A new {@link List}.
+     */
+    default List&lt;T&gt; toList() {
+<span class="fc" id="L787">        return ValueModule.toTraversable(this, List.empty(), List::of, List::ofAll);</span>
+    }
+
+    /**
+     * Converts this value to a {@link Map}.
+     *
+     * @param f   A function that maps an element to a key/value pair represented by Tuple2
+     * @param &lt;K&gt; The key type
+     * @param &lt;V&gt; The value type
+     * @return A new {@link HashMap}.
+     */
+    default &lt;K, V&gt; Map&lt;K, V&gt; toMap(Function&lt;? super T, ? extends Tuple2&lt;? extends K, ? extends V&gt;&gt; f) {
+<span class="fc" id="L799">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="pc bpc" id="L800" title="1 of 2 branches missed.">        if (isEmpty()) {</span>
+<span class="nc" id="L801">            return HashMap.empty();</span>
+<span class="pc bpc" id="L802" title="1 of 2 branches missed.">        } else if (isSingleValued()) {</span>
+<span class="nc" id="L803">            return HashMap.of(f.apply(get()));</span>
+        } else {
+<span class="fc" id="L805">            return HashMap.ofEntries(Iterator.ofAll(this).map(f));</span>
+        }
+    }
+
+    /**
+     * Converts this value to an {@link Option}.
+     *
+     * @return A new {@link Option}.
+     */
+    default Option&lt;T&gt; toOption() {
+<span class="fc bfc" id="L815" title="All 2 branches covered.">        if (this instanceof Option) {</span>
+<span class="fc" id="L816">            return (Option&lt;T&gt;) this;</span>
+        } else {
+<span class="fc bfc" id="L818" title="All 2 branches covered.">            return isEmpty() ? Option.none() : Option.some(get());</span>
+        }
+    }
+
+    /**
+     * Converts this value to a {@link Queue}.
+     *
+     * @return A new {@link Queue}.
+     */
+    default Queue&lt;T&gt; toQueue() {
+<span class="fc" id="L828">        return ValueModule.toTraversable(this, Queue.empty(), Queue::of, Queue::ofAll);</span>
+    }
+
+    /**
+     * Converts this value to a {@link Either}.
+     *
+     * @param &lt;L&gt;  left type
+     * @param left A supplier of a left value
+     * @return A new {@link Either.Left} containing the result of {@code left} if this is empty, otherwise
+     * a new {@link Either.Right} containing this value.
+     * @throws NullPointerException if {@code left} is null
+     */
+    default &lt;L&gt; Either&lt;L, T&gt; toRight(Supplier&lt;? extends L&gt; left) {
+<span class="fc" id="L841">        Objects.requireNonNull(left, &quot;left is null&quot;);</span>
+<span class="fc bfc" id="L842" title="All 2 branches covered.">        return isEmpty() ? Either.left(left.get()) : Either.right(get());</span>
+    }
+
+    /**
+     * Converts this value to a {@link Either}.
+     *
+     * @param &lt;L&gt;  left type
+     * @param left An instance of a left value
+     * @return A new {@link Either.Left} containing the value of {@code left} if this is empty, otherwise
+     * a new {@link Either.Right} containing this value.
+     * @throws NullPointerException if {@code left} is null
+     */
+    default &lt;L&gt; Either&lt;L, T&gt; toRight(L left) {
+<span class="fc bfc" id="L855" title="All 2 branches covered.">        return isEmpty() ? Either.left(left) : Either.right(get());</span>
+    }
+
+    /**
+     * Converts this value to a {@link Set}.
+     *
+     * @return A new {@link HashSet}.
+     */
+    default Set&lt;T&gt; toSet() {
+<span class="fc" id="L864">        return ValueModule.toTraversable(this, HashSet.empty(), HashSet::of, HashSet::ofAll);</span>
+    }
+
+    /**
+     * Converts this value to a {@link Stack}.
+     *
+     * @return A new {@link List}, which is a {@link Stack}.
+     */
+    default Stack&lt;T&gt; toStack() {
+<span class="fc" id="L873">        return ValueModule.toTraversable(this, Stack.empty(), Stack::of, Stack::ofAll);</span>
+    }
+
+    /**
+     * Converts this value to a {@link Stream}.
+     *
+     * @return A new {@link Stream}.
+     */
+    default Stream&lt;T&gt; toStream() {
+<span class="fc" id="L882">        return ValueModule.toTraversable(this, Stream.empty(), Stream::of, Stream::ofAll);</span>
+    }
+
+    /**
+     * Converts this value to a {@link Try}.
+     * &lt;p&gt;
+     * If this value is undefined, i.e. empty, then a new {@code Failure(NoSuchElementException)} is returned,
+     * otherwise a new {@code Success(value)} is returned.
+     *
+     * @return A new {@link Try}.
+     */
+    default Try&lt;T&gt; toTry() {
+<span class="pc bpc" id="L894" title="1 of 2 branches missed.">        if (this instanceof Try) {</span>
+<span class="nc" id="L895">            return (Try&lt;T&gt;) this;</span>
+        } else {
+<span class="fc" id="L897">            return Try.of(this::get);</span>
+        }
+    }
+
+    /**
+     * Converts this value to a {@link Try}.
+     * &lt;p&gt;
+     * If this value is undefined, i.e. empty, then a new {@code Failure(ifEmpty.get())} is returned,
+     * otherwise a new {@code Success(value)} is returned.
+     *
+     * @param ifEmpty an exception supplier
+     * @return A new {@link Try}.
+     */
+    default Try&lt;T&gt; toTry(Supplier&lt;? extends Throwable&gt; ifEmpty) {
+<span class="fc" id="L911">        Objects.requireNonNull(ifEmpty, &quot;ifEmpty is null&quot;);</span>
+<span class="fc bfc" id="L912" title="All 2 branches covered.">        return isEmpty() ? Try.failure(ifEmpty.get()) : toTry();</span>
+    }
+
+    /**
+     * Converts this value to a {@link Tree}.
+     *
+     * @return A new {@link Tree}.
+     */
+    default Tree&lt;T&gt; toTree() {
+<span class="fc" id="L921">        return ValueModule.toTraversable(this, Tree.empty(), Tree::of, Tree::ofAll);</span>
+    }
+
+    /**
+     * Converts this value to a {@link Vector}.
+     *
+     * @return A new {@link Vector}.
+     */
+    default Vector&lt;T&gt; toVector() {
+<span class="fc" id="L930">        return ValueModule.toTraversable(this, Vector.empty(), Vector::of, Vector::ofAll);</span>
+    }
+
+    // -- output
+
+    /**
+     * Sends the string representations of this value to the {@link PrintStream}.
+     * If this value consists of multiple elements, each element is displayed in a new line.
+     *
+     * @param out The PrintStream to write to
+     * @throws IllegalStateException if {@code PrintStream.checkError()} is true after writing to stream.
+     */
+    default void out(PrintStream out) {
+<span class="fc bfc" id="L943" title="All 2 branches covered.">        for (T t : this) {</span>
+<span class="fc" id="L944">            out.println(String.valueOf(t));</span>
+<span class="fc bfc" id="L945" title="All 2 branches covered.">            if (out.checkError()) {</span>
+<span class="fc" id="L946">                throw new IllegalStateException(&quot;Error writing to PrintStream&quot;);</span>
+            }
+<span class="fc" id="L948">        }</span>
+<span class="fc" id="L949">    }</span>
+
+    /**
+     * Sends the string representations of this value to the {@link PrintWriter}.
+     * If this value consists of multiple elements, each element is displayed in a new line.
+     *
+     * @param writer The PrintWriter to write to
+     * @throws IllegalStateException if {@code PrintWriter.checkError()} is true after writing to writer.
+     */
+    default void out(PrintWriter writer) {
+<span class="fc bfc" id="L959" title="All 2 branches covered.">        for (T t : this) {</span>
+<span class="fc" id="L960">            writer.println(String.valueOf(t));</span>
+<span class="fc bfc" id="L961" title="All 2 branches covered.">            if (writer.checkError()) {</span>
+<span class="fc" id="L962">                throw new IllegalStateException(&quot;Error writing to PrintWriter&quot;);</span>
+            }
+<span class="fc" id="L964">        }</span>
+<span class="fc" id="L965">    }</span>
+
+    /**
+     * Sends the string representations of this value to the standard error stream {@linkplain System#err}.
+     * If this value consists of multiple elements, each element is displayed in a new line.
+     *
+     * @throws IllegalStateException if {@code PrintStream.checkError()} is true after writing to stderr.
+     */
+    default void stderr() {
+<span class="fc" id="L974">        out(System.err);</span>
+<span class="fc" id="L975">    }</span>
+
+    /**
+     * Sends the string representations of this value to the standard output stream {@linkplain System#out}.
+     * If this value consists of multiple elements, each element is displayed in a new line.
+     *
+     * @throws IllegalStateException if {@code PrintStream.checkError()} is true after writing to stdout.
+     */
+    default void stdout() {
+<span class="fc" id="L984">        out(System.out);</span>
+<span class="fc" id="L985">    }</span>
+}
+
+interface ValueModule {
+
+    static &lt;T extends Traversable&lt;V&gt;, V&gt; T toTraversable(Value&lt;V&gt; value, T empty,
+                                                         Function&lt;V, T&gt; ofElement,
+                                                         Function&lt;Iterable&lt;V&gt;, T&gt; ofAll) {
+<span class="fc bfc" id="L993" title="All 2 branches covered.">        if (value.isEmpty()) {</span>
+<span class="fc" id="L994">            return empty;</span>
+<span class="pc bpc" id="L995" title="1 of 2 branches missed.">        } else if (value.isSingleValued()) {</span>
+<span class="nc" id="L996">            return ofElement.apply(value.get());</span>
+        } else {
+<span class="fc" id="L998">            return ofAll.apply(value);</span>
+        }
+    }
+
+    static &lt;T extends java.util.Collection&lt;V&gt;, V&gt; T toJavaCollection(Value&lt;V&gt; value, T empty) {
+<span class="fc bfc" id="L1003" title="All 2 branches covered.">        if (value.isDefined()) {</span>
+<span class="pc bpc" id="L1004" title="1 of 2 branches missed.">            if (value.isSingleValued()) {</span>
+<span class="nc" id="L1005">                empty.add(value.get());</span>
+            } else {
+<span class="fc" id="L1007">                value.forEach(empty::add);</span>
+            }
+        }
+<span class="fc" id="L1010">        return empty;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

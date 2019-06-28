@@ -1,0 +1,830 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>TreeMap.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang.collection</a> &gt; <span class="el_source">TreeMap.java</span></div><h1>TreeMap.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang.collection;
+
+import javaslang.Tuple;
+import javaslang.Tuple2;
+import javaslang.control.Match;
+import javaslang.control.Option;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.function.*;
+import java.util.stream.Collector;
+
+import static javaslang.collection.Comparators.naturalComparator;
+
+/**
+ * SortedMap implementation, backed by a Red/Black Tree.
+ *
+ * @param &lt;K&gt; Key type
+ * @param &lt;V&gt; Value type
+ * @author Daniel Dietrich
+ * @since 2.0.0
+ */
+// DEV-NOTE: use entries.min().get() in favor of iterator().next(), it is faster!
+public final class TreeMap&lt;K, V&gt; implements SortedMap&lt;K, V&gt;, Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    private final RedBlackTree&lt;Tuple2&lt;K, V&gt;&gt; entries;
+
+<span class="fc" id="L38">    private TreeMap(RedBlackTree&lt;Tuple2&lt;K, V&gt;&gt; entries) {</span>
+<span class="fc" id="L39">        this.entries = entries;</span>
+<span class="fc" id="L40">    }</span>
+
+    /**
+     * Returns a {@link java.util.stream.Collector} which may be used in conjunction with
+     * {@link java.util.stream.Stream#collect(java.util.stream.Collector)} to obtain a
+     * {@link javaslang.collection.TreeMap}.
+     *
+     * @param &lt;K&gt; The key type
+     * @param &lt;V&gt; The value type
+     * @return A {@link javaslang.collection.TreeMap} Collector.
+     */
+    public static &lt;K, V&gt; Collector&lt;Tuple2&lt;K, V&gt;, ArrayList&lt;Tuple2&lt;K, V&gt;&gt;, TreeMap&lt;K, V&gt;&gt; collector() {
+<span class="fc" id="L52">        final Supplier&lt;ArrayList&lt;Tuple2&lt;K, V&gt;&gt;&gt; supplier = ArrayList::new;</span>
+<span class="fc" id="L53">        final BiConsumer&lt;ArrayList&lt;Tuple2&lt;K, V&gt;&gt;, Tuple2&lt;K, V&gt;&gt; accumulator = ArrayList::add;</span>
+<span class="fc" id="L54">        final BinaryOperator&lt;ArrayList&lt;Tuple2&lt;K, V&gt;&gt;&gt; combiner = (left, right) -&gt; {</span>
+<span class="fc" id="L55">            left.addAll(right);</span>
+<span class="fc" id="L56">            return left;</span>
+        };
+<span class="fc" id="L58">        final Comparator&lt;? super K&gt; comparator = naturalComparator();</span>
+<span class="pc" id="L59">        final Function&lt;ArrayList&lt;Tuple2&lt;K, V&gt;&gt;, TreeMap&lt;K, V&gt;&gt; finisher = list -&gt; TreeMap.ofEntries(comparator, list);</span>
+<span class="fc" id="L60">        return Collector.of(supplier, accumulator, combiner, finisher);</span>
+    }
+
+    /**
+     * Returns the empty TreeMap. The underlying key comparator is the natural comparator of K.
+     *
+     * @param &lt;K&gt; The key type
+     * @param &lt;V&gt; The value type
+     * @return A new empty TreeMap.
+     */
+    public static &lt;K extends Comparable&lt;? super K&gt;, V&gt; TreeMap&lt;K, V&gt; empty() {
+<span class="nc" id="L71">        return empty((Comparator&lt;? super K&gt; &amp; Serializable) K::compareTo);</span>
+    }
+
+    /**
+     * Returns the empty TreeMap using the given key comparator.
+     *
+     * @param &lt;K&gt;           The key type
+     * @param &lt;V&gt;           The value type
+     * @param keyComparator The comparator used to sort the entries by their key.
+     * @return A new empty TreeMap.
+     */
+    public static &lt;K, V&gt; TreeMap&lt;K, V&gt; empty(Comparator&lt;? super K&gt; keyComparator) {
+<span class="fc" id="L83">        Objects.requireNonNull(keyComparator, &quot;keyComparator is null&quot;);</span>
+<span class="fc" id="L84">        return new TreeMap&lt;&gt;(RedBlackTree.empty(new EntryComparator&lt;&gt;(keyComparator)));</span>
+    }
+
+    /**
+     * Returns a singleton {@code TreeMap}, i.e. a {@code TreeMap} of one entry.
+     * The underlying key comparator is the natural comparator of K.
+     *
+     * @param &lt;K&gt;   The key type
+     * @param &lt;V&gt;   The value type
+     * @param entry A map entry.
+     * @return A new TreeMap containing the given entry.
+     */
+    public static &lt;K extends Comparable&lt;? super K&gt;, V&gt; TreeMap&lt;K, V&gt; of(Tuple2&lt;? extends K, ? extends V&gt; entry) {
+<span class="fc" id="L97">        return of((Comparator&lt;? super K&gt; &amp; Serializable) K::compareTo, entry);</span>
+    }
+
+    /**
+     * Creates a TreeMap of the given list of key-value pairs.
+     *
+     * @param pairs A list of key-value pairs
+     * @param &lt;K&gt;   The key type
+     * @param &lt;V&gt;   The value type
+     * @return A new Map containing the given entries
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    public static &lt;K, V&gt; TreeMap&lt;K, V&gt; of(Object... pairs) {
+<span class="fc" id="L110">        Objects.requireNonNull(pairs, &quot;pairs is null&quot;);</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        if ((pairs.length &amp; 1) != 0) {</span>
+<span class="fc" id="L112">            throw new IllegalArgumentException(&quot;Odd length of key-value pairs list&quot;);</span>
+        }
+<span class="fc" id="L114">        RedBlackTree&lt;Tuple2&lt;K, V&gt;&gt; result = RedBlackTree.empty();</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        for (int i = 0; i &lt; pairs.length; i += 2) {</span>
+<span class="fc" id="L116">            result = result.insert(Tuple.of((K) pairs[i], (V) pairs[i + 1]));</span>
+        }
+<span class="fc" id="L118">        return new TreeMap&lt;&gt;(result);</span>
+    }
+
+    /**
+     * Returns a {@code TreeMap}, from a source java.util.Map.
+     *
+     * @param map A map entry.
+     * @param &lt;K&gt; The key type
+     * @param &lt;V&gt; The value type
+     * @return A new Map containing the given map
+     */
+    public static &lt;K extends Comparable&lt;? super K&gt;, V&gt; TreeMap&lt;K, V&gt; ofAll(java.util.Map&lt;? extends K, ? extends V&gt; map) {
+<span class="fc" id="L130">        Objects.requireNonNull(map, &quot;map is null&quot;);</span>
+<span class="fc" id="L131">        RedBlackTree&lt;Tuple2&lt;K, V&gt;&gt; result = RedBlackTree.empty();</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">        for (java.util.Map.Entry&lt;? extends K, ? extends V&gt; entry : map.entrySet()) {</span>
+<span class="fc" id="L133">            result = result.insert(Tuple.of(entry.getKey(), entry.getValue()));</span>
+<span class="fc" id="L134">        }</span>
+<span class="fc" id="L135">        return new TreeMap&lt;&gt;(result);</span>
+    }
+
+    /**
+     * Returns a singleton {@code TreeMap}, i.e. a {@code TreeMap} of one entry using a specific key comparator.
+     *
+     * @param &lt;K&gt;           The key type
+     * @param &lt;V&gt;           The value type
+     * @param entry         A map entry.
+     * @param keyComparator The comparator used to sort the entries by their key.
+     * @return A new TreeMap containing the given entry.
+     */
+    public static &lt;K, V&gt; TreeMap&lt;K, V&gt; of(Comparator&lt;? super K&gt; keyComparator, Tuple2&lt;? extends K, ? extends V&gt; entry) {
+<span class="fc" id="L148">        Objects.requireNonNull(keyComparator, &quot;keyComparator is null&quot;);</span>
+<span class="fc" id="L149">        Objects.requireNonNull(entry, &quot;entry is null&quot;);</span>
+<span class="fc" id="L150">        return TreeMap.&lt;K, V&gt; empty(keyComparator).put(entry);</span>
+    }
+
+    /**
+     * Returns a singleton {@code TreeMap}, i.e. a {@code TreeMap} of one element.
+     *
+     * @param key   A singleton map key.
+     * @param value A singleton map value.
+     * @param &lt;K&gt;   The key type
+     * @param &lt;V&gt;   The value type
+     * @return A new Map containing the given entry
+     */
+    public static &lt;K extends Comparable&lt;? super K&gt;, V&gt; TreeMap&lt;K, V&gt; of(K key, V value) {
+<span class="fc" id="L163">        return of((Comparator&lt;? super K&gt; &amp; Serializable) K::compareTo, key, value);</span>
+    }
+
+    /**
+     * Returns a singleton {@code TreeMap}, i.e. a {@code TreeMap} of one element.
+     *
+     * @param key           A singleton map key.
+     * @param value         A singleton map value.
+     * @param &lt;K&gt;           The key type
+     * @param &lt;V&gt;           The value type
+     * @param keyComparator The comparator used to sort the entries by their key.
+     * @return A new Map containing the given entry
+     */
+    public static &lt;K extends Comparable&lt;? super K&gt;, V&gt; TreeMap&lt;K, V&gt; of(Comparator&lt;? super K&gt; keyComparator, K key, V value) {
+<span class="fc" id="L177">        Objects.requireNonNull(keyComparator, &quot;keyComparator is null&quot;);</span>
+<span class="fc" id="L178">        return TreeMap.&lt;K, V&gt; empty(keyComparator).put(key, value);</span>
+    }
+
+    /**
+     * Returns a TreeMap containing {@code n} values of a given Function {@code f}
+     * over a range of integer values from 0 to {@code n - 1}.
+     *
+     * @param &lt;K&gt;           The key type
+     * @param &lt;V&gt;           The value type
+     * @param keyComparator The comparator used to sort the entries by their key
+     * @param n             The number of elements in the TreeMap
+     * @param f             The Function computing element values
+     * @return A TreeMap consisting of elements {@code f(0),f(1), ..., f(n - 1)}
+     * @throws NullPointerException if {@code keyComparator} or {@code f} are null
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    public static &lt;K, V&gt; TreeMap&lt;K, V&gt; tabulate(Comparator&lt;? super K&gt; keyComparator, int n, Function&lt;? super Integer, ? extends Tuple2&lt;? extends K, ? extends V&gt;&gt; f) {
+<span class="fc" id="L195">        Objects.requireNonNull(keyComparator, &quot;keyComparator is null&quot;);</span>
+<span class="fc" id="L196">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="fc" id="L197">        return ofEntries(keyComparator, Collections.tabulate(n, (Function&lt;? super Integer, ? extends Tuple2&lt;K, V&gt;&gt;) f));</span>
+    }
+
+    /**
+     * Returns a TreeMap containing {@code n} values of a given Function {@code f}
+     * over a range of integer values from 0 to {@code n - 1}.
+     * The underlying key comparator is the natural comparator of K.
+     *
+     * @param &lt;K&gt; The key type
+     * @param &lt;V&gt; The value type
+     * @param n   The number of elements in the TreeMap
+     * @param f   The Function computing element values
+     * @return A TreeMap consisting of elements {@code f(0),f(1), ..., f(n - 1)}
+     * @throws NullPointerException if {@code f} is null
+     */
+    public static &lt;K extends Comparable&lt;? super K&gt;, V&gt; TreeMap&lt;K, V&gt; tabulate(int n, Function&lt;? super Integer, ? extends Tuple2&lt;? extends K, ? extends V&gt;&gt; f) {
+<span class="nc" id="L213">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="nc" id="L214">        return tabulate((Comparator&lt;? super K&gt; &amp; Serializable) K::compareTo, n, f);</span>
+    }
+
+    /**
+     * Returns a TreeMap containing {@code n} values supplied by a given Supplier {@code s}.
+     *
+     * @param &lt;K&gt;           The key type
+     * @param &lt;V&gt;           The value type
+     * @param keyComparator The comparator used to sort the entries by their key
+     * @param n             The number of elements in the TreeMap
+     * @param s             The Supplier computing element values
+     * @return A TreeMap of size {@code n}, where each element contains the result supplied by {@code s}.
+     * @throws NullPointerException if {@code keyComparator} or {@code s} are null
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    public static &lt;K, V&gt; TreeMap&lt;K, V&gt; fill(Comparator&lt;? super K&gt; keyComparator, int n, Supplier&lt;? extends Tuple2&lt;? extends K, ? extends V&gt;&gt; s) {
+<span class="fc" id="L230">        Objects.requireNonNull(keyComparator, &quot;keyComparator is null&quot;);</span>
+<span class="fc" id="L231">        Objects.requireNonNull(s, &quot;s is null&quot;);</span>
+<span class="fc" id="L232">        return ofEntries(keyComparator, Collections.fill(n, (Supplier&lt;? extends Tuple2&lt;K, V&gt;&gt;) s));</span>
+    }
+
+    /**
+     * Returns a TreeMap containing {@code n} values supplied by a given Supplier {@code s}.
+     * The underlying key comparator is the natural comparator of K.
+     *
+     * @param &lt;K&gt; The key type
+     * @param &lt;V&gt; The value type
+     * @param n   The number of elements in the TreeMap
+     * @param s   The Supplier computing element values
+     * @return A TreeMap of size {@code n}, where each element contains the result supplied by {@code s}.
+     * @throws NullPointerException if {@code s} is null
+     */
+    public static &lt;K extends Comparable&lt;? super K&gt;, V&gt; TreeMap&lt;K, V&gt; fill(int n, Supplier&lt;? extends Tuple2&lt;? extends K, ? extends V&gt;&gt; s) {
+<span class="nc" id="L247">        Objects.requireNonNull(s, &quot;s is null&quot;);</span>
+<span class="nc" id="L248">        return fill((Comparator&lt;? super K&gt; &amp; Serializable) K::compareTo, n, s);</span>
+    }
+
+    /**
+     * Creates a {@code TreeMap} of the given entries using the natural key comparator.
+     *
+     * @param &lt;K&gt;     The key type
+     * @param &lt;V&gt;     The value type
+     * @param entries Map entries
+     * @return A new TreeMap containing the given entries.
+     */
+    @SuppressWarnings(&quot;varargs&quot;)
+    @SafeVarargs
+    public static &lt;K extends Comparable&lt;? super K&gt;, V&gt; TreeMap&lt;K, V&gt; ofEntries(Tuple2&lt;? extends K, ? extends V&gt;... entries) {
+<span class="fc" id="L262">        return ofEntries((Comparator&lt;? super K&gt; &amp; Serializable) K::compareTo, entries);</span>
+    }
+
+    /**
+     * Creates a {@code TreeMap} of the given entries using the natural key comparator.
+     *
+     * @param &lt;K&gt;     The key type
+     * @param &lt;V&gt;     The value type
+     * @param entries Map entries
+     * @return A new TreeMap containing the given entries.
+     */
+    @SuppressWarnings(&quot;varargs&quot;)
+    @SafeVarargs
+    public static &lt;K extends Comparable&lt;? super K&gt;, V&gt; TreeMap&lt;K, V&gt; ofEntries(java.util.Map.Entry&lt;? extends K, ? extends V&gt;... entries) {
+<span class="nc" id="L276">        return ofEntries((Comparator&lt;? super K&gt; &amp; Serializable) K::compareTo, entries);</span>
+    }
+
+    /**
+     * Creates a {@code TreeMap} of the given entries using the given key comparator.
+     *
+     * @param &lt;K&gt;           The key type
+     * @param &lt;V&gt;           The value type
+     * @param entries       Map entries
+     * @param keyComparator A key comparator
+     * @return A new TreeMap containing the given entries.
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @SafeVarargs
+    public static &lt;K, V&gt; TreeMap&lt;K, V&gt; ofEntries(Comparator&lt;? super K&gt; keyComparator, Tuple2&lt;? extends K, ? extends V&gt;... entries) {
+<span class="fc" id="L291">        Objects.requireNonNull(keyComparator, &quot;keyComparator is null&quot;);</span>
+<span class="fc" id="L292">        Objects.requireNonNull(entries, &quot;entries is null&quot;);</span>
+<span class="fc" id="L293">        RedBlackTree&lt;Tuple2&lt;K, V&gt;&gt; tree = RedBlackTree.empty(new EntryComparator&lt;&gt;(keyComparator));</span>
+<span class="fc bfc" id="L294" title="All 2 branches covered.">        for (Tuple2&lt;? extends K, ? extends V&gt; entry : entries) {</span>
+<span class="fc" id="L295">            tree = tree.insert((Tuple2&lt;K, V&gt;) entry);</span>
+        }
+<span class="pc bpc" id="L297" title="1 of 2 branches missed.">        return tree.isEmpty() ? TreeMap.empty(keyComparator) : new TreeMap&lt;&gt;(tree);</span>
+    }
+
+    /**
+     * Creates a {@code TreeMap} of the given entries using the given key comparator.
+     *
+     * @param &lt;K&gt;           The key type
+     * @param &lt;V&gt;           The value type
+     * @param entries       Map entries
+     * @param keyComparator A key comparator
+     * @return A new TreeMap containing the given entries.
+     */
+    @SafeVarargs
+    public static &lt;K, V&gt; TreeMap&lt;K, V&gt; ofEntries(Comparator&lt;? super K&gt; keyComparator, java.util.Map.Entry&lt;? extends K, ? extends V&gt;... entries) {
+<span class="fc" id="L311">        Objects.requireNonNull(keyComparator, &quot;keyComparator is null&quot;);</span>
+<span class="fc" id="L312">        Objects.requireNonNull(entries, &quot;entries is null&quot;);</span>
+<span class="fc" id="L313">        RedBlackTree&lt;Tuple2&lt;K, V&gt;&gt; tree = RedBlackTree.empty(new EntryComparator&lt;&gt;(keyComparator));</span>
+<span class="fc bfc" id="L314" title="All 2 branches covered.">        for (java.util.Map.Entry&lt;? extends K, ? extends V&gt; entry : entries) {</span>
+<span class="fc" id="L315">            tree = tree.insert(Tuple.of(entry.getKey(), entry.getValue()));</span>
+        }
+<span class="pc bpc" id="L317" title="1 of 2 branches missed.">        return tree.isEmpty() ? TreeMap.empty(keyComparator) : new TreeMap&lt;&gt;(tree);</span>
+    }
+
+    /**
+     * Creates a {@code TreeMap} of the given entries.
+     *
+     * @param &lt;K&gt;     The key type
+     * @param &lt;V&gt;     The value type
+     * @param entries Map entries
+     * @return A new TreeMap containing the given entries.
+     */
+    public static &lt;K extends Comparable&lt;? super K&gt;, V&gt; TreeMap&lt;K, V&gt; ofEntries(
+            Iterable&lt;? extends Tuple2&lt;? extends K, ? extends V&gt;&gt; entries) {
+<span class="nc" id="L330">        return ofEntries((Comparator&lt;? super K&gt; &amp; Serializable) K::compareTo, entries);</span>
+    }
+
+    /**
+     * Creates a {@code TreeMap} of the given entries.
+     *
+     * @param &lt;K&gt;           The key type
+     * @param &lt;V&gt;           The value type
+     * @param entries       Map entries
+     * @param keyComparator A key comparator
+     * @return A new TreeMap containing the given entries.
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    public static &lt;K, V&gt; TreeMap&lt;K, V&gt; ofEntries(Comparator&lt;? super K&gt; keyComparator, Iterable&lt;? extends Tuple2&lt;? extends K, ? extends V&gt;&gt; entries) {
+<span class="fc" id="L344">        Objects.requireNonNull(keyComparator, &quot;keyComparator is null&quot;);</span>
+<span class="fc" id="L345">        Objects.requireNonNull(entries, &quot;entries is null&quot;);</span>
+<span class="pc bpc" id="L346" title="1 of 2 branches missed.">        if (entries instanceof TreeMap) {</span>
+<span class="nc" id="L347">            return (TreeMap&lt;K, V&gt;) entries;</span>
+        } else {
+<span class="fc" id="L349">            RedBlackTree&lt;Tuple2&lt;K, V&gt;&gt; tree = RedBlackTree.empty(new EntryComparator&lt;&gt;(keyComparator));</span>
+<span class="fc bfc" id="L350" title="All 2 branches covered.">            for (Tuple2&lt;? extends K, ? extends V&gt; entry : entries) {</span>
+<span class="fc" id="L351">                tree = tree.insert((Tuple2&lt;K, V&gt;) entry);</span>
+<span class="fc" id="L352">            }</span>
+<span class="fc" id="L353">            return new TreeMap&lt;&gt;(tree);</span>
+        }
+    }
+
+    @Override
+    public &lt;K2, V2&gt; TreeMap&lt;K2, V2&gt; bimap(Function&lt;? super K, ? extends K2&gt; keyMapper, Function&lt;? super V, ? extends V2&gt; valueMapper) {
+<span class="nc" id="L359">        return bimap(naturalComparator(), keyMapper, valueMapper);</span>
+    }
+
+    @Override
+    public &lt;K2, V2&gt; TreeMap&lt;K2, V2&gt; bimap(Comparator&lt;? super K2&gt; keyComparator,
+                                          Function&lt;? super K, ? extends K2&gt; keyMapper, Function&lt;? super V, ? extends V2&gt; valueMapper) {
+<span class="nc" id="L365">        Objects.requireNonNull(keyMapper, &quot;keyMapper is null&quot;);</span>
+<span class="nc" id="L366">        Objects.requireNonNull(valueMapper, &quot;valueMapper is null&quot;);</span>
+<span class="nc" id="L367">        return createTreeMap(new EntryComparator&lt;&gt;(keyComparator),</span>
+<span class="nc" id="L368">                entries.iterator().map(entry -&gt; Tuple.of(keyMapper.apply(entry._1), valueMapper.apply(entry._2))));</span>
+    }
+
+    @Override
+    public TreeMap&lt;K, V&gt; clear() {
+<span class="fc bfc" id="L373" title="All 2 branches covered.">        return isEmpty() ? this : new TreeMap&lt;&gt;(entries.clear());</span>
+    }
+
+    @Override
+    public TreeMap&lt;K, V&gt; distinct() {
+<span class="fc" id="L378">        return this;</span>
+    }
+
+    @Override
+    public TreeMap&lt;K, V&gt; distinctBy(Comparator&lt;? super Tuple2&lt;K, V&gt;&gt; comparator) {
+<span class="fc" id="L383">        Objects.requireNonNull(comparator, &quot;comparator is null&quot;);</span>
+<span class="fc" id="L384">        return createTreeMap(entries.comparator(), iterator().distinctBy(comparator));</span>
+    }
+
+    @Override
+    public &lt;U&gt; TreeMap&lt;K, V&gt; distinctBy(Function&lt;? super Tuple2&lt;K, V&gt;, ? extends U&gt; keyExtractor) {
+<span class="fc" id="L389">        Objects.requireNonNull(keyExtractor, &quot;keyExtractor is null&quot;);</span>
+<span class="fc" id="L390">        return createTreeMap(entries.comparator(), iterator().distinctBy(keyExtractor));</span>
+    }
+
+    @Override
+    public TreeMap&lt;K, V&gt; drop(int n) {
+<span class="fc bfc" id="L395" title="All 2 branches covered.">        if (n &lt;= 0) {</span>
+<span class="fc" id="L396">            return this;</span>
+        } else {
+<span class="fc" id="L398">            return createTreeMap(entries.comparator(), iterator().drop(n));</span>
+        }
+    }
+
+    @Override
+    public TreeMap&lt;K, V&gt; dropRight(int n) {
+<span class="fc bfc" id="L404" title="All 2 branches covered.">        if (n &lt;= 0) {</span>
+<span class="fc" id="L405">            return this;</span>
+        } else {
+<span class="fc" id="L407">            return createTreeMap(entries.comparator(), iterator().dropRight(n));</span>
+        }
+    }
+
+    @Override
+    public TreeMap&lt;K, V&gt; dropUntil(Predicate&lt;? super Tuple2&lt;K, V&gt;&gt; predicate) {
+<span class="fc" id="L413">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L414">        return dropWhile(predicate.negate());</span>
+    }
+
+    @Override
+    public TreeMap&lt;K, V&gt; dropWhile(Predicate&lt;? super Tuple2&lt;K, V&gt;&gt; predicate) {
+<span class="fc" id="L419">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L420">        return createTreeMap(entries.comparator(), iterator().dropWhile(predicate));</span>
+    }
+
+    @Override
+    public boolean containsKey(K key) {
+<span class="fc" id="L425">        final V ignored = null;</span>
+<span class="fc" id="L426">        return entries.contains(new Tuple2&lt;&gt;(key, ignored));</span>
+    }
+
+    @Override
+    public boolean containsValue(V value) {
+<span class="fc" id="L431">        return iterator().map(Tuple2::_2).contains(value);</span>
+    }
+
+    @Override
+    public TreeMap&lt;K, V&gt; filter(Predicate&lt;? super Tuple2&lt;K, V&gt;&gt; predicate) {
+<span class="fc" id="L436">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L437">        return createTreeMap(entries.comparator(), entries.iterator().filter(predicate));</span>
+    }
+
+    @Override
+    public TreeMap&lt;K, V&gt; filterNot(Predicate&lt;? super Tuple2&lt;K, V&gt;&gt; predicate) {
+<span class="fc" id="L442">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L443">        return filter(predicate.negate());</span>
+    }
+
+    @Override
+    public &lt;K2, V2&gt; TreeMap&lt;K2, V2&gt; flatMap(BiFunction&lt;? super K, ? super V, ? extends Iterable&lt;Tuple2&lt;K2, V2&gt;&gt;&gt; mapper) {
+<span class="fc" id="L448">        return flatMap(naturalComparator(), mapper);</span>
+    }
+
+    @Override
+    public &lt;K2, V2&gt; TreeMap&lt;K2, V2&gt; flatMap(Comparator&lt;? super K2&gt; keyComparator,
+    		                                BiFunction&lt;? super K, ? super V, ? extends Iterable&lt;Tuple2&lt;K2, V2&gt;&gt;&gt; mapper) {
+<span class="fc" id="L454">        Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+<span class="fc" id="L455">        return createTreeMap(new EntryComparator&lt;&gt;(keyComparator),</span>
+<span class="fc" id="L456">                entries.iterator().flatMap(entry -&gt; mapper.apply(entry._1, entry._2)));</span>
+    }
+
+    @Override
+    public &lt;U&gt; U foldRight(U zero, BiFunction&lt;? super Tuple2&lt;K, V&gt;, ? super U, ? extends U&gt; f) {
+<span class="fc" id="L461">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="fc" id="L462">        return iterator().foldRight(zero, f);</span>
+    }
+
+    @Override
+    public Option&lt;V&gt; get(K key) {
+<span class="fc" id="L467">        final V ignored = null;</span>
+<span class="fc" id="L468">        return entries.find(new Tuple2&lt;&gt;(key, ignored)).map(Tuple2::_2);</span>
+    }
+
+    @Override
+    public &lt;C&gt; Map&lt;C, TreeMap&lt;K, V&gt;&gt; groupBy(Function&lt;? super Tuple2&lt;K, V&gt;, ? extends C&gt; classifier) {
+<span class="fc" id="L473">        Objects.requireNonNull(classifier, &quot;classifier is null&quot;);</span>
+<span class="fc" id="L474">        return foldLeft(HashMap.empty(), (map, entry) -&gt; {</span>
+<span class="fc" id="L475">            final C key = classifier.apply(entry);</span>
+<span class="fc" id="L476">            final TreeMap&lt;K, V&gt; values = map.get(key).map(entries -&gt; entries.put(entry._1, entry._2)).orElse(</span>
+<span class="fc" id="L477">                    createTreeMap(entries.comparator(), Iterator.of(entry)));</span>
+<span class="fc" id="L478">            return map.put(key, values);</span>
+        });
+    }
+
+    @Override
+    public Iterator&lt;TreeMap&lt;K, V&gt;&gt; grouped(int size) {
+<span class="fc" id="L484">        return sliding(size, size);</span>
+    }
+
+    @Override
+    public boolean hasDefiniteSize() {
+<span class="fc" id="L489">        return true;</span>
+    }
+
+    @Override
+    public Tuple2&lt;K, V&gt; head() {
+<span class="fc bfc" id="L494" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L495">            throw new NoSuchElementException(&quot;head of empty TreeMap&quot;);</span>
+        } else {
+<span class="fc" id="L497">            return entries.min().get();</span>
+        }
+    }
+
+    @Override
+    public Option&lt;Tuple2&lt;K, V&gt;&gt; headOption() {
+<span class="fc bfc" id="L503" title="All 2 branches covered.">        return isEmpty() ? Option.none() : Option.some(head());</span>
+    }
+
+    @Override
+    public TreeMap&lt;K, V&gt; init() {
+<span class="fc bfc" id="L508" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L509">            throw new UnsupportedOperationException(&quot;init of empty TreeMap&quot;);</span>
+        } else {
+<span class="fc" id="L511">            final Tuple2&lt;K, V&gt; max = entries.max().get();</span>
+<span class="fc" id="L512">            return new TreeMap&lt;&gt;(entries.delete(max));</span>
+        }
+    }
+
+    @Override
+    public Option&lt;TreeMap&lt;K, V&gt;&gt; initOption() {
+<span class="fc bfc" id="L518" title="All 2 branches covered.">        return isEmpty() ? Option.none() : Option.some(init());</span>
+    }
+
+    @Override
+    public boolean isEmpty() {
+<span class="fc" id="L523">        return entries.isEmpty();</span>
+    }
+
+    @Override
+    public boolean isTraversableAgain() {
+<span class="fc" id="L528">        return true;</span>
+    }
+
+    @Override
+    public Iterator&lt;Tuple2&lt;K, V&gt;&gt; iterator() {
+<span class="fc" id="L533">        return entries.iterator();</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override
+    public Comparator&lt;K&gt; keyComparator() {
+<span class="fc" id="L539">        return ((EntryComparator&lt;K, V&gt;) entries.comparator()).keyComparator;</span>
+    }
+
+    @Override
+    public SortedSet&lt;K&gt; keySet() {
+<span class="fc" id="L544">        return TreeSet.ofAll(keyComparator(), iterator().map(Tuple2::_1));</span>
+    }
+    
+
+    @Override
+    public &lt;K2, V2&gt; TreeMap&lt;K2, V2&gt; map(BiFunction&lt;? super K, ? super V, Tuple2&lt;K2, V2&gt;&gt; mapper) {
+<span class="nc" id="L550">        return map(naturalComparator(), mapper);</span>
+    }
+
+    @Override
+    public &lt;K2, V2&gt; TreeMap&lt;K2, V2&gt; map(Comparator&lt;? super K2&gt; keyComparator,
+                                          BiFunction&lt;? super K, ? super V, Tuple2&lt;K2, V2&gt;&gt; mapper) {
+<span class="fc" id="L556">        Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+<span class="fc" id="L557">        return createTreeMap(new EntryComparator&lt;&gt;(keyComparator),</span>
+<span class="fc" id="L558">                entries.iterator().map(entry -&gt; mapper.apply(entry._1, entry._2)));</span>
+    }
+
+    @Override
+    public &lt;W&gt; TreeMap&lt;K, W&gt; mapValues(Function&lt;? super V, ? extends W&gt; valueMapper) {
+<span class="fc" id="L563">        Objects.requireNonNull(valueMapper, &quot;valueMapper is null&quot;);</span>
+<span class="fc" id="L564">        return map(keyComparator(), (k, v) -&gt; Tuple.of(k, valueMapper.apply(v)));</span>
+    }
+
+    @Override
+    public Match.MatchMonad.Of&lt;TreeMap&lt;K, V&gt;&gt; match() {
+<span class="nc" id="L569">        return Match.of(this);</span>
+    }
+
+    @Override
+    public Option&lt;Tuple2&lt;K, V&gt;&gt; max() {
+<span class="nc" id="L574">        return entries.max();</span>
+    }
+
+    @Override
+    public TreeMap&lt;K, V&gt; merge(Map&lt;? extends K, ? extends V&gt; that) {
+<span class="fc" id="L579">        return (TreeMap&lt;K, V&gt;) Collections.mergeMaps(this, that, m -&gt; createTreeMap(entries.comparator(), that));</span>
+    }
+
+    @Override
+    public &lt;U extends V&gt; TreeMap&lt;K, V&gt; merge(Map&lt;? extends K, U&gt; that,
+                                             BiFunction&lt;? super V, ? super U, ? extends V&gt; collisionResolution) {
+<span class="fc" id="L585">        return (TreeMap&lt;K, V&gt;) Collections.mergeMaps(this, that, m -&gt; createTreeMap(entries.comparator(), that), collisionResolution);</span>
+    }
+
+    @Override
+    public Option&lt;Tuple2&lt;K, V&gt;&gt; min() {
+<span class="nc" id="L590">        return entries.min();</span>
+    }
+
+    @Override
+    public Tuple2&lt;TreeMap&lt;K, V&gt;, TreeMap&lt;K, V&gt;&gt; partition(Predicate&lt;? super Tuple2&lt;K, V&gt;&gt; predicate) {
+<span class="fc" id="L595">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L596">        final Tuple2&lt;Iterator&lt;Tuple2&lt;K, V&gt;&gt;, Iterator&lt;Tuple2&lt;K, V&gt;&gt;&gt; p = iterator().partition(predicate);</span>
+<span class="fc" id="L597">        final TreeMap&lt;K, V&gt; treeMap1 = createTreeMap(entries.comparator(), p._1);</span>
+<span class="fc" id="L598">        final TreeMap&lt;K, V&gt; treeMap2 = createTreeMap(entries.comparator(), p._2);</span>
+<span class="fc" id="L599">        return Tuple.of(treeMap1, treeMap2);</span>
+    }
+
+    @Override
+    public TreeMap&lt;K, V&gt; peek(Consumer&lt;? super Tuple2&lt;K, V&gt;&gt; action) {
+<span class="fc" id="L604">        Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="fc bfc" id="L605" title="All 2 branches covered.">        if (!isEmpty()) {</span>
+<span class="fc" id="L606">            action.accept(entries.min().get());</span>
+        }
+<span class="fc" id="L608">        return this;</span>
+    }
+
+    @Override
+    public TreeMap&lt;K, V&gt; put(K key, V value) {
+<span class="fc" id="L613">        return new TreeMap&lt;&gt;(entries.insert(new Tuple2&lt;&gt;(key, value)));</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override
+    public TreeMap&lt;K, V&gt; put(Tuple2&lt;? extends K, ? extends V&gt; entry) {
+<span class="fc" id="L619">        Objects.requireNonNull(entry, &quot;entry is null&quot;);</span>
+<span class="fc" id="L620">        return new TreeMap&lt;&gt;(entries.insert((Tuple2&lt;K, V&gt;) entry));</span>
+    }
+
+    @Override
+    public TreeMap&lt;K, V&gt; remove(K key) {
+<span class="fc" id="L625">        final V ignored = null;</span>
+<span class="fc" id="L626">        final Tuple2&lt;K, V&gt; entry = new Tuple2&lt;&gt;(key, ignored);</span>
+<span class="fc bfc" id="L627" title="All 2 branches covered.">        if (entries.contains(entry)) {</span>
+<span class="fc" id="L628">            return new TreeMap&lt;&gt;(entries.delete(entry));</span>
+        } else {
+<span class="fc" id="L630">            return this;</span>
+        }
+    }
+
+    @Override
+    public TreeMap&lt;K, V&gt; removeAll(Iterable&lt;? extends K&gt; keys) {
+<span class="fc" id="L636">        final V ignored = null;</span>
+<span class="fc" id="L637">        RedBlackTree&lt;Tuple2&lt;K, V&gt;&gt; removed = entries;</span>
+<span class="fc bfc" id="L638" title="All 2 branches covered.">        for (K key : keys) {</span>
+<span class="fc" id="L639">            final Tuple2&lt;K, V&gt; entry = new Tuple2&lt;&gt;(key, ignored);</span>
+<span class="fc bfc" id="L640" title="All 2 branches covered.">            if (removed.contains(entry)) {</span>
+<span class="fc" id="L641">                removed = removed.delete(entry);</span>
+            }
+<span class="fc" id="L643">        }</span>
+<span class="fc bfc" id="L644" title="All 2 branches covered.">        if (removed.size() == entries.size()) {</span>
+<span class="fc" id="L645">            return this;</span>
+        } else {
+<span class="fc" id="L647">            return new TreeMap&lt;&gt;(removed);</span>
+        }
+    }
+
+    @Override
+    public TreeMap&lt;K, V&gt; replace(Tuple2&lt;K, V&gt; currentElement, Tuple2&lt;K, V&gt; newElement) {
+<span class="fc" id="L653">        Objects.requireNonNull(currentElement, &quot;currentElement is null&quot;);</span>
+<span class="fc" id="L654">        Objects.requireNonNull(newElement, &quot;newElement is null&quot;);</span>
+<span class="pc bpc" id="L655" title="1 of 2 branches missed.">        return containsKey(currentElement._1) ? remove(currentElement._1).put(newElement) : this;</span>
+    }
+
+    @Override
+    public TreeMap&lt;K, V&gt; replaceAll(Tuple2&lt;K, V&gt; currentElement, Tuple2&lt;K, V&gt; newElement) {
+<span class="fc" id="L660">        return replace(currentElement, newElement);</span>
+    }
+
+    @Override
+    public TreeMap&lt;K, V&gt; retainAll(Iterable&lt;? extends Tuple2&lt;K, V&gt;&gt; elements) {
+<span class="fc" id="L665">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc" id="L666">        RedBlackTree&lt;Tuple2&lt;K, V&gt;&gt; tree = RedBlackTree.empty(entries.comparator());</span>
+<span class="fc bfc" id="L667" title="All 2 branches covered.">        for (Tuple2&lt;K, V&gt; entry : elements) {</span>
+<span class="pc bpc" id="L668" title="1 of 2 branches missed.">            if (contains(entry)) {</span>
+<span class="fc" id="L669">                tree = tree.insert(entry);</span>
+            }
+<span class="fc" id="L671">        }</span>
+<span class="fc" id="L672">        return new TreeMap&lt;&gt;(tree);</span>
+    }
+
+    @Override
+    public TreeMap&lt;K, V&gt; scan(Tuple2&lt;K, V&gt; zero, BiFunction&lt;? super Tuple2&lt;K, V&gt;, ? super Tuple2&lt;K, V&gt;, ? extends Tuple2&lt;K, V&gt;&gt; operation) {
+<span class="fc" id="L677">        Objects.requireNonNull(operation, &quot;operation is null&quot;);</span>
+<span class="fc" id="L678">        return Collections.scanLeft(this, zero, operation, TreeMap.empty(keyComparator()), TreeMap::put, Function.identity());</span>
+    }
+
+    @Override
+    public &lt;U&gt; Seq&lt;U&gt; scanLeft(U zero, BiFunction&lt;? super U, ? super Tuple2&lt;K, V&gt;, ? extends U&gt; operation) {
+<span class="fc" id="L683">        Objects.requireNonNull(operation, &quot;operation is null&quot;);</span>
+<span class="fc" id="L684">        return Collections.scanLeft(this, zero, operation, List.empty(), List::prepend, List::reverse);</span>
+    }
+
+    @Override
+    public &lt;U&gt; Seq&lt;U&gt; scanRight(U zero, BiFunction&lt;? super Tuple2&lt;K, V&gt;, ? super U, ? extends U&gt; operation) {
+<span class="fc" id="L689">        Objects.requireNonNull(operation, &quot;operation is null&quot;);</span>
+<span class="fc" id="L690">        return Collections.scanRight(this, zero, operation, List.empty(), List::prepend, Function.identity());</span>
+    }
+
+    @Override
+    public int size() {
+<span class="fc" id="L695">        return entries.size();</span>
+    }
+
+    @Override
+    public Iterator&lt;TreeMap&lt;K, V&gt;&gt; sliding(int size) {
+<span class="fc" id="L700">        return sliding(size, 1);</span>
+    }
+
+    @Override
+    public Iterator&lt;TreeMap&lt;K, V&gt;&gt; sliding(int size, int step) {
+<span class="fc" id="L705">        return iterator().sliding(size, step).map(seq -&gt; createTreeMap(entries.comparator(), seq));</span>
+    }
+
+    @Override
+    public Tuple2&lt;TreeMap&lt;K, V&gt;, TreeMap&lt;K, V&gt;&gt; span(Predicate&lt;? super Tuple2&lt;K, V&gt;&gt; predicate) {
+<span class="fc" id="L710">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L711">        final Tuple2&lt;Iterator&lt;Tuple2&lt;K, V&gt;&gt;, Iterator&lt;Tuple2&lt;K, V&gt;&gt;&gt; t = iterator().span(predicate);</span>
+<span class="fc" id="L712">        final TreeMap&lt;K, V&gt; treeMap1 = createTreeMap(entries.comparator(), t._1);</span>
+<span class="fc" id="L713">        final TreeMap&lt;K, V&gt; treeMap2 = createTreeMap(entries.comparator(), t._2);</span>
+<span class="fc" id="L714">        return Tuple.of(treeMap1, treeMap2);</span>
+    }
+
+    @Override
+    public TreeMap&lt;K, V&gt; tail() {
+<span class="fc bfc" id="L719" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L720">            throw new UnsupportedOperationException(&quot;tail of empty TreeMap&quot;);</span>
+        } else {
+<span class="fc" id="L722">            final Tuple2&lt;K, V&gt; min = entries.min().get();</span>
+<span class="fc" id="L723">            return new TreeMap&lt;&gt;(entries.delete(min));</span>
+        }
+    }
+
+    @Override
+    public Option&lt;TreeMap&lt;K, V&gt;&gt; tailOption() {
+<span class="fc bfc" id="L729" title="All 2 branches covered.">        return isEmpty() ? Option.none() : Option.some(tail());</span>
+    }
+
+    @Override
+    public TreeMap&lt;K, V&gt; take(int n) {
+<span class="fc" id="L734">        return createTreeMap(entries.comparator(), entries.iterator().take(n));</span>
+    }
+
+    @Override
+    public TreeMap&lt;K, V&gt; takeRight(int n) {
+<span class="fc" id="L739">        return createTreeMap(entries.comparator(), entries.iterator().takeRight(n));</span>
+    }
+
+    @Override
+    public TreeMap&lt;K, V&gt; takeUntil(Predicate&lt;? super Tuple2&lt;K, V&gt;&gt; predicate) {
+<span class="fc" id="L744">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L745">        return createTreeMap(entries.comparator(), entries.iterator().takeUntil(predicate));</span>
+    }
+
+    @Override
+    public TreeMap&lt;K, V&gt; takeWhile(Predicate&lt;? super Tuple2&lt;K, V&gt;&gt; predicate) {
+<span class="fc" id="L750">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L751">        return createTreeMap(entries.comparator(), entries.iterator().takeWhile(predicate));</span>
+    }
+
+    @Override
+    public Seq&lt;V&gt; values() {
+<span class="fc" id="L756">        return iterator().map(Tuple2::_2).toStream();</span>
+    }
+
+    /**
+     * Internal factory method, used with Tuple2 comparator instead of a key comparator.
+     *
+     * @param comparator An Tuple2 comparator
+     * @param entries    Map entries
+     * @param &lt;K&gt;        Key type
+     * @param &lt;V&gt;        Value type
+     * @return A new TreeMap.
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    private static &lt;K, V&gt; TreeMap&lt;K, V&gt; createTreeMap(Comparator&lt;? super Tuple2&lt;K, V&gt;&gt; comparator,
+                                                      Iterable&lt;? extends Tuple2&lt;? extends K, ? extends V&gt;&gt; entries) {
+<span class="fc" id="L771">        RedBlackTree&lt;Tuple2&lt;K, V&gt;&gt; tree = RedBlackTree.empty(comparator);</span>
+<span class="fc bfc" id="L772" title="All 2 branches covered.">        for (Tuple2&lt;? extends K, ? extends V&gt; entry : entries) {</span>
+<span class="fc" id="L773">            tree = tree.insert((Tuple2&lt;K, V&gt;) entry);</span>
+<span class="fc" id="L774">        }</span>
+<span class="fc" id="L775">        return new TreeMap&lt;&gt;(tree);</span>
+    }
+
+    // -- Object
+
+    @Override
+    public boolean equals(Object o) {
+<span class="fc bfc" id="L782" title="All 2 branches covered.">        if (o == this) {</span>
+<span class="fc" id="L783">            return true;</span>
+<span class="pc bpc" id="L784" title="1 of 2 branches missed.">        } else if (o instanceof TreeMap) {</span>
+<span class="fc" id="L785">            final TreeMap&lt;?, ?&gt; that = (TreeMap&lt;?, ?&gt;) o;</span>
+<span class="fc" id="L786">            return entries.equals(that.entries);</span>
+        } else {
+<span class="nc" id="L788">            return false;</span>
+        }
+    }
+
+    @Override
+    public int hashCode() {
+<span class="fc" id="L794">        return entries.hashCode();</span>
+    }
+
+    @Override
+    public String stringPrefix() {
+<span class="fc" id="L799">        return &quot;TreeMap&quot;;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L804">        return mkString(stringPrefix() + &quot;(&quot;, &quot;, &quot;, &quot;)&quot;);</span>
+    }
+
+    /**
+     * Used to compare entries by key and store the keyComparator for later access.
+     *
+     * @param &lt;K&gt; key type
+     * @param &lt;V&gt; value type, needed at compile time for the Comparator interface
+     */
+    static class EntryComparator&lt;K, V&gt; implements Comparator&lt;Tuple2&lt;K, V&gt;&gt;, Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        final Comparator&lt;K&gt; keyComparator;
+
+        @SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L820">        EntryComparator(Comparator&lt;? super K&gt; keyComparator) {</span>
+<span class="fc" id="L821">            this.keyComparator = (Comparator&lt;K&gt;) keyComparator;</span>
+<span class="fc" id="L822">        }</span>
+
+        @Override
+        public int compare(Tuple2&lt;K, V&gt; e1, Tuple2&lt;K, V&gt; e2) {
+<span class="fc" id="L826">            return keyComparator.compare(e1._1, e2._1);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

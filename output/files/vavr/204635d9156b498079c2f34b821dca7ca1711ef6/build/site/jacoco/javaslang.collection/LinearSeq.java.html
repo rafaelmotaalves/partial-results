@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>LinearSeq.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang.collection</a> &gt; <span class="el_source">LinearSeq.java</span></div><h1>LinearSeq.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang.collection;
+
+import javaslang.Tuple;
+import javaslang.Tuple2;
+import javaslang.control.Match;
+import javaslang.control.Option;
+
+import java.util.Comparator;
+import java.util.Objects;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+
+/**
+ * Interface for immutable, linear sequences.
+ * &lt;p&gt;
+ * Efficient {@code head()}, {@code tail()}, and {@code isEmpty()} methods are characteristic for linear sequences.
+ *
+ * @param &lt;T&gt; component type
+ * @author Daniel Dietrich
+ * @since 2.0.0
+ */
+public interface LinearSeq&lt;T&gt; extends Seq&lt;T&gt; {
+
+    long serialVersionUID = 1L;
+
+    // -- Adjusted return types of Seq methods
+
+    @Override
+    LinearSeq&lt;T&gt; append(T element);
+
+    @Override
+    LinearSeq&lt;T&gt; appendAll(Iterable&lt;? extends T&gt; elements);
+
+    @Override
+    LinearSeq&lt;T&gt; clear();
+
+    @Override
+    LinearSeq&lt;? extends LinearSeq&lt;T&gt;&gt; combinations();
+
+    @Override
+    LinearSeq&lt;? extends LinearSeq&lt;T&gt;&gt; combinations(int k);
+
+    @Override
+    LinearSeq&lt;Tuple2&lt;T, T&gt;&gt; crossProduct();
+
+    @Override
+    LinearSeq&lt;? extends LinearSeq&lt;T&gt;&gt; crossProduct(int power);
+
+    @Override
+    &lt;U&gt; LinearSeq&lt;Tuple2&lt;T, U&gt;&gt; crossProduct(Iterable&lt;? extends U&gt; that);
+
+    @Override
+    LinearSeq&lt;T&gt; distinct();
+
+    @Override
+    LinearSeq&lt;T&gt; distinctBy(Comparator&lt;? super T&gt; comparator);
+
+    @Override
+    &lt;U&gt; LinearSeq&lt;T&gt; distinctBy(Function&lt;? super T, ? extends U&gt; keyExtractor);
+
+    @Override
+    LinearSeq&lt;T&gt; drop(int n);
+
+    @Override
+    LinearSeq&lt;T&gt; dropRight(int n);
+
+    @Override
+    LinearSeq&lt;T&gt; dropUntil(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    LinearSeq&lt;T&gt; dropWhile(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    LinearSeq&lt;T&gt; filter(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    LinearSeq&lt;T&gt; filterNot(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    &lt;U&gt; LinearSeq&lt;U&gt; flatMap(Function&lt;? super T, ? extends Iterable&lt;? extends U&gt;&gt; mapper);
+
+    @Override
+    &lt;C&gt; Map&lt;C, ? extends LinearSeq&lt;T&gt;&gt; groupBy(Function&lt;? super T, ? extends C&gt; classifier);
+
+    @Override
+    Iterator&lt;? extends LinearSeq&lt;T&gt;&gt; grouped(int size);
+
+    @Override
+    default int indexWhere(Predicate&lt;? super T&gt; predicate, int from) {
+<span class="fc" id="L97">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L98">        int i = from;</span>
+<span class="fc" id="L99">        LinearSeq&lt;T&gt; these = drop(from);</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        while (!these.isEmpty()) {</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">            if (predicate.test(these.head())) {</span>
+<span class="fc" id="L102">                return i;</span>
+            }
+<span class="fc" id="L104">            i++;</span>
+<span class="fc" id="L105">            these = these.tail();</span>
+        }
+<span class="fc" id="L107">        return -1;</span>
+    }
+
+    @Override
+    LinearSeq&lt;T&gt; init();
+
+    @Override
+    Option&lt;? extends LinearSeq&lt;T&gt;&gt; initOption();
+
+    @Override
+    LinearSeq&lt;T&gt; insert(int index, T element);
+
+    @Override
+    LinearSeq&lt;T&gt; insertAll(int index, Iterable&lt;? extends T&gt; elements);
+
+    @Override
+    LinearSeq&lt;T&gt; intersperse(T element);
+
+    @Override
+    default int lastIndexOfSlice(Iterable&lt;? extends T&gt; that, int end) {
+<span class="fc" id="L127">        return LinearSeqModule.LastIndexOfSlice.lastIndexOfSlice(this, unit(that), end);</span>
+    }
+
+    @Override
+    default int lastIndexWhere(Predicate&lt;? super T&gt; predicate, int end) {
+<span class="fc" id="L132">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L133">        int i = 0;</span>
+<span class="fc" id="L134">        LinearSeq&lt;T&gt; these = this;</span>
+<span class="fc" id="L135">        int last = -1;</span>
+<span class="fc bfc" id="L136" title="All 4 branches covered.">        while (!these.isEmpty() &amp;&amp; i &lt;= end) {</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">            if (predicate.test(these.head())) {</span>
+<span class="fc" id="L138">                last = i;</span>
+            }
+<span class="fc" id="L140">            these = these.tail();</span>
+<span class="fc" id="L141">            i++;</span>
+        }
+<span class="fc" id="L143">        return last;</span>
+    }
+
+    @Override
+    &lt;U&gt; LinearSeq&lt;U&gt; map(Function&lt;? super T, ? extends U&gt; mapper);
+
+    @Override
+    Match.MatchMonad.Of&lt;? extends LinearSeq&lt;T&gt;&gt; match();
+
+    @Override
+    LinearSeq&lt;T&gt; padTo(int length, T element);
+
+    @Override
+    LinearSeq&lt;T&gt; patch(int from, Iterable&lt;? extends T&gt; that, int replaced);
+
+    @Override
+    Tuple2&lt;? extends LinearSeq&lt;T&gt;, ? extends LinearSeq&lt;T&gt;&gt; partition(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    LinearSeq&lt;T&gt; peek(Consumer&lt;? super T&gt; action);
+
+    @Override
+    LinearSeq&lt;? extends LinearSeq&lt;T&gt;&gt; permutations();
+
+    @Override
+    LinearSeq&lt;T&gt; prepend(T element);
+
+    @Override
+    LinearSeq&lt;T&gt; prependAll(Iterable&lt;? extends T&gt; elements);
+
+    @Override
+    LinearSeq&lt;T&gt; remove(T element);
+
+    @Override
+    LinearSeq&lt;T&gt; removeFirst(Predicate&lt;T&gt; predicate);
+
+    @Override
+    LinearSeq&lt;T&gt; removeLast(Predicate&lt;T&gt; predicate);
+
+    @Override
+    LinearSeq&lt;T&gt; removeAt(int index);
+
+    @Override
+    LinearSeq&lt;T&gt; removeAll(T element);
+
+    @Override
+    LinearSeq&lt;T&gt; removeAll(Iterable&lt;? extends T&gt; elements);
+
+    @Override
+    LinearSeq&lt;T&gt; replace(T currentElement, T newElement);
+
+    @Override
+    LinearSeq&lt;T&gt; replaceAll(T currentElement, T newElement);
+
+    @Override
+    LinearSeq&lt;T&gt; retainAll(Iterable&lt;? extends T&gt; elements);
+
+    @Override
+    LinearSeq&lt;T&gt; reverse();
+
+    @Override
+    default Iterator&lt;T&gt; reverseIterator() {
+<span class="fc" id="L205">        return reverse().iterator();</span>
+    }
+
+    @Override
+    LinearSeq&lt;T&gt; scan(T zero, BiFunction&lt;? super T, ? super T, ? extends T&gt; operation);
+
+    @Override
+    &lt;U&gt; LinearSeq&lt;U&gt; scanLeft(U zero, BiFunction&lt;? super U, ? super T, ? extends U&gt; operation);
+
+    @Override
+    &lt;U&gt; LinearSeq&lt;U&gt; scanRight(U zero, BiFunction&lt;? super T, ? super U, ? extends U&gt; operation);
+
+    @Override
+    default int segmentLength(Predicate&lt;? super T&gt; predicate, int from) {
+<span class="fc" id="L219">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L220">        int i = 0;</span>
+<span class="fc" id="L221">        LinearSeq&lt;T&gt; these = this.drop(from);</span>
+<span class="fc bfc" id="L222" title="All 4 branches covered.">        while (!these.isEmpty() &amp;&amp; predicate.test(these.head())) {</span>
+<span class="fc" id="L223">            i++;</span>
+<span class="fc" id="L224">            these = these.tail();</span>
+        }
+<span class="fc" id="L226">        return i;</span>
+    }
+
+    @Override
+    LinearSeq&lt;T&gt; slice(int beginIndex, int endIndex);
+
+    @Override
+    Iterator&lt;? extends LinearSeq&lt;T&gt;&gt; sliding(int size);
+
+    @Override
+    Iterator&lt;? extends LinearSeq&lt;T&gt;&gt; sliding(int size, int step);
+
+    @Override
+    LinearSeq&lt;T&gt; sort();
+
+    @Override
+    LinearSeq&lt;T&gt; sort(Comparator&lt;? super T&gt; comparator);
+
+    @Override
+    &lt;U extends Comparable&lt;? super U&gt;&gt; LinearSeq&lt;T&gt; sortBy(Function&lt;? super T, ? extends U&gt; mapper);
+
+    @Override
+    &lt;U&gt; LinearSeq&lt;T&gt; sortBy(Comparator&lt;? super U&gt; comparator, Function&lt;? super T, ? extends U&gt; mapper);
+
+    @Override
+    Tuple2&lt;? extends LinearSeq&lt;T&gt;, ? extends LinearSeq&lt;T&gt;&gt; span(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    LinearSeq&lt;T&gt; subSequence(int beginIndex);
+
+    @Override
+    LinearSeq&lt;T&gt; subSequence(int beginIndex, int endIndex);
+
+    @Override
+    LinearSeq&lt;T&gt; tail();
+
+    @Override
+    Option&lt;? extends LinearSeq&lt;T&gt;&gt; tailOption();
+
+    @Override
+    LinearSeq&lt;T&gt; take(int n);
+
+    @Override
+    LinearSeq&lt;T&gt; takeRight(int n);
+
+    @Override
+    LinearSeq&lt;T&gt; takeUntil(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    LinearSeq&lt;T&gt; takeWhile(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    &lt;U&gt; LinearSeq&lt;U&gt; unit(Iterable&lt;? extends U&gt; iterable);
+
+    @Override
+    &lt;T1, T2&gt; Tuple2&lt;? extends LinearSeq&lt;T1&gt;, ? extends LinearSeq&lt;T2&gt;&gt; unzip(Function&lt;? super T, Tuple2&lt;? extends T1, ? extends T2&gt;&gt; unzipper);
+
+    @Override
+    LinearSeq&lt;T&gt; update(int index, T element);
+
+    @Override
+    &lt;U&gt; LinearSeq&lt;Tuple2&lt;T, U&gt;&gt; zip(Iterable&lt;U&gt; that);
+
+    @Override
+    &lt;U&gt; LinearSeq&lt;Tuple2&lt;T, U&gt;&gt; zipAll(Iterable&lt;U&gt; that, T thisElem, U thatElem);
+
+    @Override
+    LinearSeq&lt;Tuple2&lt;T, Integer&gt;&gt; zipWithIndex();
+
+}
+
+interface LinearSeqModule {
+    interface LastIndexOfSlice {
+        static &lt;T&gt; int lastIndexOfSlice(LinearSeq&lt;T&gt; t, LinearSeq&lt;T&gt; slice, int end) {
+<span class="fc bfc" id="L300" title="All 2 branches covered.">            if (end &lt; 0) {</span>
+<span class="fc" id="L301">                return -1;</span>
+            }
+<span class="fc bfc" id="L303" title="All 2 branches covered.">            if (t.isEmpty()) {</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">                return slice.isEmpty() ? 0 : -1;</span>
+            }
+<span class="fc bfc" id="L306" title="All 2 branches covered.">            if (slice.isEmpty()) {</span>
+<span class="fc" id="L307">                int len = t.length();</span>
+<span class="fc bfc" id="L308" title="All 2 branches covered.">                return len &lt; end ? len : end;</span>
+            }
+<span class="fc" id="L310">            int p = 0;</span>
+<span class="fc" id="L311">            int result = -1;</span>
+<span class="fc bfc" id="L312" title="All 2 branches covered.">            while (t.length() &gt;= slice.length()) {</span>
+<span class="fc" id="L313">                Tuple2&lt;LinearSeq&lt;T&gt;, Integer&gt; r = findSlice(t, slice);</span>
+<span class="fc bfc" id="L314" title="All 2 branches covered.">                if (r == null) {</span>
+<span class="fc" id="L315">                    return result;</span>
+                }
+<span class="fc bfc" id="L317" title="All 2 branches covered.">                if (p + r._2 &lt;= end) {</span>
+<span class="fc" id="L318">                    result = p + r._2;</span>
+<span class="fc" id="L319">                    p += r._2 + 1;</span>
+<span class="fc" id="L320">                    t = r._1.tail();</span>
+                } else {
+<span class="fc" id="L322">                    return result;</span>
+                }
+<span class="fc" id="L324">            }</span>
+<span class="fc" id="L325">            return result;</span>
+        }
+
+        static &lt;T&gt; Tuple2&lt;LinearSeq&lt;T&gt;, Integer&gt; findSlice(LinearSeq&lt;T&gt; t, LinearSeq&lt;T&gt; slice) {
+<span class="fc" id="L329">            int p = 0;</span>
+<span class="fc bfc" id="L330" title="All 2 branches covered.">            while (t.length() &gt;= slice.length()) {</span>
+<span class="fc bfc" id="L331" title="All 2 branches covered.">                if (t.startsWith(slice)) {</span>
+<span class="fc" id="L332">                    return Tuple.of(t, p);</span>
+                }
+<span class="fc" id="L334">                p++;</span>
+<span class="fc" id="L335">                t = t.tail();</span>
+            }
+<span class="fc" id="L337">            return null;</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

@@ -1,0 +1,749 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Validation.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang.control</a> &gt; <span class="el_source">Validation.java</span></div><h1>Validation.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang.control;
+
+import javaslang.*;
+import javaslang.algebra.Applicative;
+import javaslang.algebra.BiFunctor;
+import javaslang.algebra.Kind2;
+import javaslang.collection.List;
+
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+/**
+ * An implementation similar to scalaz's &lt;a href=&quot;http://eed3si9n.com/learning-scalaz/Validation.html&quot;&gt;Validation&lt;/a&gt; control.
+ *
+ * &lt;p&gt;
+ * The Validation type is different from a Monad type, it is an applicative
+ * functor. Whereas a Monad will short circuit after the first error, the
+ * applicative functor will continue on, accumulating ALL errors. This is
+ * especially helpful in cases such as validation, where you want to know
+ * all the validation errors that have occurred, not just the first one.
+ * &lt;/p&gt;
+ *
+ * &lt;pre&gt;
+ * &lt;code&gt;
+ * &lt;b&gt;Validation construction:&lt;/b&gt;
+ *
+ * &lt;i&gt;Valid:&lt;/i&gt;
+ * Validation&amp;lt;String,Integer&amp;gt; valid = Validation.valid(5);
+ *
+ * &lt;i&gt;Invalid:&lt;/i&gt;
+ * Validation&amp;lt;List&amp;lt;String&amp;gt;,Integer&amp;gt; invalid = Validation.invalid(List.of(&quot;error1&quot;,&quot;error2&quot;));
+ *
+ * &lt;b&gt;Validation combination:&lt;/b&gt;
+ *
+ * Validation&amp;lt;String,String&amp;gt; valid1 = Validation.valid(&quot;John&quot;);
+ * Validation&amp;lt;String,Integer&amp;gt; valid2 = Validation.valid(5);
+ * Validation&amp;lt;String,Option&amp;lt;String&amp;gt;&amp;gt; valid3 = Validation.valid(Option.of(&quot;123 Fake St.&quot;));
+ * Function3&amp;lt;String,Integer,Option&amp;lt;String&amp;gt;,Person&amp;gt; f = ...;
+ *
+ * Validation&amp;lt;List&amp;lt;String&amp;gt;,String&amp;gt; result = valid1.combine(valid2).ap((name,age) -&amp;gt; &quot;Name: &quot;+name+&quot; Age: &quot;+age);
+ * Validation&amp;lt;List&amp;lt;String&amp;gt;,Person&amp;gt; result2 = valid1.combine(valid2).combine(valid3).ap(f);
+ * &lt;/code&gt;
+ * &lt;/pre&gt;
+ *
+ * @param &lt;E&gt; value type in the case of invalid
+ * @param &lt;T&gt; value type in the case of valid
+ * @author Eric Nelson
+ * @see &lt;a href=&quot;https://github.com/scalaz/scalaz/blob/series/7.3.x/core/src/main/scala/scalaz/Validation.scala&quot;&gt;Validation&lt;/a&gt;
+ * @since 2.0.0
+ */
+public interface Validation&lt;E, T&gt; extends Applicative&lt;Validation&lt;?, ?&gt;, E, T&gt;, BiFunctor&lt;E, T&gt; {
+
+    /**
+     * Creates a {@link Valid} that contains the given {@code value}.
+     *
+     * @param &lt;E&gt;   type of the error
+     * @param &lt;T&gt;   type of the given {@code value}
+     * @param value A value
+     * @return {@code Valid(value)}
+     * @throws NullPointerException if value is null
+     */
+    static &lt;E, T&gt; Validation&lt;E, T&gt; valid(T value) {
+<span class="fc" id="L70">        Objects.requireNonNull(value, &quot;value is null&quot;);</span>
+<span class="fc" id="L71">        return new Valid&lt;&gt;(value);</span>
+    }
+
+    /**
+     * Creates an {@link Invalid} that contains the given {@code error}.
+     *
+     * @param &lt;E&gt;   type of the given {@code error}
+     * @param &lt;T&gt;   type of the value
+     * @param error An error
+     * @return {@code Invalid(error)}
+     * @throws NullPointerException if error is null
+     */
+    static &lt;E, T&gt; Validation&lt;E, T&gt; invalid(E error) {
+<span class="fc" id="L84">        Objects.requireNonNull(error, &quot;error is null&quot;);</span>
+<span class="fc" id="L85">        return new Invalid&lt;&gt;(error);</span>
+    }
+
+    /**
+     * Combines two {@code Validation}s into a {@link Builder}.
+     *
+     * @param &lt;E&gt;         type of error
+     * @param &lt;T1&gt;        type of first valid value
+     * @param &lt;T2&gt;        type of second valid value
+     * @param validation1 first validation
+     * @param validation2 second validation
+     * @return an instance of Builder&amp;lt;E,T1,T2&amp;gt;
+     * @throws NullPointerException if validation1 or validation2 is null
+     */
+    static &lt;E, T1, T2&gt; Builder&lt;E, T1, T2&gt; combine(Validation&lt;E, T1&gt; validation1, Validation&lt;E, T2&gt; validation2) {
+<span class="fc" id="L100">        Objects.requireNonNull(validation1, &quot;validation1 is null&quot;);</span>
+<span class="fc" id="L101">        Objects.requireNonNull(validation2, &quot;validation2 is null&quot;);</span>
+<span class="fc" id="L102">        return new Builder&lt;&gt;(validation1, validation2);</span>
+    }
+
+    /**
+     * Combines three {@code Validation}s into a {@link Builder3}.
+     *
+     * @param &lt;E&gt;         type of error
+     * @param &lt;T1&gt;        type of first valid value
+     * @param &lt;T2&gt;        type of second valid value
+     * @param &lt;T3&gt;        type of third valid value
+     * @param validation1 first validation
+     * @param validation2 second validation
+     * @param validation3 third validation
+     * @return an instance of Builder3&amp;lt;E,T1,T2,T3&amp;gt;
+     * @throws NullPointerException if validation1, validation2 or validation3 is null
+     */
+    static &lt;E, T1, T2, T3&gt; Builder3&lt;E, T1, T2, T3&gt; combine(Validation&lt;E, T1&gt; validation1, Validation&lt;E, T2&gt; validation2, Validation&lt;E, T3&gt; validation3) {
+<span class="fc" id="L119">        Objects.requireNonNull(validation1, &quot;validation1 is null&quot;);</span>
+<span class="fc" id="L120">        Objects.requireNonNull(validation2, &quot;validation2 is null&quot;);</span>
+<span class="fc" id="L121">        Objects.requireNonNull(validation3, &quot;validation3 is null&quot;);</span>
+<span class="fc" id="L122">        return new Builder3&lt;&gt;(validation1, validation2, validation3);</span>
+    }
+
+    /**
+     * Combines four {@code Validation}s into a {@link Builder4}.
+     *
+     * @param &lt;E&gt;         type of error
+     * @param &lt;T1&gt;        type of first valid value
+     * @param &lt;T2&gt;        type of second valid value
+     * @param &lt;T3&gt;        type of third valid value
+     * @param &lt;T4&gt;        type of fourth valid value
+     * @param validation1 first validation
+     * @param validation2 second validation
+     * @param validation3 third validation
+     * @param validation4 fourth validation
+     * @return an instance of Builder3&amp;lt;E,T1,T2,T3,T4&amp;gt;
+     * @throws NullPointerException if validation1, validation2, validation3 or validation4 is null
+     */
+    static &lt;E, T1, T2, T3, T4&gt; Builder4&lt;E, T1, T2, T3, T4&gt; combine(Validation&lt;E, T1&gt; validation1, Validation&lt;E, T2&gt; validation2, Validation&lt;E, T3&gt; validation3, Validation&lt;E, T4&gt; validation4) {
+<span class="fc" id="L141">        Objects.requireNonNull(validation1, &quot;validation1 is null&quot;);</span>
+<span class="fc" id="L142">        Objects.requireNonNull(validation2, &quot;validation2 is null&quot;);</span>
+<span class="fc" id="L143">        Objects.requireNonNull(validation3, &quot;validation3 is null&quot;);</span>
+<span class="fc" id="L144">        Objects.requireNonNull(validation4, &quot;validation4 is null&quot;);</span>
+<span class="fc" id="L145">        return new Builder4&lt;&gt;(validation1, validation2, validation3, validation4);</span>
+    }
+
+    /**
+     * Combines five {@code Validation}s into a {@link Builder5}.
+     *
+     * @param &lt;E&gt;         type of error
+     * @param &lt;T1&gt;        type of first valid value
+     * @param &lt;T2&gt;        type of second valid value
+     * @param &lt;T3&gt;        type of third valid value
+     * @param &lt;T4&gt;        type of fourth valid value
+     * @param &lt;T5&gt;        type of fifth valid value
+     * @param validation1 first validation
+     * @param validation2 second validation
+     * @param validation3 third validation
+     * @param validation4 fourth validation
+     * @param validation5 fifth validation
+     * @return an instance of Builder3&amp;lt;E,T1,T2,T3,T4,T5&amp;gt;
+     * @throws NullPointerException if validation1, validation2, validation3, validation4 or validation5 is null
+     */
+    static &lt;E, T1, T2, T3, T4, T5&gt; Builder5&lt;E, T1, T2, T3, T4, T5&gt; combine(Validation&lt;E, T1&gt; validation1, Validation&lt;E, T2&gt; validation2, Validation&lt;E, T3&gt; validation3, Validation&lt;E, T4&gt; validation4, Validation&lt;E, T5&gt; validation5) {
+<span class="fc" id="L166">        Objects.requireNonNull(validation1, &quot;validation1 is null&quot;);</span>
+<span class="fc" id="L167">        Objects.requireNonNull(validation2, &quot;validation2 is null&quot;);</span>
+<span class="fc" id="L168">        Objects.requireNonNull(validation3, &quot;validation3 is null&quot;);</span>
+<span class="fc" id="L169">        Objects.requireNonNull(validation4, &quot;validation4 is null&quot;);</span>
+<span class="fc" id="L170">        Objects.requireNonNull(validation5, &quot;validation5 is null&quot;);</span>
+<span class="fc" id="L171">        return new Builder5&lt;&gt;(validation1, validation2, validation3, validation4, validation5);</span>
+    }
+
+    /**
+     * Combines six {@code Validation}s into a {@link Builder6}.
+     *
+     * @param &lt;E&gt;         type of error
+     * @param &lt;T1&gt;        type of first valid value
+     * @param &lt;T2&gt;        type of second valid value
+     * @param &lt;T3&gt;        type of third valid value
+     * @param &lt;T4&gt;        type of fourth valid value
+     * @param &lt;T5&gt;        type of fifth valid value
+     * @param &lt;T6&gt;        type of sixth valid value
+     * @param validation1 first validation
+     * @param validation2 second validation
+     * @param validation3 third validation
+     * @param validation4 fourth validation
+     * @param validation5 fifth validation
+     * @param validation6 sixth validation
+     * @return an instance of Builder3&amp;lt;E,T1,T2,T3,T4,T5,T6&amp;gt;
+     * @throws NullPointerException if validation1, validation2, validation3, validation4, validation5 or validation6 is null
+     */
+    static &lt;E, T1, T2, T3, T4, T5, T6&gt; Builder6&lt;E, T1, T2, T3, T4, T5, T6&gt; combine(Validation&lt;E, T1&gt; validation1, Validation&lt;E, T2&gt; validation2, Validation&lt;E, T3&gt; validation3, Validation&lt;E, T4&gt; validation4, Validation&lt;E, T5&gt; validation5, Validation&lt;E, T6&gt; validation6) {
+<span class="fc" id="L194">        Objects.requireNonNull(validation1, &quot;validation1 is null&quot;);</span>
+<span class="fc" id="L195">        Objects.requireNonNull(validation2, &quot;validation2 is null&quot;);</span>
+<span class="fc" id="L196">        Objects.requireNonNull(validation3, &quot;validation3 is null&quot;);</span>
+<span class="fc" id="L197">        Objects.requireNonNull(validation4, &quot;validation4 is null&quot;);</span>
+<span class="fc" id="L198">        Objects.requireNonNull(validation5, &quot;validation5 is null&quot;);</span>
+<span class="fc" id="L199">        Objects.requireNonNull(validation6, &quot;validation6 is null&quot;);</span>
+<span class="fc" id="L200">        return new Builder6&lt;&gt;(validation1, validation2, validation3, validation4, validation5, validation6);</span>
+    }
+
+    /**
+     * Combines seven {@code Validation}s into a {@link Builder7}.
+     *
+     * @param &lt;E&gt;         type of error
+     * @param &lt;T1&gt;        type of first valid value
+     * @param &lt;T2&gt;        type of second valid value
+     * @param &lt;T3&gt;        type of third valid value
+     * @param &lt;T4&gt;        type of fourth valid value
+     * @param &lt;T5&gt;        type of fifth valid value
+     * @param &lt;T6&gt;        type of sixth valid value
+     * @param &lt;T7&gt;        type of seventh valid value
+     * @param validation1 first validation
+     * @param validation2 second validation
+     * @param validation3 third validation
+     * @param validation4 fourth validation
+     * @param validation5 fifth validation
+     * @param validation6 sixth validation
+     * @param validation7 seventh validation
+     * @return an instance of Builder3&amp;lt;E,T1,T2,T3,T4,T5,T6,T7&amp;gt;
+     * @throws NullPointerException if validation1, validation2, validation3, validation4, validation5, validation6 or validation7 is null
+     */
+    static &lt;E, T1, T2, T3, T4, T5, T6, T7&gt; Builder7&lt;E, T1, T2, T3, T4, T5, T6, T7&gt; combine(Validation&lt;E, T1&gt; validation1, Validation&lt;E, T2&gt; validation2, Validation&lt;E, T3&gt; validation3, Validation&lt;E, T4&gt; validation4, Validation&lt;E, T5&gt; validation5, Validation&lt;E, T6&gt; validation6, Validation&lt;E, T7&gt; validation7) {
+<span class="fc" id="L225">        Objects.requireNonNull(validation1, &quot;validation1 is null&quot;);</span>
+<span class="fc" id="L226">        Objects.requireNonNull(validation2, &quot;validation2 is null&quot;);</span>
+<span class="fc" id="L227">        Objects.requireNonNull(validation3, &quot;validation3 is null&quot;);</span>
+<span class="fc" id="L228">        Objects.requireNonNull(validation4, &quot;validation4 is null&quot;);</span>
+<span class="fc" id="L229">        Objects.requireNonNull(validation5, &quot;validation5 is null&quot;);</span>
+<span class="fc" id="L230">        Objects.requireNonNull(validation6, &quot;validation6 is null&quot;);</span>
+<span class="fc" id="L231">        Objects.requireNonNull(validation7, &quot;validation7 is null&quot;);</span>
+<span class="fc" id="L232">        return new Builder7&lt;&gt;(validation1, validation2, validation3, validation4, validation5, validation6, validation7);</span>
+    }
+
+    /**
+     * Combines eight {@code Validation}s into a {@link Builder8}.
+     *
+     * @param &lt;E&gt;         type of error
+     * @param &lt;T1&gt;        type of first valid value
+     * @param &lt;T2&gt;        type of second valid value
+     * @param &lt;T3&gt;        type of third valid value
+     * @param &lt;T4&gt;        type of fourth valid value
+     * @param &lt;T5&gt;        type of fifth valid value
+     * @param &lt;T6&gt;        type of sixth valid value
+     * @param &lt;T7&gt;        type of seventh valid value
+     * @param &lt;T8&gt;        type of eighth valid value
+     * @param validation1 first validation
+     * @param validation2 second validation
+     * @param validation3 third validation
+     * @param validation4 fourth validation
+     * @param validation5 fifth validation
+     * @param validation6 sixth validation
+     * @param validation7 seventh validation
+     * @param validation8 eigth validation
+     * @return an instance of Builder3&amp;lt;E,T1,T2,T3,T4,T5,T6,T7,T8&amp;gt;
+     * @throws NullPointerException if validation1, validation2, validation3, validation4, validation5, validation6, validation7 or validation8 is null
+     */
+    static &lt;E, T1, T2, T3, T4, T5, T6, T7, T8&gt; Builder8&lt;E, T1, T2, T3, T4, T5, T6, T7, T8&gt; combine(Validation&lt;E, T1&gt; validation1, Validation&lt;E, T2&gt; validation2, Validation&lt;E, T3&gt; validation3, Validation&lt;E, T4&gt; validation4, Validation&lt;E, T5&gt; validation5, Validation&lt;E, T6&gt; validation6, Validation&lt;E, T7&gt; validation7, Validation&lt;E, T8&gt; validation8) {
+<span class="fc" id="L259">        Objects.requireNonNull(validation1, &quot;validation1 is null&quot;);</span>
+<span class="fc" id="L260">        Objects.requireNonNull(validation2, &quot;validation2 is null&quot;);</span>
+<span class="fc" id="L261">        Objects.requireNonNull(validation3, &quot;validation3 is null&quot;);</span>
+<span class="fc" id="L262">        Objects.requireNonNull(validation4, &quot;validation4 is null&quot;);</span>
+<span class="fc" id="L263">        Objects.requireNonNull(validation5, &quot;validation5 is null&quot;);</span>
+<span class="fc" id="L264">        Objects.requireNonNull(validation6, &quot;validation6 is null&quot;);</span>
+<span class="fc" id="L265">        Objects.requireNonNull(validation7, &quot;validation7 is null&quot;);</span>
+<span class="fc" id="L266">        Objects.requireNonNull(validation8, &quot;validation8 is null&quot;);</span>
+<span class="fc" id="L267">        return new Builder8&lt;&gt;(validation1, validation2, validation3, validation4, validation5, validation6, validation7, validation8);</span>
+    }
+
+    /**
+     * Check whether this is of type {@code Valid}
+     *
+     * @return true if is a Valid, false if is an Invalid
+     */
+    boolean isValid();
+
+    /**
+     * Check whether this is of type {@code Invalid}
+     *
+     * @return true if is an Invalid, false if is a Valid
+     */
+    boolean isInvalid();
+
+    /**
+     * Gets the value of this Validation if is a Valid or throws if this is an Invalid
+     *
+     * @return The value of this Validation
+     * @throws RuntimeException if this is an Invalid
+     */
+    T get();
+
+    /**
+     * Gets the error of this Validation if is an Invalid or throws if this is a Valid
+     *
+     * @return The error of this Invalid
+     * @throws RuntimeException if this is a Valid
+     */
+    E getError();
+
+    @Override
+    boolean equals(Object o);
+
+    @Override
+    int hashCode();
+
+    @Override
+    String toString();
+
+    /**
+     * Performs the given action for the value contained in {@code Valid}, or do nothing
+     * if this is an Invalid.
+     *
+     * @param action the action to be performed on the contained value
+     * @throws NullPointerException if action is null
+     */
+    default void forEach(Consumer&lt;? super T&gt; action) {
+<span class="fc" id="L317">        Objects.requireNonNull(action, &quot;function f is null&quot;);</span>
+<span class="fc bfc" id="L318" title="All 2 branches covered.">        if (isValid())</span>
+<span class="fc" id="L319">            action.accept(get());</span>
+<span class="fc" id="L320">    }</span>
+
+    /**
+     * Performs the action in fInvalid on error if this is an Invalid, or fValid on value if
+     * this is a Valid. Returns an object of type U.
+     *
+     * &lt;p&gt;
+     * &lt;code&gt;
+     * For example:&lt;br&gt;
+     * Validation&amp;lt;List&amp;lt;String&amp;gt;,String&amp;gt; valid = ...;&lt;br&gt;
+     * Integer i = valid.fold(List::length, String::length);
+     * &lt;/code&gt;
+     * &lt;/p&gt;
+     *
+     * @param &lt;U&gt;      the fold result type
+     * @param fInvalid the invalid fold operation
+     * @param fValid   the valid fold operation
+     * @return an instance of type U
+     * @throws NullPointerException if fInvalid or fValid is null
+     */
+    default &lt;U&gt; U fold(Function&lt;? super E, ? extends U&gt; fInvalid, Function&lt;? super T, ? extends U&gt; fValid) {
+<span class="fc" id="L341">        Objects.requireNonNull(fInvalid, &quot;function fInvalid null&quot;);</span>
+<span class="fc" id="L342">        Objects.requireNonNull(fValid, &quot;function fValid null&quot;);</span>
+<span class="fc bfc" id="L343" title="All 2 branches covered.">        if (isInvalid()) {</span>
+<span class="fc" id="L344">            E error = this.getError();</span>
+<span class="fc" id="L345">            return fInvalid.apply(error);</span>
+        } else {
+<span class="fc" id="L347">            T value = this.get();</span>
+<span class="fc" id="L348">            return fValid.apply(value);</span>
+        }
+    }
+
+    /**
+     * Flip the valid/invalid values for this Validation. If this is a Valid&amp;lt;E,T&amp;gt;, returns Invalid&amp;lt;T,E&amp;gt;.
+     * Or if this is an Invalid&amp;lt;E,T&amp;gt;, return a Valid&amp;lt;T,E&amp;gt;.
+     *
+     * @return a flipped instance of Validation
+     */
+    default Validation&lt;T, E&gt; swap() {
+<span class="fc bfc" id="L359" title="All 2 branches covered.">        if (isInvalid()) {</span>
+<span class="fc" id="L360">            E error = this.getError();</span>
+<span class="fc" id="L361">            return Validation.valid(error);</span>
+        } else {
+<span class="fc" id="L363">            T value = this.get();</span>
+<span class="fc" id="L364">            return Validation.invalid(value);</span>
+        }
+    }
+
+    @Override
+    default &lt;U&gt; Validation&lt;E, U&gt; map(Function&lt;? super T, ? extends U&gt; f) {
+<span class="fc" id="L370">        Objects.requireNonNull(f, &quot;function f is null&quot;);</span>
+<span class="fc bfc" id="L371" title="All 2 branches covered.">        if (isInvalid()) {</span>
+<span class="fc" id="L372">            return Validation.invalid(this.getError());</span>
+        } else {
+<span class="fc" id="L374">            T value = this.get();</span>
+<span class="fc" id="L375">            return Validation.valid(f.apply(value));</span>
+        }
+    }
+
+    /**
+     * Whereas map only performs a mapping on a valid Validation, and leftMap performs a mapping on an invalid
+     * Validation, bimap allows you to provide mapping actions for both, and will give you the result based
+     * on what type of Validation this is. Without this, you would have to do something like:
+     *
+     * validation.map(...).leftMap(...);
+     *
+     * @param &lt;U&gt;           type of the mapping result if this is an invalid
+     * @param &lt;R&gt;           type of the mapping result if this is a valid
+     * @param invalidMapper the invalid mapping operation
+     * @param validMapper   the valid mapping operation
+     * @return an instance of Validation&amp;lt;U,R&amp;gt;
+     * @throws NullPointerException if invalidMapper or validMapper is null
+     */
+    @Override
+    default &lt;U, R&gt; Validation&lt;U, R&gt; bimap(Function&lt;? super E, ? extends U&gt; invalidMapper, Function&lt;? super T, ? extends R&gt; validMapper) {
+<span class="fc" id="L395">        Objects.requireNonNull(invalidMapper, &quot;function invalidMapper is null&quot;);</span>
+<span class="fc" id="L396">        Objects.requireNonNull(validMapper, &quot;function validMapper is null&quot;);</span>
+<span class="fc bfc" id="L397" title="All 2 branches covered.">        if (isInvalid()) {</span>
+<span class="fc" id="L398">            E error = this.getError();</span>
+<span class="fc" id="L399">            return Validation.invalid(invalidMapper.apply(error));</span>
+        } else {
+<span class="fc" id="L401">            T value = this.get();</span>
+<span class="fc" id="L402">            return Validation.valid(validMapper.apply(value));</span>
+        }
+    }
+
+    /**
+     * Applies a function f to the error of this Validation if this is an Invalid. Otherwise does nothing
+     * if this is a Valid.
+     *
+     * @param &lt;U&gt; type of the error resulting from the mapping
+     * @param f   a function that maps the error in this Invalid
+     * @return an instance of Validation&amp;lt;U,T&amp;gt;
+     * @throws NullPointerException if mapping operation f is null
+     */
+    default &lt;U&gt; Validation&lt;U, T&gt; leftMap(Function&lt;? super E, ? extends U&gt; f) {
+<span class="fc" id="L416">        Objects.requireNonNull(f, &quot;function f is null&quot;);</span>
+<span class="fc bfc" id="L417" title="All 2 branches covered.">        if (isInvalid()) {</span>
+<span class="fc" id="L418">            E error = this.getError();</span>
+<span class="fc" id="L419">            return Validation.invalid(f.apply(error));</span>
+        } else {
+<span class="fc" id="L421">            return Validation.valid(this.get());</span>
+        }
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override
+    default &lt;U&gt; Validation&lt;List&lt;E&gt;, U&gt; ap(Kind2&lt;Validation&lt;?, ?&gt;, List&lt;E&gt;, ? extends Function&lt;? super T, ? extends U&gt;&gt; kind) {
+<span class="fc" id="L428">        Objects.requireNonNull(kind, &quot;kind is null&quot;);</span>
+<span class="fc" id="L429">        Validation&lt;List&lt;E&gt;, Function&lt;T, U&gt;&gt; validation = (Validation&lt;List&lt;E&gt;, Function&lt;T, U&gt;&gt;) (Object) kind;</span>
+
+<span class="fc bfc" id="L431" title="All 4 branches covered.">        if (isValid() &amp;&amp; validation.isValid()) {</span>
+<span class="fc" id="L432">            Function&lt;? super T, ? extends U&gt; f = validation.get();</span>
+<span class="fc" id="L433">            U u = f.apply(this.get());</span>
+<span class="fc" id="L434">            return valid(u);</span>
+<span class="pc bpc" id="L435" title="1 of 4 branches missed.">        } else if (isValid() &amp;&amp; validation.isInvalid()) {</span>
+<span class="fc" id="L436">            List&lt;E&gt; errors = validation.getError();</span>
+<span class="fc" id="L437">            return invalid(errors);</span>
+<span class="pc bpc" id="L438" title="1 of 4 branches missed.">        } else if (isInvalid() &amp;&amp; validation.isValid()) {</span>
+<span class="fc" id="L439">            E error = this.getError();</span>
+<span class="fc" id="L440">            return invalid(List.of(error));</span>
+        } else {
+<span class="fc" id="L442">            List&lt;E&gt; errors = validation.getError();</span>
+<span class="fc" id="L443">            E error = this.getError();</span>
+<span class="fc" id="L444">            return invalid(errors.append(error));</span>
+        }
+    }
+
+    /**
+     * Combines two {@code Validation}s to form a {@link Builder}, which can then be used to perform further
+     * combines, or apply a function to it in order to transform the {@link Builder} into a {@code Validation}.
+     *
+     * @param &lt;U&gt;        type of the value contained in validation
+     * @param validation the validation object to combine this with
+     * @return an instance of Builder
+     */
+    default &lt;U&gt; Builder&lt;E, T, U&gt; combine(Validation&lt;E, U&gt; validation) {
+<span class="fc" id="L457">        return new Builder&lt;&gt;(this, validation);</span>
+    }
+
+    /**
+     * A valid Validation
+     *
+     * @param &lt;E&gt; type of the error of this Validation
+     * @param &lt;T&gt; type of the value of this Validation
+     */
+    final class Valid&lt;E, T&gt; implements Validation&lt;E, T&gt; {
+
+        private final T value;
+
+        /**
+         * Construct a {@code Valid}
+         *
+         * @param value The value of this success
+         */
+<span class="fc" id="L475">        private Valid(T value) {</span>
+<span class="fc" id="L476">            this.value = value;</span>
+<span class="fc" id="L477">        }</span>
+
+        @Override
+        public boolean isValid() {
+<span class="fc" id="L481">            return true;</span>
+        }
+
+        @Override
+        public boolean isInvalid() {
+<span class="fc" id="L486">            return false;</span>
+        }
+
+        @Override
+        public T get() {
+<span class="fc" id="L491">            return value;</span>
+        }
+
+        @Override
+        public E getError() throws RuntimeException {
+<span class="fc" id="L496">            throw new NoSuchElementException(&quot;error of 'valid' Validation&quot;);</span>
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+<span class="pc bpc" id="L501" title="1 of 6 branches missed.">            return (obj == this) || (obj instanceof Valid &amp;&amp; Objects.equals(value, ((Valid&lt;?, ?&gt;) obj).value));</span>
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L506">            return Objects.hashCode(value);</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="fc" id="L511">            return &quot;Valid(&quot; + value + &quot;)&quot;;</span>
+        }
+
+    }
+
+    /**
+     * An invalid Validation
+     *
+     * @param &lt;E&gt; type of the error of this Validation
+     * @param &lt;T&gt; type of the value of this Validation
+     */
+    final class Invalid&lt;E, T&gt; implements Validation&lt;E, T&gt; {
+
+        private final E error;
+
+        /**
+         * Construct an {@code Invalid}
+         *
+         * @param error The value of this error
+         */
+<span class="fc" id="L531">        private Invalid(E error) {</span>
+<span class="fc" id="L532">            this.error = error;</span>
+<span class="fc" id="L533">        }</span>
+
+        @Override
+        public boolean isValid() {
+<span class="fc" id="L537">            return false;</span>
+        }
+
+        @Override
+        public boolean isInvalid() {
+<span class="fc" id="L542">            return true;</span>
+        }
+
+        @Override
+        public T get() throws RuntimeException {
+<span class="fc" id="L547">            throw new NoSuchElementException(&quot;get of 'invalid' Validation&quot;);</span>
+        }
+
+        @Override
+        public E getError() {
+<span class="fc" id="L552">            return error;</span>
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+<span class="pc bpc" id="L557" title="1 of 6 branches missed.">            return (obj == this) || (obj instanceof Invalid &amp;&amp; Objects.equals(error, ((Invalid&lt;?, ?&gt;) obj).error));</span>
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L562">            return Objects.hashCode(error);</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="fc" id="L567">            return &quot;Invalid(&quot; + error + &quot;)&quot;;</span>
+        }
+
+    }
+
+    final class Builder&lt;E, T1, T2&gt; {
+
+        private Validation&lt;E, T1&gt; v1;
+        private Validation&lt;E, T2&gt; v2;
+
+<span class="fc" id="L577">        private Builder(Validation&lt;E, T1&gt; v1, Validation&lt;E, T2&gt; v2) {</span>
+<span class="fc" id="L578">            this.v1 = v1;</span>
+<span class="fc" id="L579">            this.v2 = v2;</span>
+<span class="fc" id="L580">        }</span>
+
+        public &lt;R&gt; Validation&lt;List&lt;E&gt;, R&gt; ap(Function2&lt;T1, T2, R&gt; f) {
+<span class="fc" id="L583">            return v2.ap(v1.ap(Validation.valid(f.curried())));</span>
+        }
+
+        public &lt;T3&gt; Builder3&lt;E, T1, T2, T3&gt; combine(Validation&lt;E, T3&gt; v3) {
+<span class="fc" id="L587">            return new Builder3&lt;&gt;(v1, v2, v3);</span>
+        }
+
+    }
+
+    final class Builder3&lt;E, T1, T2, T3&gt; {
+
+        private Validation&lt;E, T1&gt; v1;
+        private Validation&lt;E, T2&gt; v2;
+        private Validation&lt;E, T3&gt; v3;
+
+<span class="fc" id="L598">        private Builder3(Validation&lt;E, T1&gt; v1, Validation&lt;E, T2&gt; v2, Validation&lt;E, T3&gt; v3) {</span>
+<span class="fc" id="L599">            this.v1 = v1;</span>
+<span class="fc" id="L600">            this.v2 = v2;</span>
+<span class="fc" id="L601">            this.v3 = v3;</span>
+<span class="fc" id="L602">        }</span>
+
+        public &lt;R&gt; Validation&lt;List&lt;E&gt;, R&gt; ap(Function3&lt;T1, T2, T3, R&gt; f) {
+<span class="fc" id="L605">            return v3.ap(v2.ap(v1.ap(Validation.valid(f.curried()))));</span>
+        }
+
+        public &lt;T4&gt; Builder4&lt;E, T1, T2, T3, T4&gt; combine(Validation&lt;E, T4&gt; v4) {
+<span class="fc" id="L609">            return new Builder4&lt;&gt;(v1, v2, v3, v4);</span>
+        }
+
+    }
+
+    final class Builder4&lt;E, T1, T2, T3, T4&gt; {
+
+        private Validation&lt;E, T1&gt; v1;
+        private Validation&lt;E, T2&gt; v2;
+        private Validation&lt;E, T3&gt; v3;
+        private Validation&lt;E, T4&gt; v4;
+
+<span class="fc" id="L621">        private Builder4(Validation&lt;E, T1&gt; v1, Validation&lt;E, T2&gt; v2, Validation&lt;E, T3&gt; v3, Validation&lt;E, T4&gt; v4) {</span>
+<span class="fc" id="L622">            this.v1 = v1;</span>
+<span class="fc" id="L623">            this.v2 = v2;</span>
+<span class="fc" id="L624">            this.v3 = v3;</span>
+<span class="fc" id="L625">            this.v4 = v4;</span>
+<span class="fc" id="L626">        }</span>
+
+        public &lt;R&gt; Validation&lt;List&lt;E&gt;, R&gt; ap(Function4&lt;T1, T2, T3, T4, R&gt; f) {
+<span class="fc" id="L629">            return v4.ap(v3.ap(v2.ap(v1.ap(Validation.valid(f.curried())))));</span>
+        }
+
+        public &lt;T5&gt; Builder5&lt;E, T1, T2, T3, T4, T5&gt; combine(Validation&lt;E, T5&gt; v5) {
+<span class="fc" id="L633">            return new Builder5&lt;&gt;(v1, v2, v3, v4, v5);</span>
+        }
+
+    }
+
+    final class Builder5&lt;E, T1, T2, T3, T4, T5&gt; {
+
+        private Validation&lt;E, T1&gt; v1;
+        private Validation&lt;E, T2&gt; v2;
+        private Validation&lt;E, T3&gt; v3;
+        private Validation&lt;E, T4&gt; v4;
+        private Validation&lt;E, T5&gt; v5;
+
+<span class="fc" id="L646">        private Builder5(Validation&lt;E, T1&gt; v1, Validation&lt;E, T2&gt; v2, Validation&lt;E, T3&gt; v3, Validation&lt;E, T4&gt; v4, Validation&lt;E, T5&gt; v5) {</span>
+<span class="fc" id="L647">            this.v1 = v1;</span>
+<span class="fc" id="L648">            this.v2 = v2;</span>
+<span class="fc" id="L649">            this.v3 = v3;</span>
+<span class="fc" id="L650">            this.v4 = v4;</span>
+<span class="fc" id="L651">            this.v5 = v5;</span>
+<span class="fc" id="L652">        }</span>
+
+        public &lt;R&gt; Validation&lt;List&lt;E&gt;, R&gt; ap(Function5&lt;T1, T2, T3, T4, T5, R&gt; f) {
+<span class="fc" id="L655">            return v5.ap(v4.ap(v3.ap(v2.ap(v1.ap(Validation.valid(f.curried()))))));</span>
+        }
+
+        public &lt;T6&gt; Builder6&lt;E, T1, T2, T3, T4, T5, T6&gt; combine(Validation&lt;E, T6&gt; v6) {
+<span class="fc" id="L659">            return new Builder6&lt;&gt;(v1, v2, v3, v4, v5, v6);</span>
+        }
+
+    }
+
+    final class Builder6&lt;E, T1, T2, T3, T4, T5, T6&gt; {
+
+        private Validation&lt;E, T1&gt; v1;
+        private Validation&lt;E, T2&gt; v2;
+        private Validation&lt;E, T3&gt; v3;
+        private Validation&lt;E, T4&gt; v4;
+        private Validation&lt;E, T5&gt; v5;
+        private Validation&lt;E, T6&gt; v6;
+
+<span class="fc" id="L673">        private Builder6(Validation&lt;E, T1&gt; v1, Validation&lt;E, T2&gt; v2, Validation&lt;E, T3&gt; v3, Validation&lt;E, T4&gt; v4, Validation&lt;E, T5&gt; v5, Validation&lt;E, T6&gt; v6) {</span>
+<span class="fc" id="L674">            this.v1 = v1;</span>
+<span class="fc" id="L675">            this.v2 = v2;</span>
+<span class="fc" id="L676">            this.v3 = v3;</span>
+<span class="fc" id="L677">            this.v4 = v4;</span>
+<span class="fc" id="L678">            this.v5 = v5;</span>
+<span class="fc" id="L679">            this.v6 = v6;</span>
+<span class="fc" id="L680">        }</span>
+
+        public &lt;R&gt; Validation&lt;List&lt;E&gt;, R&gt; ap(Function6&lt;T1, T2, T3, T4, T5, T6, R&gt; f) {
+<span class="fc" id="L683">            return v6.ap(v5.ap(v4.ap(v3.ap(v2.ap(v1.ap(Validation.valid(f.curried())))))));</span>
+        }
+
+        public &lt;T7&gt; Builder7&lt;E, T1, T2, T3, T4, T5, T6, T7&gt; combine(Validation&lt;E, T7&gt; v7) {
+<span class="fc" id="L687">            return new Builder7&lt;&gt;(v1, v2, v3, v4, v5, v6, v7);</span>
+        }
+
+    }
+
+    final class Builder7&lt;E, T1, T2, T3, T4, T5, T6, T7&gt; {
+
+        private Validation&lt;E, T1&gt; v1;
+        private Validation&lt;E, T2&gt; v2;
+        private Validation&lt;E, T3&gt; v3;
+        private Validation&lt;E, T4&gt; v4;
+        private Validation&lt;E, T5&gt; v5;
+        private Validation&lt;E, T6&gt; v6;
+        private Validation&lt;E, T7&gt; v7;
+
+<span class="fc" id="L702">        private Builder7(Validation&lt;E, T1&gt; v1, Validation&lt;E, T2&gt; v2, Validation&lt;E, T3&gt; v3, Validation&lt;E, T4&gt; v4, Validation&lt;E, T5&gt; v5, Validation&lt;E, T6&gt; v6, Validation&lt;E, T7&gt; v7) {</span>
+<span class="fc" id="L703">            this.v1 = v1;</span>
+<span class="fc" id="L704">            this.v2 = v2;</span>
+<span class="fc" id="L705">            this.v3 = v3;</span>
+<span class="fc" id="L706">            this.v4 = v4;</span>
+<span class="fc" id="L707">            this.v5 = v5;</span>
+<span class="fc" id="L708">            this.v6 = v6;</span>
+<span class="fc" id="L709">            this.v7 = v7;</span>
+<span class="fc" id="L710">        }</span>
+
+        public &lt;R&gt; Validation&lt;List&lt;E&gt;, R&gt; ap(Function7&lt;T1, T2, T3, T4, T5, T6, T7, R&gt; f) {
+<span class="fc" id="L713">            return v7.ap(v6.ap(v5.ap(v4.ap(v3.ap(v2.ap(v1.ap(Validation.valid(f.curried()))))))));</span>
+        }
+
+        public &lt;T8&gt; Builder8&lt;E, T1, T2, T3, T4, T5, T6, T7, T8&gt; combine(Validation&lt;E, T8&gt; v8) {
+<span class="fc" id="L717">            return new Builder8&lt;&gt;(v1, v2, v3, v4, v5, v6, v7, v8);</span>
+        }
+
+    }
+
+    final class Builder8&lt;E, T1, T2, T3, T4, T5, T6, T7, T8&gt; {
+
+        private Validation&lt;E, T1&gt; v1;
+        private Validation&lt;E, T2&gt; v2;
+        private Validation&lt;E, T3&gt; v3;
+        private Validation&lt;E, T4&gt; v4;
+        private Validation&lt;E, T5&gt; v5;
+        private Validation&lt;E, T6&gt; v6;
+        private Validation&lt;E, T7&gt; v7;
+        private Validation&lt;E, T8&gt; v8;
+
+<span class="fc" id="L733">        private Builder8(Validation&lt;E, T1&gt; v1, Validation&lt;E, T2&gt; v2, Validation&lt;E, T3&gt; v3, Validation&lt;E, T4&gt; v4, Validation&lt;E, T5&gt; v5, Validation&lt;E, T6&gt; v6, Validation&lt;E, T7&gt; v7, Validation&lt;E, T8&gt; v8) {</span>
+<span class="fc" id="L734">            this.v1 = v1;</span>
+<span class="fc" id="L735">            this.v2 = v2;</span>
+<span class="fc" id="L736">            this.v3 = v3;</span>
+<span class="fc" id="L737">            this.v4 = v4;</span>
+<span class="fc" id="L738">            this.v5 = v5;</span>
+<span class="fc" id="L739">            this.v6 = v6;</span>
+<span class="fc" id="L740">            this.v7 = v7;</span>
+<span class="fc" id="L741">            this.v8 = v8;</span>
+<span class="fc" id="L742">        }</span>
+
+        public &lt;R&gt; Validation&lt;List&lt;E&gt;, R&gt; ap(Function8&lt;T1, T2, T3, T4, T5, T6, T7, T8, R&gt; f) {
+<span class="fc" id="L745">            return v8.ap(v7.ap(v6.ap(v5.ap(v4.ap(v3.ap(v2.ap(v1.ap(Validation.valid(f.curried())))))))));</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

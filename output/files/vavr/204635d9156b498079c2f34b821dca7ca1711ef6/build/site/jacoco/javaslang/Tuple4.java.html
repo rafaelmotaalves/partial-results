@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Tuple4.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang</a> &gt; <span class="el_source">Tuple4.java</span></div><h1>Tuple4.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang;
+
+/*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*\
+   G E N E R A T O R   C R A F T E D
+\*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*/
+
+import java.io.Serializable;
+import java.util.Comparator;
+import java.util.Objects;
+import java.util.function.Function;
+import javaslang.collection.List;
+import javaslang.collection.Seq;
+
+/**
+ * A tuple of 4 elements which can be seen as cartesian product of 4 components.
+ *
+ * @param &lt;T1&gt; type of the 1st element
+ * @param &lt;T2&gt; type of the 2nd element
+ * @param &lt;T3&gt; type of the 3rd element
+ * @param &lt;T4&gt; type of the 4th element
+ * @author Daniel Dietrich
+ * @since 1.1.0
+ */
+public final class Tuple4&lt;T1, T2, T3, T4&gt; implements Tuple, Comparable&lt;Tuple4&lt;T1, T2, T3, T4&gt;&gt;, Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * The 1st element of this tuple.
+     */
+    public final T1 _1;
+
+    /**
+     * The 2nd element of this tuple.
+     */
+    public final T2 _2;
+
+    /**
+     * The 3rd element of this tuple.
+     */
+    public final T3 _3;
+
+    /**
+     * The 4th element of this tuple.
+     */
+    public final T4 _4;
+
+    /**
+     * Constructs a tuple of 4 elements.
+     *
+     * @param t1 the 1st element
+     * @param t2 the 2nd element
+     * @param t3 the 3rd element
+     * @param t4 the 4th element
+     */
+<span class="fc" id="L61">    public Tuple4(T1 t1, T2 t2, T3 t3, T4 t4) {</span>
+<span class="fc" id="L62">        this._1 = t1;</span>
+<span class="fc" id="L63">        this._2 = t2;</span>
+<span class="fc" id="L64">        this._3 = t3;</span>
+<span class="fc" id="L65">        this._4 = t4;</span>
+<span class="fc" id="L66">    }</span>
+
+    public static &lt;T1, T2, T3, T4&gt; Comparator&lt;Tuple4&lt;T1, T2, T3, T4&gt;&gt; comparator(Comparator&lt;? super T1&gt; t1Comp, Comparator&lt;? super T2&gt; t2Comp, Comparator&lt;? super T3&gt; t3Comp, Comparator&lt;? super T4&gt; t4Comp) {
+<span class="fc" id="L69">        return (Comparator&lt;Tuple4&lt;T1, T2, T3, T4&gt;&gt; &amp; Serializable) (t1, t2) -&gt; {</span>
+<span class="fc" id="L70">            final int check1 = t1Comp.compare(t1._1, t2._1);</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">            if (check1 != 0) {</span>
+<span class="fc" id="L72">                return check1;</span>
+            }
+
+<span class="fc" id="L75">            final int check2 = t2Comp.compare(t1._2, t2._2);</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">            if (check2 != 0) {</span>
+<span class="fc" id="L77">                return check2;</span>
+            }
+
+<span class="fc" id="L80">            final int check3 = t3Comp.compare(t1._3, t2._3);</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">            if (check3 != 0) {</span>
+<span class="fc" id="L82">                return check3;</span>
+            }
+
+<span class="fc" id="L85">            final int check4 = t4Comp.compare(t1._4, t2._4);</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">            if (check4 != 0) {</span>
+<span class="fc" id="L87">                return check4;</span>
+            }
+
+            // all components are equal
+<span class="fc" id="L91">            return 0;</span>
+        };
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    private static &lt;U1 extends Comparable&lt;? super U1&gt;, U2 extends Comparable&lt;? super U2&gt;, U3 extends Comparable&lt;? super U3&gt;, U4 extends Comparable&lt;? super U4&gt;&gt; int compareTo(Tuple4&lt;?, ?, ?, ?&gt; o1, Tuple4&lt;?, ?, ?, ?&gt; o2) {
+<span class="fc" id="L97">        final Tuple4&lt;U1, U2, U3, U4&gt; t1 = (Tuple4&lt;U1, U2, U3, U4&gt;) o1;</span>
+<span class="fc" id="L98">        final Tuple4&lt;U1, U2, U3, U4&gt; t2 = (Tuple4&lt;U1, U2, U3, U4&gt;) o2;</span>
+
+<span class="fc" id="L100">        final int check1 = t1._1.compareTo(t2._1);</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        if (check1 != 0) {</span>
+<span class="fc" id="L102">            return check1;</span>
+        }
+
+<span class="fc" id="L105">        final int check2 = t1._2.compareTo(t2._2);</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        if (check2 != 0) {</span>
+<span class="fc" id="L107">            return check2;</span>
+        }
+
+<span class="fc" id="L110">        final int check3 = t1._3.compareTo(t2._3);</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        if (check3 != 0) {</span>
+<span class="fc" id="L112">            return check3;</span>
+        }
+
+<span class="fc" id="L115">        final int check4 = t1._4.compareTo(t2._4);</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">        if (check4 != 0) {</span>
+<span class="fc" id="L117">            return check4;</span>
+        }
+
+        // all components are equal
+<span class="fc" id="L121">        return 0;</span>
+    }
+
+    @Override
+    public int arity() {
+<span class="fc" id="L126">        return 4;</span>
+    }
+
+    @Override
+    public int compareTo(Tuple4&lt;T1, T2, T3, T4&gt; that) {
+<span class="fc" id="L131">        return Tuple4.compareTo(this, that);</span>
+    }
+
+    /**
+     * Getter of the 1st element of this tuple.
+     *
+     * @return the 1st element of this Tuple.
+     */
+    public T1 _1() {
+<span class="fc" id="L140">        return _1;</span>
+    }
+
+    /**
+     * Getter of the 2nd element of this tuple.
+     *
+     * @return the 2nd element of this Tuple.
+     */
+    public T2 _2() {
+<span class="fc" id="L149">        return _2;</span>
+    }
+
+    /**
+     * Getter of the 3rd element of this tuple.
+     *
+     * @return the 3rd element of this Tuple.
+     */
+    public T3 _3() {
+<span class="fc" id="L158">        return _3;</span>
+    }
+
+    /**
+     * Getter of the 4th element of this tuple.
+     *
+     * @return the 4th element of this Tuple.
+     */
+    public T4 _4() {
+<span class="fc" id="L167">        return _4;</span>
+    }
+
+    public &lt;U1, U2, U3, U4&gt; Tuple4&lt;U1, U2, U3, U4&gt; map(Function4&lt;? super T1, ? super T2, ? super T3, ? super T4, Tuple4&lt;U1, U2, U3, U4&gt;&gt; f) {
+<span class="fc" id="L171">        return f.apply(_1, _2, _3, _4);</span>
+    }
+
+    public &lt;U1, U2, U3, U4&gt; Tuple4&lt;U1, U2, U3, U4&gt; map(Function&lt;? super T1, ? extends U1&gt; f1, Function&lt;? super T2, ? extends U2&gt; f2, Function&lt;? super T3, ? extends U3&gt; f3, Function&lt;? super T4, ? extends U4&gt; f4) {
+<span class="fc" id="L175">        return Tuple.of(f1.apply(_1), f2.apply(_2), f3.apply(_3), f4.apply(_4));</span>
+    }
+
+    /**
+     * Transforms this tuple to an arbitrary object (which may be also a tuple of same or different arity).
+     *
+     * @param f Transformation which creates a new object of type U based on this tuple's contents.
+     * @param &lt;U&gt; New type
+     * @return An object of type U
+     * @throws NullPointerException if {@code f} is null
+     */
+    public &lt;U&gt; U transform(Function&lt;Tuple4&lt;T1, T2, T3, T4&gt;, ? extends U&gt; f) {
+<span class="fc" id="L187">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="fc" id="L188">        return f.apply(this);</span>
+    }
+
+    @Override
+    public Seq&lt;?&gt; toSeq() {
+<span class="fc" id="L193">        return List.of(_1, _2, _3, _4);</span>
+    }
+
+    // -- Object
+
+    @Override
+    public boolean equals(Object o) {
+<span class="fc bfc" id="L200" title="All 2 branches covered.">        if (o == this) {</span>
+<span class="fc" id="L201">            return true;</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">        } else if (!(o instanceof Tuple4)) {</span>
+<span class="fc" id="L203">            return false;</span>
+        } else {
+<span class="fc" id="L205">            final Tuple4&lt;?, ?, ?, ?&gt; that = (Tuple4&lt;?, ?, ?, ?&gt;) o;</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">            return Objects.equals(this._1, that._1)</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">                  &amp;&amp; Objects.equals(this._2, that._2)</span>
+<span class="fc bfc" id="L208" title="All 2 branches covered.">                  &amp;&amp; Objects.equals(this._3, that._3)</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">                  &amp;&amp; Objects.equals(this._4, that._4);</span>
+        }
+    }
+
+    @Override
+    public int hashCode() {
+<span class="fc" id="L215">        return Objects.hash(_1, _2, _3, _4);</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L220">        return String.format(&quot;(%s, %s, %s, %s)&quot;, _1, _2, _3, _4);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

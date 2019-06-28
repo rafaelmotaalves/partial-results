@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testng-results skipped="0" failed="0" total="9" passed="9">
+  <reporter-output>
+  </reporter-output>
+  <suite name="quickdt.crossValidation.CrossValidatorTest" duration-ms="51" started-at="2019-06-28T20:46:43Z" finished-at="2019-06-28T20:46:43Z">
+    <groups>
+    </groups>
+    <test name="Command line test f312cb99-09f4-47b4-ae1b-2af0150aa4fc" duration-ms="51" started-at="2019-06-28T20:46:43Z" finished-at="2019-06-28T20:46:43Z">
+      <class name="quickdt.crossValidation.CrossValidatorTest">
+        <test-method status="PASS" signature="testCrossValidator()[pri:0, instance:testCrossValidator(quickdt.crossValidation.CrossValidatorTest)]" name="testCrossValidator" duration-ms="49" started-at="2019-06-28T20:46:43Z" finished-at="2019-06-28T20:46:43Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testCrossValidator -->
+      </class> <!-- quickdt.crossValidation.CrossValidatorTest -->
+    </test> <!-- Command line test f312cb99-09f4-47b4-ae1b-2af0150aa4fc -->
+  </suite> <!-- quickdt.crossValidation.CrossValidatorTest -->
+  <suite name="quickdt.crossValidation.MSECrossValLossTest" duration-ms="77" started-at="2019-06-28T20:46:43Z" finished-at="2019-06-28T20:46:43Z">
+    <groups>
+    </groups>
+    <test name="Command line test 08e8c14f-79cc-44a5-b459-ecf8ceb5f5b4" duration-ms="77" started-at="2019-06-28T20:46:43Z" finished-at="2019-06-28T20:46:43Z">
+      <class name="quickdt.crossValidation.MSECrossValLossTest">
+        <test-method status="PASS" signature="testGetTotalLoss()[pri:0, instance:testGetTotalLoss(quickdt.crossValidation.MSECrossValLossTest)]" name="testGetTotalLoss" duration-ms="35" started-at="2019-06-28T20:46:43Z" finished-at="2019-06-28T20:46:43Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testGetTotalLoss -->
+      </class> <!-- quickdt.crossValidation.MSECrossValLossTest -->
+    </test> <!-- Command line test 08e8c14f-79cc-44a5-b459-ecf8ceb5f5b4 -->
+  </suite> <!-- quickdt.crossValidation.MSECrossValLossTest -->
+  <suite name="quickdt.crossValidation.WeightedAUCCrossValLossTest" duration-ms="213" started-at="2019-06-28T20:46:43Z" finished-at="2019-06-28T20:46:43Z">
+    <groups>
+    </groups>
+    <test name="Command line test 49ea5dd6-2b39-41ea-ae2d-d1d02c9e095b" duration-ms="213" started-at="2019-06-28T20:46:43Z" finished-at="2019-06-28T20:46:43Z">
+      <class name="quickdt.crossValidation.WeightedAUCCrossValLossTest">
+        <test-method status="PASS" signature="testGetTotalLoss()[pri:0, instance:testGetTotalLoss(quickdt.crossValidation.WeightedAUCCrossValLossTest)]" name="testGetTotalLoss" duration-ms="16" started-at="2019-06-28T20:46:43Z" finished-at="2019-06-28T20:46:43Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testGetTotalLoss -->
+        <test-method status="PASS" signature="testOnlySupportBinaryClassifications()[pri:0, instance:testOnlySupportBinaryClassifications(quickdt.crossValidation.WeightedAUCCrossValLossTest)]" name="testOnlySupportBinaryClassifications" duration-ms="5" started-at="2019-06-28T20:46:43Z" finished-at="2019-06-28T20:46:43Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testOnlySupportBinaryClassifications -->
+        <test-method status="PASS" signature="testSortDataByProbability()[pri:0, instance:testSortDataByProbability(quickdt.crossValidation.WeightedAUCCrossValLossTest)]" name="testSortDataByProbability" duration-ms="1" started-at="2019-06-28T20:46:43Z" finished-at="2019-06-28T20:46:43Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testSortDataByProbability -->
+        <test-method status="PASS" signature="testGetAUCPoint()[pri:0, instance:testGetAUCPoint(quickdt.crossValidation.WeightedAUCCrossValLossTest)]" name="testGetAUCPoint" duration-ms="0" started-at="2019-06-28T20:46:43Z" finished-at="2019-06-28T20:46:43Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testGetAUCPoint -->
+        <test-method status="PASS" signature="testGetAucPointsFromData()[pri:0, instance:testGetAucPointsFromData(quickdt.crossValidation.WeightedAUCCrossValLossTest)]" name="testGetAucPointsFromData" duration-ms="0" started-at="2019-06-28T20:46:43Z" finished-at="2019-06-28T20:46:43Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testGetAucPointsFromData -->
+        <test-method status="PASS" signature="testTotalLossNoData()[pri:0, instance:testTotalLossNoData(quickdt.crossValidation.WeightedAUCCrossValLossTest)]" name="testTotalLossNoData" duration-ms="1" started-at="2019-06-28T20:46:43Z" finished-at="2019-06-28T20:46:43Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testTotalLossNoData -->
+        <test-method status="PASS" signature="testAgainstMahout()[pri:0, instance:testAgainstMahout(quickdt.crossValidation.WeightedAUCCrossValLossTest)]" name="testAgainstMahout" duration-ms="181" started-at="2019-06-28T20:46:43Z" finished-at="2019-06-28T20:46:43Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testAgainstMahout -->
+      </class> <!-- quickdt.crossValidation.WeightedAUCCrossValLossTest -->
+    </test> <!-- Command line test 49ea5dd6-2b39-41ea-ae2d-d1d02c9e095b -->
+  </suite> <!-- quickdt.crossValidation.WeightedAUCCrossValLossTest -->
+</testng-results>

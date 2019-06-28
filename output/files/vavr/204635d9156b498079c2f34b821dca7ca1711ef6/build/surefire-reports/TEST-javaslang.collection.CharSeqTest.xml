@@ -1,0 +1,532 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuite tests="468" failures="0" name="javaslang.collection.CharSeqTest" time="0.14" errors="0" skipped="0">
+  <properties>
+    <property name="java.runtime.name" value="Java(TM) SE Runtime Environment"/>
+    <property name="sun.boot.library.path" value="/usr/lib/jvm/java-8-oracle/jre/lib/amd64"/>
+    <property name="java.vm.version" value="25.151-b12"/>
+    <property name="java.vm.vendor" value="Oracle Corporation"/>
+    <property name="maven.multiModuleProjectDirectory" value="/home/travis/build/rafaresearch/vavr"/>
+    <property name="java.vendor.url" value="http://java.oracle.com/"/>
+    <property name="path.separator" value=":"/>
+    <property name="guice.disable.misplaced.annotation.check" value="true"/>
+    <property name="java.vm.name" value="Java HotSpot(TM) 64-Bit Server VM"/>
+    <property name="file.encoding.pkg" value="sun.io"/>
+    <property name="user.country" value="US"/>
+    <property name="sun.java.launcher" value="SUN_STANDARD"/>
+    <property name="sun.os.patch.level" value="unknown"/>
+    <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
+    <property name="user.dir" value="/home/travis/build/rafaresearch/vavr"/>
+    <property name="java.runtime.version" value="1.8.0_151-b12"/>
+    <property name="java.awt.graphicsenv" value="sun.awt.X11GraphicsEnvironment"/>
+    <property name="java.endorsed.dirs" value="/usr/lib/jvm/java-8-oracle/jre/lib/endorsed"/>
+    <property name="os.arch" value="amd64"/>
+    <property name="java.io.tmpdir" value="/tmp"/>
+    <property name="line.separator" value="
+"/>
+    <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
+    <property name="os.name" value="Linux"/>
+    <property name="classworlds.conf" value="/usr/local/maven-3.5.2/bin/m2.conf"/>
+    <property name="sun.jnu.encoding" value="UTF-8"/>
+    <property name="java.library.path" value="/usr/java/packages/lib/amd64:/usr/lib64:/lib64:/lib:/usr/lib"/>
+    <property name="maven.conf" value="/usr/local/maven-3.5.2/conf"/>
+    <property name="java.specification.name" value="Java Platform API Specification"/>
+    <property name="java.class.version" value="52.0"/>
+    <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
+    <property name="os.version" value="4.4.0-101-generic"/>
+    <property name="library.jansi.path" value="/usr/local/maven-3.5.2/lib/jansi-native"/>
+    <property name="user.home" value="/home/travis"/>
+    <property name="user.timezone" value="UTC"/>
+    <property name="java.awt.printerjob" value="sun.print.PSPrinterJob"/>
+    <property name="java.specification.version" value="1.8"/>
+    <property name="file.encoding" value="UTF-8"/>
+    <property name="user.name" value="travis"/>
+    <property name="java.class.path" value="/usr/local/maven-3.5.2/boot/plexus-classworlds-2.5.2.jar"/>
+    <property name="java.vm.specification.version" value="1.8"/>
+    <property name="sun.arch.data.model" value="64"/>
+    <property name="java.home" value="/usr/lib/jvm/java-8-oracle/jre"/>
+    <property name="sun.java.command" value="org.codehaus.plexus.classworlds.launcher.Launcher package"/>
+    <property name="java.specification.vendor" value="Oracle Corporation"/>
+    <property name="user.language" value="en"/>
+    <property name="awt.toolkit" value="sun.awt.X11.XToolkit"/>
+    <property name="java.vm.info" value="mixed mode"/>
+    <property name="java.version" value="1.8.0_151"/>
+    <property name="java.ext.dirs" value="/usr/lib/jvm/java-8-oracle/jre/lib/ext:/usr/java/packages/lib/ext"/>
+    <property name="securerandom.source" value="file:/dev/./urandom"/>
+    <property name="sun.boot.class.path" value="/usr/lib/jvm/java-8-oracle/jre/lib/resources.jar:/usr/lib/jvm/java-8-oracle/jre/lib/rt.jar:/usr/lib/jvm/java-8-oracle/jre/lib/sunrsasign.jar:/usr/lib/jvm/java-8-oracle/jre/lib/jsse.jar:/usr/lib/jvm/java-8-oracle/jre/lib/jce.jar:/usr/lib/jvm/java-8-oracle/jre/lib/charsets.jar:/usr/lib/jvm/java-8-oracle/jre/lib/jfr.jar:/usr/lib/jvm/java-8-oracle/jre/classes"/>
+    <property name="java.vendor" value="Oracle Corporation"/>
+    <property name="maven.home" value="/usr/local/maven-3.5.2"/>
+    <property name="file.separator" value="/"/>
+    <property name="java.vendor.url.bug" value="http://bugreport.sun.com/bugreport/"/>
+    <property name="sun.cpu.endian" value="little"/>
+    <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
+    <property name="sun.cpu.isalist" value=""/>
+  </properties>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenTailOnNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldZipAllNils" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveFirstElementByPredicateBegin" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowOnAppendAllOfNull" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveFirstElementByPredicateInner" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFindIndexOfFirstSlice" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCreateRangeClosedByWhereFromAndToEqualMAX_VALUE" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldDropUntilNoneIfPredicateIsTrue" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenMaxByFunctionOfNil" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldBeAwareOfPropertyThatHoldsForAll" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSplitNonNil" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSortNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenMaxByOfNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSpanNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldScanLeft" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldStartsNilOfNonNilCalculate" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSplitAtInclusivePredicateBegin" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldMapToVectorWhenMapIsUsed" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReduceRightNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSlide4ElementsBySize5AndStep3" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFindFirstOfNonNil" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveAllElementsFromNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSplitAtEnd" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSplitAtNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSerializeDeserializeNonNil" time="0.004"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSplitAtPredicateNotFound" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldTabulateTheCharSeqWith0ElementsWhenNIsNegative" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldDropWhileAllIfPredicateIsTrue" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldMapElementsToSequentialValuesInTheRightOrder" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldInsertAllBehindOfElement" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldIntersperseNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldPatchEmptyByEmpty" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldBeAwareOfExistingElement" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenSetWithNegativeIndexOnNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldComputePermutationsOfNonEmpty" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldPatchEmptyByNonEmpty" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldComputeMaxOfChar" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldHaveSizedSpliterator" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnSubSequenceWhenIndicesAreWithinRange" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldPartitionIntsInOddAndEvenHavingOddAndEventNumbers" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveFirstElementByPredicateBeginM" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldDropRightAllIfCountExceedsSize" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCreateRangeClosedByWhereFromIsLessThanToAndStepCorrectDirection" time="0.002"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCreateRangeClosedWhereFromIsLessThanTo" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldMkStringNonNil" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldHaveImmutableSpliterator" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenGroupedWithSizeZero" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRecognizeNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveFirstElementByPredicateFromSingleton" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFullyIterateNonNil" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenInsertOnNonNilAllWithNegativeIndex" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldTabulateTheCharSeqWith0Elements" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCreateRangeClosedByWhereFromEqualsTo" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenSlidingNonNilByNegativeSize" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldGetLastElement" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRecognizeNonNilDoesContainSlice" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldComputeLengthOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFlatMapEmptyTraversable" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldZipNilWithIndex" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenFoldRightNullOperator" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenMinByWithNullComparator" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldMapNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveFirstElementByPredicateInnerM" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldGetFirstElement" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCalculateDifferentHashCodesForDifferentTraversables" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldPrependElementToNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnSomeHeadWhenCallingHeadOptionOnNonNil" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnStringPrefix" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldNonNilNotEqualsNull" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldInserAlltIntoNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveIndxOutOfBoundsLeft" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldClearNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCreateRangeClosedWhereFromIsGreaterThanTo" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldTakeRightAllIfCountExceedsSize" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenSubSequenceOnNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldConvertTotoUpperCase" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldTakeRightAsExpectedIfCountIsLessThanSize" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnNilWhenSubSequenceFrom0OnNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRepeat" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldConvertNonNilToArrayList" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnHeadOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCreateRangeClosedByWhereFromAndToEqualMIN_VALUE" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenFoldLeftNullOperator" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenSetWithNegativeIndexOnNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldBeAwareOfNonExistingElement" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveFirstElementByPredicateFromNil" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldGroupedTraversableWithRemainder" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldUnzip3NonNil" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSplitPredicateAtNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldStartsNonNilOfNonNilWithOffsetCalculate" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCalculateCrossProductOfNonNilAndNonNil" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenCalculatingCrossProductAndThatIsNull" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldDropNoneIfCountIsNegative" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCalculateHashCodeOfNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldGroupedWhenTraversableLengthIsSmallerThanBlockSize" time="0.002"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnNoneWhenComputingMaxOfNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldNilGroupBy" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldNotHasNextWhenNilIterator" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenSetWithIndexExceedingByTwoOnNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldBeAwareOfExistingUniqueElement" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldConvertNilToHashMap" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldConvertNilToHashSet" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRecognizeNonEqualityOfTraversablesOfSameSize" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFoldRightNil" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCreateRangeWhereFromIsLessThanTo" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldInsertAllInFrontOfElement" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldStartsNonNilOfNilWithOffsetCalculate" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFillTheCharSeqCallingTheSupplierInTheRightOrder" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSplitAtPredicateBegin" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFindIndexOfInnerSlice" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReplaceAllElementsOfNilUsingCurrNew" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCreateRangeByWhereFromEqualsTo" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowOnInsertAllWithNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFindIndexOfFirstElement" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldDropAsExpectedIfCountIsLessThanSize" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowOnSubSequenceOnNonNilWhenBeginIndexExceedsLowerBound" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSplitAtInclusivePredicateNotFound" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnNilWhenSubSequenceBeginningWithSize" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnNilWhenSubSequenceFrom0To0OnNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCalculateMinByOfInts" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldPartitionIntsInOddAndEvenHavingOnlyEvenNumbers" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldComputeMinOfChar" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldUnzipNil" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReplaceElementOfNilUsingCurrNew" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldNotFindIndexOfSliceWhenStartIsGreater" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenGroupedWithNegativeSize" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldWriteToStderr" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldWriteToStdout" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSortByComparator" time="0.002"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSlide5ElementsBySize2AndStep3" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSlide5ElementsBySize2AndStep4" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSlide5ElementsBySize2AndStep5" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldTabulateTheCharSeq" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnSeqWithFirstElementWhenSubSequenceFrom0To1OnNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFillTheCharSeqWith0Elements" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldTabulateTheCharSeqCallingTheFunctionInTheRightOrder" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldMkStringWithDelimiterNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldZipAllNonEmptyAndNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldPrependAllNonNilToNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldPrependAllNilToNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldDropRightNoneIfCountIsNegative" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveFirstElementByPredicateNonExisting" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldAppendAllNonNilToNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFilterNotEmptyTraversable" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldConvertNonNilToJavaArray" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenReduceNullOperator" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowOnNextWhenNilIterator" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenSubSequenceWithOutOfUpperBound" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnSubSequenceWhenIndexIsWithinRange" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenMaxByWithNullFunction" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldPeekNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldComputeDistinctByOfNonEmptyTraversableUsingKeyExtractor" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldDropRightNoneOnNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFoldNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveLastElementByPredicateFromSingleton" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldBeAwareOfPropertyThatNotHoldsForAll" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldPreserveSingletonInstanceOnDeserialization" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnNilWhenSubSequenceFrom0To0OnNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFoldLeftNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSplitInclusivePredicateAtNil" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveLastElementByPredicateNonExisting" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveLastElementByPredicateInnerM" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenReduceLeftNullOperator" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReplaceAllElementsOfNonNilUsingCurrNew" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenComputingSumOfStrings" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSetFirstElement" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldZipNonNilsOfSameSize" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCreateRangeByWhereFromAndToEqualMAX_VALUE" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenInsertOnNilAllWithNegativeIndex" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldTakeNoneOnNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldTakeRightNoneIfCountIsNegative" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSplitPredicateAtNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnSomethingOnHasDefiniteSize" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveIndxOutOfBoundsRight" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSpanNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCreateRangeClosedWhereFromAndToEqualMAX_VALUE" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCalculateCrossProductOfNilAndNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnNoneWhenCallingHeadOptionOnNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldHandleStdoutIOException" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSlice" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldGroupedTraversableWithEqualSizedBlocks" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFullyIterateNonNilStartingAtIndex" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRecognizeNonNilDoesNotContainCharSequence" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRecognizeContentEqualityOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCreateNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSortByFunction" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnSomeInitWhenCallingInitOptionOnNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSlideNilBySizeAndStep" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowOnSubSequenceOnNilWhenBeginIndexExceedsLowerBound" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldInsertBehindOfElement" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnSomeTailWhenCallingTailOptionOnNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCalculateInverseMinByFunctionOfInts" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldAppendAllNilToNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldClearNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFilterNonEmptyTraversable" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldEmptyNotEqualsDifferentType" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCreateRangeWhereFromEqualsTo" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnLastOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCalculateInverseMaxByFunctionOfInts" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCreateListOfIterable" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldZipNils" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldTakeWhileNoneOnNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCalculateMaxByOfInts" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldScan" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnNilWhenIndicesBothAreUpperBound" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowIfZipWithThatIsNull" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFilterNonEmptyTraversableAllMatch" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenMaxByWithNullComparator" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldComputeDistinctByOfEmptyTraversableUsingKeyExtractor" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldMkStringWithDelimiterNonNil" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldZipAllEmptyAndNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldMapNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldBeAwareOfExistingNonUniqueElement" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldGroupedNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCreateRangeWhereFromIsGreaterThanTo" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenSubSequence2OnNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldNotRemoveAllNonObjectsElementsFromNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldAppendElementToNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldDropRightAsExpectedIfCountIsLessThanSize" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldNonNilGroupByEqual" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnSizeWhenSpliterator" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldInsertIntoNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldInsertIntoSeq" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldMkStringWithDelimiterAndPrefixAndSuffixNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldTakeUntilAllOnFalseCondition" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldPadEmptyToNonEmpty" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnIdentityWhenSubSequenceFrom0OnNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRecognizeNonNilDoesContainCharSequence" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenLastOnNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRecognizeNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnTailOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldComputePermutationsOfEmptyList" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveLastElementByPredicateBegin" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowOnPrependAllOfNull" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveLastElementByPredicateInner" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenReduceNil" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReduceLeftNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReverseNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenFoldNullOperator" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldMkStringNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRecognizeEqualityOfNonNils" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldPeekNonNilPerformingAnAction" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldProhibitCharRangeByStepZero" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="sholdFlatMapChars" time="0.003"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRetainAllElementsFromNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldTakeUntilAsExpected" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFindLastIndexOfSliceWithEnd" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFindIndexOfInnerElement" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenReduceRightNullOperator" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFilterNotNonEmptyTraversable" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnNoneWhenCallingLastOptionOnNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldTakeUntilNoneOnNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldAppendElementToNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldUseSeqAsPartialFunction" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCreateRangeByWhereFromIsGreaterThanToAndStepWrongDirection" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldComputeCombinationsOfEmptyList" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveLastElementByPredicateEndM" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRecognizeNonNilDoesContainElement" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldPadNonEmpty" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenMinByWithNullFunction" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCalculateMinByFunctionOfInts" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldUnzipNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldInsertAllIntoSeq" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldZipAllNonNilsIfThisIsSmaller" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSortNonNilUsingComparator" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCalculateMaxByFunctionOfInts" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCreateRangeByWhereFromAndToEqualMIN_VALUE" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="ofAllShouldReturnTheSingletonEmpty" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFindIndexOfLastElement" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFindLastIndexOfElement" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldStartsNonNilOfNilCalculate" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRecognizeNonEqualityOfTraversablesOfDifferentSize" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="ofShouldReturnTheSingletonEmpty" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldComputeDistinctOfNonEmptyTraversable" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCreateRangeClosedWhereFromAndToEqualMIN_VALUE" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldTakeWhileAllOnTrueCondition" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldDropWhileCorrect" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldPatchNonEmptyByNonEmpty" time="0.002"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveLastElementByPredicateFromNil" time="0.008"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSlideNilBySize" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveAllExistingObjectsFromNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldComputeProductOfNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldTakeAllIfCountExceedsSize" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldInsertInFrontOfElement" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveNonExistingElement" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldTakeUntilAllOnTrueCondition" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCreateRangeClosedByWhereFromIsGreaterThanToAndStepWrongDirection" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldStartsNilOfNilWithOffsetCalculate" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldUnzip3Nil" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveFirstElementByPredicateEnd" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldPrependElementToNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenMinByOfNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldComputeDistinctByOfNonEmptyTraversableUsingComparator" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldStartsNilOfNilCalculate" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldDropUntilCorrect" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldParallelStreamAndCollectNonNil" time="0.008"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldComputeKCombinationsOfNegativeK" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveIndxAtEnd" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveIndxAtNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCalculateInverseMinByOfInts" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveIndxAtBegin" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCalculateCrossProductOfNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCalculateCrossProductPower" time="0.004"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCalculateCrossProductOfNonNil" time="0.002"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnNoneWhenCallingInitOptionOnNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldNotFindLastIndexOfElementWhenEndIdLess" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldZipNonNilsIfThisIsSmaller" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldComputeKCombinationsOfEmptyList" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldComputeSumOfNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveFirstElement" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldZipNonEmptyAndNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFindIndexOfLastSlice" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnNoneWhenComputingAverageOfNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveLastElementByPredicateEnd" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFlatMapElementsToSequentialValuesInTheRightOrder" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFilterNotNonEmptyTraversableAllMatch" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSortNilUsingComparator" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCreateRangeClosedWhereFromEqualsTo" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveElementFromNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenPartitionNilAndPredicateIsNull" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFindLastOfNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowOnSubSequenceOnNonNilWhenBeginIndexIsGreaterThanEndIndex" time="0.008"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldConvertNonNilToHashMap" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldConvertNonNilToHashSet" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFlatMapTraversableByExpandingElements" time="0.002"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReplaceElementOfNonNilUsingCurrNew" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldStreamAndCollectNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldComputeDistinctOfEmptyTraversable" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldEqualSameTraversableInstance" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldTakeWhileAsExpected" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldConvertToLowerCase" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowOnSubSequenceOnNilWhenBeginIndexIsGreaterThanEndIndex" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldNotFindIndexOfElementWhenStartIsGreater" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSplitAtBegin" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldNotFindLastIndexOfElementWhenSeqIsEmpty" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldPrependAllNonNilToNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldHandleStderrIOException" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenInsertOnNilWithNegativeIndex" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenMinByFunctionOfNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSetLastElement" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldComputeCombinationsOfNonEmptyList" time="0.007"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSerializeDeserializeNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRecognizeNonNilDoesNotContainSlice" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSplitAtNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenSlidingNilByZeroSize" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldComputeDistinctByOfEmptyTraversableUsingComparator" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldTakeWhileAllOnFalseCondition" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldIntersperseSingleton" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldNonNilGroupByIdentity" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldPrependAllNilToNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCreateSeqOfElements" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCreateRangeByWhereFromIsLessThanToAndStepCorrectDirection" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldGetInitOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFilterEmptyTraversable" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenGetWithTooBigIndexOnNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenReduceRightNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRecognizeNonNilDoesNotContainElement" time="0.004"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldZipEmptyAndNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRecognizeNonNilNotContainsAllOverlappingElements" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCalculateInverseMaxByOfInts" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnNoneWhenCallingTailOptionOnNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCalculateHashCodeOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRecognizeEqualityOfNils" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCreateRangeWhereFromAndToEqualMAX_VALUE" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldZipAllNonNilsOfSameSize" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFlatMapNonEmptyTraversable" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenComputingAverageOfStrings" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowOnInsertAllWhenExceedingUpperBound" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSplitNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldTakeNoneIfCountIsNegative" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowOnInsertWhenExceedingUpperBound" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnNoneWhenComputingMinOfNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowOnSubSequenceWhenEndIndexExceedsUpperBound" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveLastElement" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSplitAtOutOfBounds" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnSomeLastWhenCallingLastOptionOnNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveIndxAtSingleton" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFoldNonNil" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldNotFindIndexOfElementWhenSeqIsEmpty" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldHaveOrderedSpliterator" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldDropNoneOnNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRecognizeNilContainsNoElement" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFoldRightNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldNotRetainAllNonExistingElementsFromNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenSetOnNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldZipNonNilWithIndex" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRecognizeNilNotContainsSlice" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldTakeAsExpectedIfCountIsLessThanSize" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldNilNotEqualsNull" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSplitAtPredicateEnd" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldNotFindLastIndexOfSliceWhenEndIdLess" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldPadNonEmptyZeroLen" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldAppendAllNonNilToNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRecognizeNilNotContainsAllElements" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSplitAtInclusivePredicateEnd" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSplitInclusivePredicateAtNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldScanRight" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveAllObjectsFromNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldConvertNilToArrayList" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldStreamAndCollectNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldNotFindLastIndexOfSliceWhenSeqIsEmpty" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldNotFindIndexOfSliceWhenSeqIsEmpty" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnNilWhenSubSequenceFrom1OnSeqOf1" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenNilIteratorStartingAtIndex" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldZipAllNonNilsIfThatIsSmaller" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCalculateCrossProductOfNonNilAndNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldComputeLengthOfNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldTakeRightNoneOnNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldBeAwareOfNonExistingUniqueElement" time="0.002"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReduceNonNil" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldDropWhileNoneOnNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFindLastIndexOfElementWithEnd" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveInnerElement" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenGetWithNegativeIndexOnNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldComputeKCombinationsOfNonEmptyList" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveElementFromSingleton" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenGetWithNegativeIndexOnNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldParallelStreamAndCollectNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenSlidingNonNilByZeroSize" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFindLastIndexOfSlice" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldStartsNilOfNonNilWithOffsetCalculate" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldIntersperseMultipleElements" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldWrapOtherCharSeq" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCalculateCrossProductOfNilAndNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldZipNonNilsIfThatIsSmaller" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowIfZipAllWithThatIsNull" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenSetWithIndexExceedingByOneOnNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldNonEmptyNotEqualsDifferentType" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRetainAllExistingElementsFromNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldNotRemoveAllNonExistingElementsFromNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldAppendAllNilToNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenGetOnNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFindFirstOfNil" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldPartitionIntsInOddAndEvenHavingOnlyOddNumbers" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSortNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldCreateRangeWhereFromAndToEqualMIN_VALUE" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenReduceLeftNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldIterateFirstElementOfNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenInitOfNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldPeekSingleValuePerformingAnAction" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldDropWhileNoneIfPredicateIsFalse" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReturnNilWhenSubSequenceFrom1To1OnNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRecognizeNonNilContainsAllOnSelf" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenComputingProductOfStrings" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldReverseNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenHeadOnNil" time="0.004"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldConvertNilToJavaArray" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFindLastOfNonNil" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFoldLeftNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldDropUntilNoneOnNil" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveAllExistingElementsFromNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenInsertOnNonNilWithNegativeIndex" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldRemoveIndxAtNonNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldFillTheCharSeqWith0ElementsWhenNIsNegative" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldMapToCharSeqWhenMapCharsIsUsed" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldPeekNonNilPerformingNoAction" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldPatchNonEmptyByEmpty" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldIterateFirstElementOfNonNilStartingAtIndex" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldDropUntilAllIfPredicateIsFalse" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldPadEmptyToEmpty" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldPartitionNil" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldStartsNonNilOfNonNilCalculate" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenSubSequenceWithOutOfLowerBound" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldThrowWhenSlidingNilByNegativeSize" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldDropAllIfCountExceedsSize" time="0.001"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSlideNonNilBySize1" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldSlideNonNilBySize2" time="0"/>
+  <testcase classname="javaslang.collection.CharSeqTest" name="shouldMkStringWithDelimiterAndPrefixAndSuffixNil" time="0"/>
+</testsuite>

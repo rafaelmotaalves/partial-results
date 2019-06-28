@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="TestSuite" time="18.835" tests="37" errors="0" skipped="0" failures="0">
+  <properties>
+    <property name="java.runtime.name" value="Java(TM) SE Runtime Environment"/>
+    <property name="sun.boot.library.path" value="/usr/lib/jvm/java-8-oracle/jre/lib/amd64"/>
+    <property name="java.vm.version" value="25.151-b12"/>
+    <property name="java.vm.vendor" value="Oracle Corporation"/>
+    <property name="maven.multiModuleProjectDirectory" value="/home/travis/build/rafaresearch/quickml"/>
+    <property name="java.vendor.url" value="http://java.oracle.com/"/>
+    <property name="path.separator" value=":"/>
+    <property name="guice.disable.misplaced.annotation.check" value="true"/>
+    <property name="java.vm.name" value="Java HotSpot(TM) 64-Bit Server VM"/>
+    <property name="file.encoding.pkg" value="sun.io"/>
+    <property name="user.country" value="US"/>
+    <property name="sun.java.launcher" value="SUN_STANDARD"/>
+    <property name="sun.os.patch.level" value="unknown"/>
+    <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
+    <property name="user.dir" value="/home/travis/build/rafaresearch/quickml"/>
+    <property name="java.runtime.version" value="1.8.0_151-b12"/>
+    <property name="java.awt.graphicsenv" value="sun.awt.X11GraphicsEnvironment"/>
+    <property name="java.endorsed.dirs" value="/usr/lib/jvm/java-8-oracle/jre/lib/endorsed"/>
+    <property name="os.arch" value="amd64"/>
+    <property name="java.io.tmpdir" value="/tmp"/>
+    <property name="line.separator" value="&#10;"/>
+    <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
+    <property name="os.name" value="Linux"/>
+    <property name="classworlds.conf" value="/usr/local/maven-3.5.2/bin/m2.conf"/>
+    <property name="sun.jnu.encoding" value="UTF-8"/>
+    <property name="java.library.path" value="/usr/java/packages/lib/amd64:/usr/lib64:/lib64:/lib:/usr/lib"/>
+    <property name="maven.conf" value="/usr/local/maven-3.5.2/conf"/>
+    <property name="java.specification.name" value="Java Platform API Specification"/>
+    <property name="java.class.version" value="52.0"/>
+    <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
+    <property name="os.version" value="4.4.0-101-generic"/>
+    <property name="library.jansi.path" value="/usr/local/maven-3.5.2/lib/jansi-native"/>
+    <property name="user.home" value="/home/travis"/>
+    <property name="user.timezone" value="UTC"/>
+    <property name="java.awt.printerjob" value="sun.print.PSPrinterJob"/>
+    <property name="java.specification.version" value="1.8"/>
+    <property name="file.encoding" value="UTF-8"/>
+    <property name="user.name" value="travis"/>
+    <property name="java.class.path" value="/usr/local/maven-3.5.2/boot/plexus-classworlds-2.5.2.jar"/>
+    <property name="java.vm.specification.version" value="1.8"/>
+    <property name="sun.arch.data.model" value="64"/>
+    <property name="java.home" value="/usr/lib/jvm/java-8-oracle/jre"/>
+    <property name="sun.java.command" value="org.codehaus.plexus.classworlds.launcher.Launcher package"/>
+    <property name="java.specification.vendor" value="Oracle Corporation"/>
+    <property name="user.language" value="en"/>
+    <property name="awt.toolkit" value="sun.awt.X11.XToolkit"/>
+    <property name="java.vm.info" value="mixed mode"/>
+    <property name="java.version" value="1.8.0_151"/>
+    <property name="java.ext.dirs" value="/usr/lib/jvm/java-8-oracle/jre/lib/ext:/usr/java/packages/lib/ext"/>
+    <property name="securerandom.source" value="file:/dev/./urandom"/>
+    <property name="sun.boot.class.path" value="/usr/lib/jvm/java-8-oracle/jre/lib/resources.jar:/usr/lib/jvm/java-8-oracle/jre/lib/rt.jar:/usr/lib/jvm/java-8-oracle/jre/lib/sunrsasign.jar:/usr/lib/jvm/java-8-oracle/jre/lib/jsse.jar:/usr/lib/jvm/java-8-oracle/jre/lib/jce.jar:/usr/lib/jvm/java-8-oracle/jre/lib/charsets.jar:/usr/lib/jvm/java-8-oracle/jre/lib/jfr.jar:/usr/lib/jvm/java-8-oracle/jre/classes"/>
+    <property name="java.vendor" value="Oracle Corporation"/>
+    <property name="maven.home" value="/usr/local/maven-3.5.2"/>
+    <property name="file.separator" value="/"/>
+    <property name="java.vendor.url.bug" value="http://bugreport.sun.com/bugreport/"/>
+    <property name="sun.cpu.endian" value="little"/>
+    <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
+    <property name="sun.cpu.isalist" value=""/>
+  </properties>
+  <testcase name="simpleBmiTest" classname="quickdt.predictiveModels.splitOnAttributePredictiveModel.SplitOnAttributePMBuilderTest" time="4.904"/>
+  <testcase name="simpleBmiTestNoSplit" classname="quickdt.predictiveModels.splitOnAttributePredictiveModel.SplitOnAttributePMBuilderTest" time="0.851"/>
+  <testcase name="simpleBmiTestSplit" classname="quickdt.predictiveModels.splitOnAttributePredictiveModel.SplitOnAttributePMBuilderTest" time="1.077"/>
+  <testcase name="simpleTest" classname="quickdt.predictiveModels.downsamplingPredictiveModel.DownsamplingPredictiveModelTest" time="0.099"/>
+  <testcase name="simpleBmiTest" classname="quickdt.predictiveModels.downsamplingPredictiveModel.DownsamplingPredictiveModelBuilderTest" time="0.51"/>
+  <testcase name="simpleTest" classname="quickdt.predictiveModels.downsamplingPredictiveModel.DownsamplingPredictiveModelBuilderTest" time="0.011"/>
+  <testcase name="simpleBmiTest" classname="quickdt.predictiveModels.calibratedPredictiveModel.PAVCalibratedPredictiveModelBuilderTest" time="2.669"/>
+  <testcase name="simpleBmiTestNoSplit" classname="quickdt.predictiveModels.calibratedPredictiveModel.PAVCalibratedPredictiveModelBuilderTest" time="0.307"/>
+  <testcase name="simpleBmiTestSplit" classname="quickdt.predictiveModels.calibratedPredictiveModel.PAVCalibratedPredictiveModelBuilderTest" time="0.635"/>
+  <testcase name="simpleBmiTest" classname="quickdt.predictiveModels.temporallyWeightPredictiveModel.TemporallyReweightedPMBuilderTest" time="0.345"/>
+  <testcase name="simpleBmiTest" classname="quickdt.predictiveModels.decisionTree.TreeBuilderTest" time="0.129"/>
+  <testcase name="simpleBmiTestNoSplit" classname="quickdt.predictiveModels.decisionTree.TreeBuilderTest" time="0.128"/>
+  <testcase name="simpleBmiTestRebuild" classname="quickdt.predictiveModels.decisionTree.TreeBuilderTest" time="0.368"/>
+  <testcase name="simpleBmiTestSplit" classname="quickdt.predictiveModels.decisionTree.TreeBuilderTest" time="0.14"/>
+  <testcase name="simpleTest" classname="quickdt.predictiveModels.decisionTree.scorers.MSEScorerTest" time="0.002"/>
+  <testcase name="simpleTest" classname="quickdt.predictiveModels.featureEngineering.FeatureEngineeringPredictiveModelBuilderTest" time="0.003"/>
+  <testcase name="simpleTest" classname="quickdt.predictiveModels.featureEngineering.enrichStrategies.attributeCombiner.AttributeCombiningEnricherTest" time="0.003"/>
+  <testcase name="testCreateAttributesEnricher" classname="quickdt.predictiveModels.featureEngineering.enrichStrategies.probabilityInjector.ProbabilityEnrichStrategyTest" time="0.002"/>
+  <testcase name="simpleTest" classname="quickdt.predictiveModels.featureEngineering.enrichStrategies.probabilityInjector.ProbabilityInjectingEnricherTest" time="0.001"/>
+  <testcase name="simpleBmiTest" classname="quickdt.predictiveModels.randomForest.RandomForestBuilderTest" time="1.447"/>
+  <testcase name="simpleBmiTestNoSplit" classname="quickdt.predictiveModels.randomForest.RandomForestBuilderTest" time="1.982"/>
+  <testcase name="simpleBmiTestSplit" classname="quickdt.predictiveModels.randomForest.RandomForestBuilderTest" time="3.112"/>
+  <testcase name="testGetEntryWithLowestValue" classname="quickdt.MiscTest" time="0"/>
+  <testcase name="simpleTest" classname="quickdt.predictiveModelOptimizer.fieldValueRecommenders.FixedOrderRecommenderTest" time="0.001"/>
+  <testcase name="simpleTest" classname="quickdt.collections.ValueSummingMapTest" time="0.001"/>
+  <testcase name="testAdd" classname="quickdt.ClassificationCounterTest" time="0.001"/>
+  <testcase name="testMerge" classname="quickdt.ClassificationCounterTest" time="0"/>
+  <testcase name="testSubtract" classname="quickdt.ClassificationCounterTest" time="0.001"/>
+  <testcase name="testGetTotalLoss on testGetTotalLoss(quickdt.crossValidation.MSECrossValLossTest)" classname="quickdt.crossValidation.MSECrossValLossTest" time="0.018"/>
+  <testcase name="testCrossValidator on testCrossValidator(quickdt.crossValidation.CrossValidatorTest)" classname="quickdt.crossValidation.CrossValidatorTest" time="0.03"/>
+  <testcase name="testGetTotalLoss on testGetTotalLoss(quickdt.crossValidation.WeightedAUCCrossValLossTest)" classname="quickdt.crossValidation.WeightedAUCCrossValLossTest" time="0.005"/>
+  <testcase name="testOnlySupportBinaryClassifications on testOnlySupportBinaryClassifications(quickdt.crossValidation.WeightedAUCCrossValLossTest)" classname="quickdt.crossValidation.WeightedAUCCrossValLossTest" time="0.002"/>
+  <testcase name="testSortDataByProbability on testSortDataByProbability(quickdt.crossValidation.WeightedAUCCrossValLossTest)" classname="quickdt.crossValidation.WeightedAUCCrossValLossTest" time="0"/>
+  <testcase name="testGetAUCPoint on testGetAUCPoint(quickdt.crossValidation.WeightedAUCCrossValLossTest)" classname="quickdt.crossValidation.WeightedAUCCrossValLossTest" time="0"/>
+  <testcase name="testGetAucPointsFromData on testGetAucPointsFromData(quickdt.crossValidation.WeightedAUCCrossValLossTest)" classname="quickdt.crossValidation.WeightedAUCCrossValLossTest" time="0"/>
+  <testcase name="testTotalLossNoData on testTotalLossNoData(quickdt.crossValidation.WeightedAUCCrossValLossTest)" classname="quickdt.crossValidation.WeightedAUCCrossValLossTest" time="0"/>
+  <testcase name="testAgainstMahout on testAgainstMahout(quickdt.crossValidation.WeightedAUCCrossValLossTest)" classname="quickdt.crossValidation.WeightedAUCCrossValLossTest" time="0.051"/>
+</testsuite>

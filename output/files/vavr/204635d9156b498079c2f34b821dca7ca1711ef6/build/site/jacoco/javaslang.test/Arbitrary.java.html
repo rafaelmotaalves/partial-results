@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Arbitrary.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang.test</a> &gt; <span class="el_source">Arbitrary.java</span></div><h1>Arbitrary.java</h1><pre class="source lang-java linenums">/*     / \____  _    ______   _____ / \____   ____  _____
+ *    /  \__  \/ \  / \__  \ /  __//  \__  \ /    \/ __  \   Javaslang
+ *  _/  // _\  \  \/  / _\  \\_  \/  // _\  \  /\  \__/  /   Copyright 2014-2015 Daniel Dietrich
+ * /___/ \_____/\____/\_____/____/\___\_____/_/  \_/____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang.test;
+
+import javaslang.Value;
+import javaslang.algebra.Monad;
+import javaslang.collection.Iterator;
+import javaslang.collection.List;
+import javaslang.collection.Stream;
+import javaslang.control.Match;
+
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+
+/**
+ * Represents an arbitrary object of type T.
+ *
+ * @param &lt;T&gt; The type of the arbitrary object.
+ * @author Daniel Dietrich
+ * @since 1.2.0
+ */
+@FunctionalInterface
+public interface Arbitrary&lt;T&gt; extends Monad&lt;T&gt;, Value&lt;T&gt; {
+
+    /**
+     * Returns a generator for objects of type T.
+     * Use {@link Gen#map(Function)} and {@link Gen#flatMap(Function)} to
+     * combine object generators.
+     * &lt;p&gt;
+     * Example:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * // represents arbitrary binary trees of a certain depth n
+     * final class ArbitraryTree implements Arbitrary&amp;lt;BinaryTree&amp;lt;Integer&amp;gt;&amp;gt; {
+     *     &amp;#64;Override
+     *     public Gen&amp;lt;BinaryTree&amp;lt;Integer&amp;gt;&amp;gt; apply(int n) {
+     *         return Gen.choose(-1000, 1000).flatMap(value -&amp;gt; {
+     *                  if (n == 0) {
+     *                      return Gen.of(BinaryTree.leaf(value));
+     *                  } else {
+     *                      return Gen.frequency(
+     *                              Tuple.of(1, Gen.of(BinaryTree.leaf(value))),
+     *                              Tuple.of(4, Gen.of(BinaryTree.branch(apply(n / 2).get(), value, apply(n / 2).get())))
+     *                      );
+     *                  }
+     *         });
+     *     }
+     * }
+     *
+     * // tree generator with a size hint of 10
+     * final Gen&amp;lt;BinaryTree&amp;lt;Integer&amp;gt;&amp;gt; treeGen = new ArbitraryTree().apply(10);
+     *
+     * // stream sum of tree node values to console for 100 arbitrary trees
+     * Stream.of(() -&amp;gt; treeGen.apply(RNG.get())).map(Tree::sum).take(100).stdout();
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param size A (not necessarily positive) size parameter which may be interpreted individually and is constant for all arbitrary objects regarding one property check.
+     * @return A generator for objects of type T.
+     */
+    Gen&lt;T&gt; apply(int size);
+
+    /**
+     * Returns an Arbitrary based on this Arbitrary which produces values that fulfill the given predicate.
+     *
+     * @param predicate A predicate
+     * @return A new generator
+     */
+    @Override
+    default Arbitrary&lt;T&gt; filter(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L76">        return size -&gt; apply(size).filter(predicate);</span>
+    }
+
+    @Override
+    default Arbitrary&lt;T&gt; filterNot(Predicate&lt;? super T&gt; predicate) {
+<span class="nc" id="L81">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="nc" id="L82">        return filter(predicate.negate());</span>
+    }
+
+    /**
+     * Maps arbitrary objects T to arbitrary object U.
+     *
+     * @param mapper A function that maps arbitrary Ts to arbitrary Us given a mapper.
+     * @param &lt;U&gt;    New type of arbitrary objects
+     * @return A new Arbitrary
+     */
+    @Override
+    default &lt;U&gt; Arbitrary&lt;U&gt; flatMap(Function&lt;? super T, ? extends Iterable&lt;? extends U&gt;&gt; mapper) {
+<span class="fc" id="L94">        return size -&gt; {</span>
+<span class="fc" id="L95">            final Gen&lt;T&gt; gen = apply(size);</span>
+<span class="fc" id="L96">            return random -&gt; unit(mapper.apply(gen.apply(random))).apply(size).apply(random);</span>
+        };
+    }
+
+    /**
+     * Maps arbitrary objects T to arbitrary object U.
+     *
+     * @param mapper A function that maps an arbitrary T to an object of type U.
+     * @param &lt;U&gt;    Type of the mapped object
+     * @return A new generator
+     */
+    default &lt;U&gt; Arbitrary&lt;U&gt; map(Function&lt;? super T, ? extends U&gt; mapper) {
+<span class="fc" id="L108">        Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+<span class="fc" id="L109">        return n -&gt; {</span>
+<span class="fc" id="L110">            final Gen&lt;T&gt; generator = apply(n);</span>
+<span class="fc" id="L111">            return random -&gt; mapper.apply(generator.apply(random));</span>
+        };
+    }
+
+    @Override
+    default Match.MatchMonad.Of&lt;Arbitrary&lt;T&gt;&gt; match() {
+<span class="nc" id="L117">        return Match.of(this);</span>
+    }
+
+    @Override
+    default Arbitrary&lt;T&gt; peek(Consumer&lt;? super T&gt; action) {
+<span class="fc" id="L122">        return size -&gt; apply(size).peek(action);</span>
+    }
+
+    /**
+     * Transforms this {@code Arbitrary}.
+     *
+     * @param f   A transformation
+     * @param &lt;U&gt; Type of transformation result
+     * @return An instance of type {@code U}
+     * @throws NullPointerException if {@code f} is null
+     */
+    default &lt;U&gt; U transform(Function&lt;? super Arbitrary&lt;? super T&gt;, ? extends U&gt; f) {
+<span class="nc" id="L134">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="nc" id="L135">        return f.apply(this);</span>
+    }
+    
+    @SuppressWarnings(&quot;unchecked&quot;)
+	default &lt;U&gt; Arbitrary&lt;U&gt; unit(Iterable&lt;? extends U&gt; iterable) {
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">    	if (iterable instanceof Arbitrary) {</span>
+<span class="fc" id="L141">    		return (Arbitrary&lt;U&gt;) iterable;</span>
+    	} else {
+<span class="nc" id="L143">    		final Stream&lt;Gen&lt;U&gt;&gt; generators = Stream.ofAll(iterable).map(Gen::of);</span>
+<span class="nc" id="L144">    		return ignored -&gt; Gen.oneOf(generators);</span>
+    	}
+    }
+
+    @Override
+    default T get() {
+<span class="nc" id="L150">        return apply(Checkable.DEFAULT_SIZE).get();</span>
+    }
+
+    @Override
+    default boolean isEmpty() {
+<span class="fc" id="L155">        return false;</span>
+    }
+
+    /**
+     * This is philosophical. We see an {@code Arbitrary} as single-valued type which holds a variable random value.
+     *
+     * @return {@code true}
+     */
+    @Override
+    default boolean isSingleValued() {
+<span class="nc" id="L165">        return true;</span>
+    }
+
+    /**
+     * Iterator of &lt;em&gt;one&lt;/em&gt; arbitrary value using the default size {@link Checkable#DEFAULT_SIZE}
+     * and the default random generator {@link Checkable#RNG}.
+     *
+     * @return A new Iterator having one value.
+     */
+    @Override
+    default Iterator&lt;T&gt; iterator() {
+<span class="fc" id="L176">        return apply(Checkable.DEFAULT_SIZE).iterator();</span>
+    }
+
+    @Override
+    default String stringPrefix() {
+<span class="nc" id="L181">        return &quot;Arbitrary&quot;;</span>
+    }
+
+    /**
+     * Generates arbitrary integer values.
+     *
+     * @return A new Arbitrary of Integer
+     */
+    static Arbitrary&lt;Integer&gt; integer() {
+<span class="fc" id="L190">        return size -&gt; random -&gt; Gen.choose(-size, size).apply(random);</span>
+    }
+
+    /**
+     * Generates arbitrary strings based on a given alphabet represented by &lt;em&gt;gen&lt;/em&gt;.
+     * &lt;p&gt;
+     * Example:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * Arbitrary.string(
+     *     Gen.frequency(
+     *         Tuple.of(1, Gen.choose('A', 'Z')),
+     *         Tuple.of(1, Gen.choose('a', 'z')),
+     *         Tuple.of(1, Gen.choose('0', '9'))));
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param gen A character generator
+     * @return a new Arbitrary of String
+     */
+    static Arbitrary&lt;String&gt; string(Gen&lt;Character&gt; gen) {
+<span class="fc" id="L211">        return size -&gt; random -&gt; Gen.choose(0, size).map(i -&gt; {</span>
+<span class="fc" id="L212">            final char[] chars = new char[i];</span>
+<span class="fc bfc" id="L213" title="All 2 branches covered.">            for (int j = 0; j &lt; i; j++) {</span>
+<span class="fc" id="L214">                chars[j] = gen.apply(random);</span>
+            }
+<span class="fc" id="L216">            return new String(chars);</span>
+<span class="fc" id="L217">        }).apply(random);</span>
+    }
+
+    /**
+     * Generates arbitrary lists based on a given element generator arbitraryT.
+     * &lt;p&gt;
+     * Example:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * Arbitrary.list(Arbitrary.integer());
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param arbitraryT Arbitrary elements of type T
+     * @param &lt;T&gt;        Component type of the List
+     * @return a new Arbitrary of List&amp;lt;T&amp;gt;
+     */
+    static &lt;T&gt; Arbitrary&lt;List&lt;T&gt;&gt; list(Arbitrary&lt;T&gt; arbitraryT) {
+<span class="fc" id="L235">        return size -&gt; {</span>
+<span class="fc" id="L236">            final Gen&lt;T&gt; genT = arbitraryT.apply(size);</span>
+<span class="fc" id="L237">            return random -&gt; Gen.choose(0, size).map(i -&gt; {</span>
+<span class="fc" id="L238">                List&lt;T&gt; list = List.empty();</span>
+<span class="fc bfc" id="L239" title="All 2 branches covered.">                for (int j = 0; j &lt; i; j++) {</span>
+<span class="fc" id="L240">                    final T element = genT.apply(random);</span>
+<span class="fc" id="L241">                    list = list.prepend(element);</span>
+                }
+<span class="fc" id="L243">                return list;</span>
+<span class="fc" id="L244">            }).apply(random);</span>
+        };
+    }
+
+    /**
+     * Generates arbitrary streams based on a given element generator arbitraryT.
+     * &lt;p&gt;
+     * Example:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * Arbitrary.stream(Arbitrary.integer());
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param arbitraryT Arbitrary elements of type T
+     * @param &lt;T&gt;        Component type of the Stream
+     * @return a new Arbitrary of Stream&amp;lt;T&amp;gt;
+     */
+    static &lt;T&gt; Arbitrary&lt;Stream&lt;T&gt;&gt; stream(Arbitrary&lt;T&gt; arbitraryT) {
+<span class="fc" id="L263">        return size -&gt; {</span>
+<span class="fc" id="L264">            final Gen&lt;T&gt; genT = arbitraryT.apply(size);</span>
+<span class="fc" id="L265">            return random -&gt; Gen.choose(0, size).map(i -&gt; Stream.ofAll(new Iterator&lt;T&gt;() {</span>
+
+<span class="fc" id="L267">                int count = i;</span>
+
+                @Override
+                public boolean hasNext() {
+<span class="pc bpc" id="L271" title="1 of 2 branches missed.">                    return count-- &gt; 0;</span>
+                }
+
+                @Override
+                public T next() {
+<span class="nc" id="L276">                    return genT.apply(random);</span>
+                }
+<span class="fc" id="L278">            })).apply(random);</span>
+        };
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

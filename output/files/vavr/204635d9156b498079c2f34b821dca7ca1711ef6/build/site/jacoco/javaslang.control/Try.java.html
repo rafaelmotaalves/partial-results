@@ -1,0 +1,862 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Try.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang.control</a> &gt; <span class="el_source">Try.java</span></div><h1>Try.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang.control;
+
+import javaslang.CheckedFunction1;
+import javaslang.Value;
+import javaslang.algebra.Monad;
+import javaslang.collection.Iterator;
+import javaslang.collection.List;
+import javaslang.collection.Seq;
+
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+
+/**
+ * An implementation similar to Scala's Try control.
+ *
+ * @param &lt;T&gt; Value type in the case of success.
+ * @author Daniel Dietrich
+ * @since 1.0.0
+ */
+public interface Try&lt;T&gt; extends Monad&lt;T&gt;, Value&lt;T&gt; {
+
+    /**
+     * Creates a Try of a CheckedSupplier.
+     *
+     * @param supplier A checked supplier
+     * @param &lt;T&gt;      Component type
+     * @return {@code Success(supplier.get())} if no exception occurs, otherwise {@code Failure(throwable)} if an
+     * exception occurs calling {@code supplier.get()}.
+     */
+    static &lt;T&gt; Try&lt;T&gt; of(CheckedSupplier&lt;? extends T&gt; supplier) {
+        try {
+<span class="fc" id="L42">            return new Success&lt;&gt;(supplier.get());</span>
+<span class="fc" id="L43">        } catch (Throwable t) {</span>
+<span class="fc" id="L44">            return new Failure&lt;&gt;(t);</span>
+        }
+    }
+
+    /**
+     * Creates a Try of a CheckedRunnable.
+     *
+     * @param runnable A checked runnable
+     * @return {@code Success(null)} if no exception occurs, otherwise {@code Failure(throwable)} if an exception occurs
+     * calling {@code runnable.run()}.
+     */
+    static Try&lt;Void&gt; run(CheckedRunnable runnable) {
+        try {
+<span class="fc" id="L57">            runnable.run();</span>
+<span class="fc" id="L58">            return new Success&lt;&gt;(null); // null represents the absence of an value, i.e. Void</span>
+<span class="fc" id="L59">        } catch (Throwable t) {</span>
+<span class="fc" id="L60">            return new Failure&lt;&gt;(t);</span>
+        }
+    }
+
+    /**
+     * Reduces many {@code Try}s into a single {@code Try} by transforming an
+     * {@code Iterable&lt;Try&lt;? extends T&gt;&gt;} into a {@code Try&lt;Seq&lt;T&gt;&gt;}. If any of
+     * the {@code Try}s are {@link Try.Failure}, then this returns a {@link Try.Failure}.
+     *
+     * @param values An {@link Iterable} of {@code Try}s
+     * @param &lt;T&gt;    type of the Trys
+     * @return A {@code Try} of a {@link Seq} of results
+     * @throws NullPointerException if {@code values} is null
+     */
+    static &lt;T&gt; Try&lt;Seq&lt;T&gt;&gt; sequence(Iterable&lt;? extends Try&lt;? extends T&gt;&gt; values) {
+<span class="fc" id="L75">        Objects.requireNonNull(values, &quot;values is null&quot;);</span>
+<span class="fc" id="L76">        List&lt;T&gt; list = List.empty();</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        for (Try&lt;? extends T&gt; value : values) {</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">            if (value.isFailure()) {</span>
+<span class="fc" id="L79">                return Try.failure(value.getCause());</span>
+            }
+<span class="fc" id="L81">            list = list.prepend(value.get());</span>
+<span class="fc" id="L82">        }</span>
+
+<span class="fc" id="L84">        return Try.success(list.reverse());</span>
+    }
+
+    /**
+     * Creates a {@link Success} that contains the given {@code value}. Shortcut for {@code new Success&lt;&gt;(value)}.
+     *
+     * @param value A value.
+     * @param &lt;T&gt;   Type of the given {@code value}.
+     * @return A new {@code Success}.
+     */
+    static &lt;T&gt; Try&lt;T&gt; success(T value) {
+<span class="fc" id="L95">        return new Success&lt;&gt;(value);</span>
+    }
+
+    /**
+     * Creates a {@link Failure} that contains the given {@code exception}. Shortcut for {@code new Failure&lt;&gt;(exception)}.
+     *
+     * @param exception An exception.
+     * @param &lt;T&gt;       Component type of the {@code Try}.
+     * @return A new {@code Failure}.
+     */
+    static &lt;T&gt; Try&lt;T&gt; failure(Throwable exception) {
+<span class="fc" id="L106">        return new Failure&lt;&gt;(exception);</span>
+    }
+
+    /**
+     * Runs the given checked consumer if this is a {@code Success},
+     * passing the result of the current expression to it.
+     * If this expression is a {@code Failure} then it'll return a new
+     * {@code Failure} of type T with the original exception.
+     *
+     * The main use case is chaining checked functions using method references:
+     *
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * Try.of(() -&amp;gt; 100)
+     *    .andThen(i -&amp;gt; System.out.println(i));
+     *
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param consumer A checked consumer taking a single argument.
+     * @return a new {@code Try}
+     */
+    default Try&lt;T&gt; andThen(CheckedConsumer&lt;? super T&gt; consumer) {
+<span class="fc bfc" id="L129" title="All 2 branches covered.">        if (isFailure()) {</span>
+<span class="fc" id="L130">            return this;</span>
+        } else {
+<span class="fc" id="L132">            return Try.run(() -&gt; consumer.accept(get())).flatMap(ignored -&gt; this);</span>
+        }
+    }
+
+    /**
+     * Runs the given runnable if this is a {@code Success}, otherwise returns this {@code Failure}.
+     * Shorthand for {@code flatMap(ignored -&gt; Try.run(runnable))}.
+     * The main use case is chaining runnables using method references:
+     *
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * Try.run(A::methodRef).andThen(B::methodRef).andThen(C::methodRef);
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * Please note that these lines are semantically the same:
+     *
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * Try.run(() -&amp;gt; { doStuff(); })
+     *    .andThen(() -&amp;gt; { doMoreStuff(); })
+     *    .andThen(() -&amp;gt; { doEvenMoreStuff(); });
+     *
+     * Try.run(() -&amp;gt; {
+     *     doStuff();
+     *     doMoreStuff();
+     *     doEvenMoreStuff();
+     * });
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param runnable A checked runnable
+     * @return a new {@code Try}
+     */
+    default Try&lt;Void&gt; andThen(CheckedRunnable runnable) {
+<span class="fc" id="L167">        return flatMap(ignored -&gt; Try.run(runnable));</span>
+    }
+
+    /**
+     * Returns {@code Success(throwable)} if this is a {@code Failure(throwable)}, otherwise
+     * a {@code Failure(new NoSuchElementException(&quot;Success.failed()&quot;))} if this is a Success.
+     *
+     * @return a new Try
+     */
+    default Try&lt;Throwable&gt; failed() {
+<span class="fc bfc" id="L177" title="All 2 branches covered.">        if (isFailure()) {</span>
+<span class="fc" id="L178">            return new Success&lt;&gt;(getCause());</span>
+        } else {
+<span class="fc" id="L180">            return new Failure&lt;&gt;(new NoSuchElementException(&quot;Success.failed()&quot;));</span>
+        }
+    }
+
+    /**
+     * Returns {@code this} if this is a Failure or this is a Success and the value satisfies the predicate.
+     * &lt;p&gt;
+     * Returns a new Failure, if this is a Success and the value does not satisfy the Predicate or an exception
+     * occurs testing the predicate.
+     *
+     * @param predicate A predicate
+     * @return a new Try
+     */
+    @Override
+    default Try&lt;T&gt; filter(Predicate&lt;? super T&gt; predicate) {
+<span class="fc bfc" id="L195" title="All 2 branches covered.">        if (isFailure()) {</span>
+<span class="fc" id="L196">            return this;</span>
+        } else {
+            try {
+<span class="fc bfc" id="L199" title="All 2 branches covered.">                if (predicate.test(get())) {</span>
+<span class="fc" id="L200">                    return this;</span>
+                } else {
+<span class="fc" id="L202">                    return new Failure&lt;&gt;(new NoSuchElementException(&quot;Predicate does not hold for &quot; + get()));</span>
+                }
+<span class="fc" id="L204">            } catch (Throwable t) {</span>
+<span class="fc" id="L205">                return new Failure&lt;&gt;(t);</span>
+            }
+        }
+    }
+
+    @Override
+    default Try&lt;T&gt; filterNot(Predicate&lt;? super T&gt; predicate) {
+<span class="nc" id="L212">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="nc" id="L213">        return filter(predicate.negate());</span>
+    }
+
+    default Try&lt;T&gt; filterTry(CheckedPredicate&lt;? super T&gt; predicate) {
+<span class="fc bfc" id="L217" title="All 2 branches covered.">        if (isFailure()) {</span>
+<span class="fc" id="L218">            return this;</span>
+        } else {
+<span class="fc" id="L220">            return Try.of(() -&gt; predicate.test(get())).flatMap(b -&gt; filter(ignored -&gt; b));</span>
+        }
+    }
+
+    default Try&lt;T&gt; filterNotTry(CheckedPredicate&lt;? super T&gt; predicate) {
+<span class="nc" id="L225">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="nc" id="L226">        return filterTry(predicate.negate());</span>
+    }
+
+    /**
+     * FlatMaps the value of a Success or returns a Failure.
+     *
+     * @param mapper A mapper
+     * @param &lt;U&gt;    The new component type
+     * @return a new Try
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    default &lt;U&gt; Try&lt;U&gt; flatMap(Function&lt;? super T, ? extends Iterable&lt;? extends U&gt;&gt; mapper) {
+<span class="fc bfc" id="L238" title="All 2 branches covered.">        if (isFailure()) {</span>
+<span class="fc" id="L239">            return (Failure&lt;U&gt;) this;</span>
+        } else {
+<span class="fc" id="L241">            return flatMapTry((CheckedFunction&lt;T, Iterable&lt;? extends U&gt;&gt;) mapper::apply);</span>
+        }
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    default &lt;U&gt; Try&lt;U&gt; flatMapTry(CheckedFunction&lt;? super T, ? extends Iterable&lt;? extends U&gt;&gt; mapper) {
+<span class="fc bfc" id="L247" title="All 2 branches covered.">        if (isFailure()) {</span>
+<span class="fc" id="L248">            return (Failure&lt;U&gt;) this;</span>
+        } else {
+            try {
+<span class="fc" id="L251">                return unit(mapper.apply(get()));</span>
+<span class="fc" id="L252">            } catch (Throwable t) {</span>
+<span class="fc" id="L253">                return new Failure&lt;&gt;(t);</span>
+            }
+        }
+    }
+
+    /**
+     * Gets the result of this Try if this is a Success or throws if this is a Failure.
+     *
+     * @return The result of this Try.
+     * @throws NonFatalException if this is a Failure
+     */
+    @Override
+    T get();
+
+    /**
+     * Gets the cause if this is a Failure or throws if this is a Success.
+     *
+     * @return The cause if this is a Failure
+     * @throws UnsupportedOperationException if this is a Success
+     */
+    Throwable getCause();
+
+    /**
+     * Checks whether this Try has no result, i.e. is a Failure.
+     *
+     * @return true if this is a Failure, returns false if this is a Success.
+     */
+    @Override
+    boolean isEmpty();
+
+    /**
+     * Checks if this is a Failure.
+     *
+     * @return true, if this is a Failure, otherwise false, if this is a Success
+     */
+    boolean isFailure();
+
+    /**
+     * A {@code Try} is a single-valued.
+     *
+     * @return {@code true}
+     */
+    @Override
+    default boolean isSingleValued() {
+<span class="nc" id="L297">        return true;</span>
+    }
+
+    /**
+     * Checks if this is a Success.
+     *
+     * @return true, if this is a Success, otherwise false, if this is a Failure
+     */
+    boolean isSuccess();
+
+    @Override
+    default Iterator&lt;T&gt; iterator() {
+<span class="fc bfc" id="L309" title="All 2 branches covered.">        return isSuccess() ? Iterator.of(get()) : Iterator.empty();</span>
+    }
+
+    /**
+     * Maps the value of a Success or returns a Failure.
+     *
+     * @param &lt;U&gt;    The new component type
+     * @param mapper A mapper
+     * @return a new Try
+     */
+    @Override
+    default &lt;U&gt; Try&lt;U&gt; map(Function&lt;? super T, ? extends U&gt; mapper) {
+<span class="fc" id="L321">        return mapTry(mapper::apply);</span>
+    }
+
+    /**
+     * Runs the given checked function if this is a {@code Success},
+     * passing the result of the current expression to it.
+     * If this expression is a {@code Failure} then it'll return a new
+     * {@code Failure} of type R with the original exception.
+     *
+     * The main use case is chaining checked functions using method references:
+     *
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * Try.of(() -&amp;gt; 0)
+     *    .mapTry(x -&amp;gt; 1 / x); // division by zero
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param &lt;U&gt;    The new component type
+     * @param mapper A checked function
+     * @return a new {@code Try}
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    default &lt;U&gt; Try&lt;U&gt; mapTry(CheckedFunction1&lt;? super T, ? extends U&gt; mapper) {
+<span class="fc bfc" id="L345" title="All 2 branches covered.">        if (isFailure()) {</span>
+<span class="fc" id="L346">            return (Failure&lt;U&gt;) this;</span>
+        } else {
+<span class="fc" id="L348">            return Try.of(() -&gt; mapper.apply(get()));</span>
+        }
+    }
+
+    @Override
+    default Match.MatchMonad.Of&lt;Try&lt;T&gt;&gt; match() {
+<span class="nc" id="L354">        return Match.of(this);</span>
+    }
+
+    /**
+     * Consumes the throwable if this is a Failure.
+     *
+     * @param action An exception consumer
+     * @return a new Failure, if this is a Failure and the consumer throws, otherwise this, which may be a Success or
+     * a Failure.
+     */
+    default Try&lt;T&gt; onFailure(Consumer&lt;? super Throwable&gt; action) {
+<span class="fc bfc" id="L365" title="All 2 branches covered.">        if (isFailure()) {</span>
+            try {
+<span class="fc" id="L367">                action.accept(getCause());</span>
+<span class="fc" id="L368">                return this;</span>
+<span class="fc" id="L369">            } catch (Throwable t) {</span>
+<span class="fc" id="L370">                return new Failure&lt;&gt;(t);</span>
+            }
+        } else {
+<span class="fc" id="L373">            return this;</span>
+        }
+    }
+
+    /**
+     * Consumes the value if this is a Success.
+     *
+     * @param action A value consumer
+     * @return a new Failure, if this is a Success and the consumer throws, otherwise this, which may be a Success or
+     * a Failure.
+     */
+    default Try&lt;T&gt; onSuccess(Consumer&lt;? super T&gt; action) {
+<span class="fc bfc" id="L385" title="All 2 branches covered.">        if (isSuccess()) {</span>
+            try {
+<span class="fc" id="L387">                action.accept(get());</span>
+<span class="fc" id="L388">                return this;</span>
+<span class="nc" id="L389">            } catch (Throwable t) {</span>
+<span class="nc" id="L390">                return new Failure&lt;&gt;(t);</span>
+            }
+        } else {
+<span class="fc" id="L393">            return this;</span>
+        }
+    }
+
+    default T orElseGet(Function&lt;? super Throwable, ? extends T&gt; other) {
+<span class="fc bfc" id="L398" title="All 2 branches covered.">        if (isFailure()) {</span>
+<span class="fc" id="L399">            return other.apply(getCause());</span>
+        } else {
+<span class="fc" id="L401">            return get();</span>
+        }
+    }
+
+    default void orElseRun(Consumer&lt;? super Throwable&gt; action) {
+<span class="fc bfc" id="L406" title="All 2 branches covered.">        if (isFailure()) {</span>
+<span class="fc" id="L407">            action.accept(getCause());</span>
+        }
+<span class="fc" id="L409">    }</span>
+
+    default &lt;X extends Throwable&gt; T orElseThrow(Function&lt;? super Throwable, X&gt; exceptionProvider) throws X {
+<span class="fc bfc" id="L412" title="All 2 branches covered.">        if (isFailure()) {</span>
+<span class="fc" id="L413">            throw exceptionProvider.apply(getCause());</span>
+        } else {
+<span class="fc" id="L415">            return get();</span>
+        }
+    }
+
+    /**
+     * Applies the action to the value of a Success or does nothing in the case of a Failure.
+     *
+     * @param action A Consumer
+     * @return this Try
+     */
+    @Override
+    default Try&lt;T&gt; peek(Consumer&lt;? super T&gt; action) {
+<span class="fc bfc" id="L427" title="All 2 branches covered.">        if (isSuccess()) {</span>
+<span class="fc" id="L428">            action.accept(get());</span>
+        }
+<span class="fc" id="L430">        return this;</span>
+    }
+
+    /**
+     * Returns {@code this}, if this is a {@code Success}, otherwise tries to recover the exception of the failure with {@code f},
+     * i.e. calling {@code Try.of(() -&gt; f.apply(throwable))}.
+     *
+     * @param f A recovery function taking a Throwable
+     * @return a new Try
+     */
+    default Try&lt;T&gt; recover(Function&lt;? super Throwable, ? extends T&gt; f) {
+<span class="fc bfc" id="L441" title="All 2 branches covered.">        if (isFailure()) {</span>
+<span class="fc" id="L442">            return Try.of(() -&gt; f.apply(getCause()));</span>
+        } else {
+<span class="fc" id="L444">            return this;</span>
+        }
+    }
+
+    /**
+     * Returns {@code this}, if this is a Success, otherwise tries to recover the exception of the failure with {@code f},
+     * i.e. calling {@code f.apply(cause.getCause())}. If an error occurs recovering a Failure, then the new Failure is
+     * returned.
+     *
+     * @param f A recovery function taking a Throwable
+     * @return a new Try
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    default Try&lt;T&gt; recoverWith(Function&lt;? super Throwable, ? extends Try&lt;? extends T&gt;&gt; f) {
+<span class="fc bfc" id="L458" title="All 2 branches covered.">        if (isFailure()) {</span>
+            try {
+<span class="fc" id="L460">                return (Try&lt;T&gt;) f.apply(getCause());</span>
+<span class="fc" id="L461">            } catch (Throwable t) {</span>
+<span class="fc" id="L462">                return new Failure&lt;&gt;(t);</span>
+            }
+        } else {
+<span class="fc" id="L465">            return this;</span>
+        }
+    }
+
+    default Either&lt;Throwable, T&gt; toEither() {
+<span class="fc bfc" id="L470" title="All 2 branches covered.">        if (isFailure()) {</span>
+<span class="fc" id="L471">            return Either.left(getCause());</span>
+        } else {
+<span class="fc" id="L473">            return Either.right(get());</span>
+        }
+    }
+
+    /**
+     * Transforms this {@code Try}.
+     *
+     * @param f   A transformation
+     * @param &lt;U&gt; Type of transformation result
+     * @return An instance of type {@code U}
+     * @throws NullPointerException if {@code f} is null
+     */
+    default &lt;U&gt; U transform(Function&lt;? super Try&lt;? super T&gt;, ? extends U&gt; f) {
+<span class="nc" id="L486">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="nc" id="L487">        return f.apply(this);</span>
+    }
+    
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override
+    default &lt;U&gt; Try&lt;U&gt; unit(Iterable&lt;? extends U&gt; iterable) {
+<span class="pc bpc" id="L493" title="1 of 2 branches missed.">    	if (iterable instanceof Try) {</span>
+<span class="fc" id="L494">    		return (Try&lt;U&gt;) iterable;</span>
+<span class="nc bnc" id="L495" title="All 2 branches missed.">    	} else if (iterable instanceof Value) {</span>
+<span class="nc" id="L496">    		final Value&lt;U&gt; value = (Value&lt;U&gt;) iterable;</span>
+<span class="nc bnc" id="L497" title="All 2 branches missed.">    		return value.isEmpty() ? Try.failure(new NoSuchElementException()) : Try.of(value::get);</span>
+    	} else {
+<span class="nc" id="L499">    		final java.util.Iterator&lt;? extends U&gt; iterator = iterable.iterator();</span>
+<span class="nc bnc" id="L500" title="All 2 branches missed.">    		if (iterator.hasNext()) {</span>
+<span class="nc" id="L501">    			return Try.of(() -&gt; iterator.next());</span>
+    		} else {
+<span class="nc" id="L503">    			return Try.failure(new NoSuchElementException());</span>
+    		}
+        }
+    }
+
+    @Override
+    boolean equals(Object o);
+
+    @Override
+    int hashCode();
+
+    @Override
+    String toString();
+
+    /**
+     * A {@linkplain java.util.function.Consumer} which may throw.
+     *
+     * @param &lt;T&gt; the type of value supplied to this consumer.
+     */
+    @FunctionalInterface
+    interface CheckedConsumer&lt;T&gt; {
+
+        /**
+         * Performs side-effects.
+         *
+         * @param value a value
+         * @throws Throwable if an error occurs
+         */
+        void accept(T value) throws Throwable;
+    }
+
+    /**
+     * A {@linkplain java.util.function.Function} which may throw.
+     *
+     * @param &lt;T&gt; the type of the input to the function
+     * @param &lt;R&gt; the result type of the function
+     */
+    @FunctionalInterface
+    interface CheckedFunction&lt;T, R&gt; {
+
+        /**
+         * Applies this function to the given argument.
+         *
+         * @param t the function argument
+         * @return the function result
+         * @throws Throwable if an error occurs
+         */
+        R apply(T t) throws Throwable;
+    }
+
+    /**
+     * A {@linkplain java.util.function.Predicate} which may throw.
+     *
+     * @param &lt;T&gt; the type of the input to the predicate
+     */
+    @FunctionalInterface
+    interface CheckedPredicate&lt;T&gt; {
+
+        /**
+         * Evaluates this predicate on the given argument.
+         *
+         * @param t the input argument
+         * @return {@code true} if the input argument matches the predicate, otherwise {@code false}
+         * @throws Throwable if an error occurs
+         */
+        boolean test(T t) throws Throwable;
+
+        /**
+         * Negates this predicate.
+         *
+         * @return A new CheckedPredicate.
+         */
+        default CheckedPredicate&lt;T&gt; negate() {
+<span class="nc bnc" id="L576" title="All 2 branches missed.">            return t -&gt; !test(t);</span>
+        }
+    }
+
+    /**
+     * A {@linkplain java.lang.Runnable} which may throw.
+     */
+    @FunctionalInterface
+    interface CheckedRunnable {
+
+        /**
+         * Performs side-effects.
+         *
+         * @throws Throwable if an error occurs
+         */
+        void run() throws Throwable;
+    }
+
+    /**
+     * A {@linkplain java.util.function.Supplier} which may throw.
+     *
+     * @param &lt;R&gt; the type of results supplied by this supplier
+     */
+    @FunctionalInterface
+    interface CheckedSupplier&lt;R&gt; {
+
+        /**
+         * Gets a result.
+         *
+         * @return a result
+         * @throws Throwable if an error occurs
+         */
+        R get() throws Throwable;
+    }
+
+    /**
+     * A succeeded Try.
+     *
+     * @param &lt;T&gt; component type of this Success
+     * @author Daniel Dietrich
+     * @since 1.0.0
+     */
+    final class Success&lt;T&gt; implements Try&lt;T&gt;, Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        private final T value;
+
+        /**
+         * Constructs a Success.
+         *
+         * @param value The value of this Success.
+         */
+<span class="fc" id="L629">        private Success(T value) {</span>
+<span class="fc" id="L630">            this.value = value;</span>
+<span class="fc" id="L631">        }</span>
+
+        @Override
+        public T get() {
+<span class="fc" id="L635">            return value;</span>
+        }
+
+        @Override
+        public Throwable getCause() {
+<span class="fc" id="L640">            throw new UnsupportedOperationException(&quot;getCause on Success&quot;);</span>
+        }
+
+        @Override
+        public boolean isEmpty() {
+<span class="fc" id="L645">            return false;</span>
+        }
+
+        @Override
+        public boolean isFailure() {
+<span class="fc" id="L650">            return false;</span>
+        }
+
+        @Override
+        public boolean isSuccess() {
+<span class="fc" id="L655">            return true;</span>
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+<span class="pc bpc" id="L660" title="1 of 6 branches missed.">            return (obj == this) || (obj instanceof Success &amp;&amp; Objects.equals(value, ((Success&lt;?&gt;) obj).value));</span>
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L665">            return Objects.hashCode(value);</span>
+        }
+
+        @Override
+        public String stringPrefix() {
+<span class="fc" id="L670">            return &quot;Success&quot;;</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="fc" id="L675">            return stringPrefix() + &quot;(&quot; + value + &quot;)&quot;;</span>
+        }
+    }
+
+    /**
+     * A failed Try.
+     *
+     * @param &lt;T&gt; component type of this Failure
+     * @author Daniel Dietrich
+     * @since 1.0.0
+     */
+    final class Failure&lt;T&gt; implements Try&lt;T&gt;, Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        private final NonFatalException cause;
+
+        /**
+         * Constructs a Failure.
+         *
+         * @param exception A cause of type Throwable, may not be null.
+         * @throws NullPointerException if exception is null
+         * @throws Error                if the given exception if fatal, i.e. non-recoverable
+         */
+<span class="fc" id="L699">        private Failure(Throwable exception) {</span>
+<span class="fc" id="L700">            Objects.requireNonNull(exception, &quot;exception is null&quot;);</span>
+<span class="fc" id="L701">            cause = NonFatalException.of(exception);</span>
+<span class="fc" id="L702">        }</span>
+
+        // Throws NonFatal instead of Throwable because it is a RuntimeException which does not need to be checked.
+        @Override
+        public T get() throws NonFatalException {
+<span class="fc" id="L707">            throw cause;</span>
+        }
+
+        @Override
+        public Throwable getCause() {
+<span class="fc" id="L712">            return cause.getCause();</span>
+        }
+
+        @Override
+        public boolean isEmpty() {
+<span class="fc" id="L717">            return true;</span>
+        }
+
+        @Override
+        public boolean isFailure() {
+<span class="fc" id="L722">            return true;</span>
+        }
+
+        @Override
+        public boolean isSuccess() {
+<span class="fc" id="L727">            return false;</span>
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+<span class="pc bpc" id="L732" title="1 of 6 branches missed.">            return (obj == this) || (obj instanceof Failure &amp;&amp; Objects.equals(cause, ((Failure&lt;?&gt;) obj).cause));</span>
+        }
+
+        @Override
+        public String stringPrefix() {
+<span class="fc" id="L737">            return &quot;Failure&quot;;</span>
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L742">            return Objects.hashCode(cause.getCause());</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="fc" id="L747">            return stringPrefix() + &quot;(&quot; + cause.getCause() + &quot;)&quot;;</span>
+        }
+
+    }
+
+    /**
+     * An unchecked wrapper for Fatal exceptions.
+     * &lt;p&gt;
+     * See {@link NonFatalException}.
+     */
+    final class FatalException extends RuntimeException implements Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        private FatalException(Throwable exception) {
+<span class="fc" id="L762">            super(exception);</span>
+<span class="fc" id="L763">        }</span>
+
+        /**
+         * Two Fatal exceptions are equal, if they have the same stack trace.
+         *
+         * @param o An object
+         * @return true, if o equals this, false otherwise.
+         */
+        @Override
+        public boolean equals(Object o) {
+<span class="pc bpc" id="L773" title="2 of 4 branches missed.">            return (o == this) || (o instanceof FatalException</span>
+<span class="pc bpc" id="L774" title="1 of 2 branches missed.">                    &amp;&amp; Arrays.deepEquals(getCause().getStackTrace(), ((FatalException) o).getCause().getStackTrace()));</span>
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L779">            return Objects.hashCode(getCause());</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="fc" id="L784">            return &quot;Fatal(&quot; + getCause() + &quot;)&quot;;</span>
+        }
+    }
+
+    /**
+     * An unchecked wrapper for non-fatal/recoverable exceptions. The underlying exception can
+     * be accessed via {@link #getCause()}.
+     * &lt;p&gt;
+     * The following exceptions are considered to be fatal/non-recoverable:
+     * &lt;ul&gt;
+     * &lt;li&gt;{@linkplain InterruptedException}&lt;/li&gt;
+     * &lt;li&gt;{@linkplain LinkageError}&lt;/li&gt;
+     * &lt;li&gt;{@linkplain ThreadDeath}&lt;/li&gt;
+     * &lt;li&gt;{@linkplain VirtualMachineError} (i.e. {@linkplain OutOfMemoryError} or {@linkplain StackOverflowError})&lt;/li&gt;
+     * &lt;/ul&gt;
+     */
+    final class NonFatalException extends RuntimeException implements Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        private NonFatalException(Throwable exception) {
+<span class="fc" id="L805">            super(exception);</span>
+<span class="fc" id="L806">        }</span>
+
+        /**
+         * Wraps the given exception in a {@code NonFatal} or throws an {@link Error} if the given exception is fatal.
+         * &lt;p&gt;
+         * Note: InterruptedException is not considered to be fatal. It should be handled explicitly but we cannot
+         * throw it directly because it is not an Error. If we would wrap it in an Error, we couldn't handle it
+         * directly. Therefore it is not thrown as fatal exception.
+         *
+         * @param exception A Throwable
+         * @return A new {@code NonFatal} if the given exception is recoverable
+         * @throws Error                if the given exception is fatal, i.e. not recoverable
+         * @throws NullPointerException if exception is null
+         */
+        static NonFatalException of(Throwable exception) {
+<span class="fc" id="L821">            Objects.requireNonNull(exception, &quot;exception is null&quot;);</span>
+<span class="fc bfc" id="L822" title="All 2 branches covered.">            if (exception instanceof NonFatalException) {</span>
+<span class="fc" id="L823">                return (NonFatalException) exception;</span>
+<span class="fc bfc" id="L824" title="All 2 branches covered.">            } else if (exception instanceof FatalException) {</span>
+<span class="fc" id="L825">                throw (FatalException) exception;</span>
+            } else {
+<span class="pc bpc" id="L827" title="2 of 8 branches missed.">                final boolean isFatal = exception instanceof InterruptedException</span>
+                        || exception instanceof LinkageError
+                        || exception instanceof ThreadDeath
+                        || exception instanceof VirtualMachineError;
+<span class="fc bfc" id="L831" title="All 2 branches covered.">                if (isFatal) {</span>
+<span class="fc" id="L832">                    throw new FatalException(exception);</span>
+                } else {
+<span class="fc" id="L834">                    return new NonFatalException(exception);</span>
+                }
+            }
+        }
+
+        /**
+         * Two NonFatal exceptions are equal, if they have the same stack trace.
+         *
+         * @param o An object
+         * @return true, if o equals this, false otherwise.
+         */
+        @Override
+        public boolean equals(Object o) {
+<span class="pc bpc" id="L847" title="2 of 4 branches missed.">            return (o == this) || (o instanceof NonFatalException</span>
+<span class="pc bpc" id="L848" title="1 of 2 branches missed.">                    &amp;&amp; Arrays.deepEquals(getCause().getStackTrace(), ((NonFatalException) o).getCause().getStackTrace()));</span>
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L853">            return Objects.hashCode(getCause());</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="fc" id="L858">            return &quot;NonFatal(&quot; + getCause() + &quot;)&quot;;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

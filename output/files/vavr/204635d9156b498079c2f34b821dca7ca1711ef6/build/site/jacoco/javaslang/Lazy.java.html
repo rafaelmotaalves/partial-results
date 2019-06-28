@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Lazy.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang</a> &gt; <span class="el_source">Lazy.java</span></div><h1>Lazy.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang;
+
+import javaslang.algebra.Monad;
+import javaslang.collection.Iterator;
+import javaslang.collection.List;
+import javaslang.collection.Seq;
+import javaslang.control.Match;
+
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Proxy;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
+/**
+ * Represents a lazy evaluated value. Compared to a Supplier, Lazy is memoizing, i.e. it evaluates only once and
+ * therefore is referential transparent.
+ *
+ * &lt;pre&gt;
+ * &lt;code&gt;
+ * final Lazy&amp;lt;Double&amp;gt; l = Lazy.of(Math::random);
+ * l.isEvaluated(); // = false
+ * l.get();         // = 0.123 (random generated)
+ * l.isEvaluated(); // = true
+ * l.get();         // = 0.123 (memoized)
+ * &lt;/code&gt;
+ * &lt;/pre&gt;
+ *
+ * Since 2.0.0 you may also create a &lt;em&gt;real&lt;/em&gt; lazy value (works only with interfaces):
+ *
+ * &lt;pre&gt;&lt;code&gt;final CharSequence chars = Lazy.of(() -&amp;gt; &quot;Yay!&quot;, CharSequence.class);&lt;/code&gt;&lt;/pre&gt;
+ *
+ * @author Daniel Dietrich
+ * @since 1.2.1
+ */
+public interface Lazy&lt;T&gt; extends Monad&lt;T&gt;, Supplier&lt;T&gt;, Value&lt;T&gt; {
+
+    /**
+     * Creates a {@code Lazy} that requests its value from a given {@code Supplier}. The supplier is asked only once,
+     * the value is memoized.
+     *
+     * @param &lt;T&gt;      type of the lazy value
+     * @param supplier A supplier
+     * @return A new instance of Lazy
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    static &lt;T&gt; Lazy&lt;T&gt; of(Supplier&lt;? extends T&gt; supplier) {
+<span class="fc" id="L59">        Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        if (supplier instanceof Lazy) {</span>
+<span class="fc" id="L61">            return (Lazy&lt;T&gt;) supplier;</span>
+        } else {
+<span class="fc" id="L63">            return new Defined&lt;&gt;(supplier);</span>
+        }
+    }
+
+    /**
+     * Reduces many {@code Lazy} values into a single {@code Lazy} by transforming an
+     * {@code Iterable&lt;Lazy&lt;? extends T&gt;&gt;} into a {@code Lazy&lt;Seq&lt;T&gt;&gt;}.
+     *
+     * @param &lt;T&gt;    Type of the lazy values.
+     * @param values An iterable of lazy values.
+     * @return A lazy sequence of values.
+     * @throws NullPointerException if values is null
+     */
+    static &lt;T&gt; Lazy&lt;Seq&lt;T&gt;&gt; sequence(Iterable&lt;? extends Lazy&lt;? extends T&gt;&gt; values) {
+<span class="fc" id="L77">        Objects.requireNonNull(values, &quot;values is null&quot;);</span>
+<span class="fc" id="L78">        return Lazy.of(() -&gt; List.ofAll(values).map(Lazy::get));</span>
+    }
+
+    /**
+     * Returns the singleton {@code undefined} lazy value.
+     * &lt;p&gt;
+     * The undefined lazy value is by definition empty and throws a {@code NoSuchElementException} on {@code get()}.
+     *
+     * @param &lt;T&gt; Component type
+     * @return The undefined lazy value.
+     */
+    static &lt;T&gt; Lazy&lt;T&gt; undefined() {
+<span class="fc" id="L90">        return Undefined.instance();</span>
+    }
+
+    /**
+     * Creates a real _lazy value_ of type {@code T}, backed by a {@linkplain java.lang.reflect.Proxy} which delegates
+     * to a {@code Lazy} instance.
+     *
+     * @param supplier A supplier
+     * @param type     An interface
+     * @param &lt;T&gt;      type of the lazy value
+     * @return A new instance of T
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    static &lt;T&gt; T val(Supplier&lt;? extends T&gt; supplier, Class&lt;T&gt; type) {
+<span class="fc" id="L104">        Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="fc" id="L105">        Objects.requireNonNull(type, &quot;type is null&quot;);</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        if (!type.isInterface()) {</span>
+<span class="fc" id="L107">            throw new IllegalArgumentException(&quot;type has to be an interface&quot;);</span>
+        }
+<span class="fc" id="L109">        final Lazy&lt;T&gt; lazy = Lazy.of(supplier);</span>
+<span class="fc" id="L110">        final InvocationHandler handler = (proxy, method, args) -&gt; method.invoke(lazy.get(), args);</span>
+<span class="fc" id="L111">        return (T) Proxy.newProxyInstance(type.getClassLoader(), new Class&lt;?&gt;[] { type }, handler);</span>
+    }
+
+    /**
+     * Filters this value. If the filter result is empty, {@code None} is returned, otherwise Some of this lazy value
+     * is returned.
+     *
+     * @param predicate A predicate
+     * @return A new Option instance
+     * @throws NullPointerException if {@code predicate} is null.
+     */
+    @Override
+    default Lazy&lt;T&gt; filter(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L124">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L126">            return this;</span>
+        } else {
+<span class="fc bfc" id="L128" title="All 2 branches covered.">            return predicate.test(get()) ? this : Undefined.instance();</span>
+        }
+    }
+
+    @Override
+    default Lazy&lt;T&gt; filterNot(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L134">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L135">        return filter(predicate.negate());</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override
+    default &lt;U&gt; Lazy&lt;U&gt; flatMap(Function&lt;? super T, ? extends Iterable&lt;? extends U&gt;&gt; mapper) {
+<span class="fc" id="L141">        Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L143">            return (Lazy&lt;U&gt;) this;</span>
+        } else {
+<span class="fc" id="L145">            return unit(mapper.apply(get()));</span>
+        }
+    }
+
+    /**
+     * Evaluates this lazy value and caches it, when called the first time.
+     * On subsequent calls, returns the cached value.
+     *
+     * @return the lazy evaluated value
+     * @throws NoSuchElementException if this value is undefined
+     */
+    @Override
+    T get();
+
+    /**
+     * Checks, if this lazy value is evaluated.
+     * &lt;p&gt;
+     * Note: A value is internally evaluated (once) by calling {@link #get()}.
+     *
+     * @return true, if the value is evaluated, false otherwise.
+     * @throws UnsupportedOperationException if this value is undefined
+     */
+    boolean isEvaluated();
+
+    /**
+     * A {@code Lazy} is single-valued.
+     *
+     * @return {@code true}
+     */
+    @Override
+    default boolean isSingleValued() {
+<span class="fc" id="L176">        return true;</span>
+    }
+
+    @Override
+    default &lt;U&gt; Lazy&lt;U&gt; map(Function&lt;? super T, ? extends U&gt; mapper) {
+<span class="fc bfc" id="L181" title="All 2 branches covered.">        return isEmpty() ? Lazy.undefined() : Lazy.of(() -&gt; mapper.apply(get()));</span>
+    }
+
+    @Override
+    default Match.MatchMonad.Of&lt;Lazy&lt;T&gt;&gt; match() {
+<span class="nc" id="L186">        return Match.of(this);</span>
+    }
+
+    @Override
+    default Lazy&lt;T&gt; peek(Consumer&lt;? super T&gt; action) {
+<span class="fc bfc" id="L191" title="All 2 branches covered.">        if (!isEmpty()) {</span>
+<span class="fc" id="L192">            action.accept(get());</span>
+        }
+<span class="fc" id="L194">        return this;</span>
+    }
+
+    @Override
+    default String stringPrefix() {
+<span class="fc" id="L199">        return &quot;Lazy&quot;;</span>
+    }
+
+    /**
+     * Transforms this {@code Lazy}.
+     *
+     * @param f   A transformation
+     * @param &lt;U&gt; Type of transformation result
+     * @return An instance of type {@code U}
+     * @throws NullPointerException if {@code f} is null
+     */
+    default &lt;U&gt; U transform(Function&lt;? super Lazy&lt;? super T&gt;, ? extends U&gt; f) {
+<span class="fc" id="L211">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="fc" id="L212">        return f.apply(this);</span>
+    }
+    
+    @SuppressWarnings(&quot;unchecked&quot;)
+	@Override
+    default &lt;U&gt; Lazy&lt;U&gt; unit(Iterable&lt;? extends U&gt; iterable) {
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">    	if (iterable instanceof Lazy) {</span>
+<span class="fc" id="L219">    		return (Lazy&lt;U&gt;) iterable;</span>
+<span class="nc bnc" id="L220" title="All 2 branches missed.">    	} else if (iterable instanceof Value) {</span>
+<span class="nc" id="L221">    		final Value&lt;U&gt; value = (Value&lt;U&gt;) iterable;</span>
+<span class="nc bnc" id="L222" title="All 2 branches missed.">    		return value.isEmpty() ? Lazy.undefined() : Lazy.of(value::get);</span>
+    	} else {
+<span class="nc" id="L224">    		final java.util.Iterator&lt;? extends U&gt; iterator = iterable.iterator();</span>
+<span class="nc bnc" id="L225" title="All 2 branches missed.">    		if (iterator.hasNext()) {</span>
+<span class="nc" id="L226">    			return Lazy.of(() -&gt; iterator.next());</span>
+    		} else {
+<span class="nc" id="L228">    			return Lazy.undefined();</span>
+    		}
+        }
+    }
+
+    /**
+     * Lazy value implementation.
+     *
+     * @param &lt;T&gt; Type of the value.
+     */
+    final class Defined&lt;T&gt; implements Lazy&lt;T&gt;, Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        // read http://javarevisited.blogspot.de/2014/05/double-checked-locking-on-singleton-in-java.html
+        private transient volatile Supplier&lt;? extends T&gt; supplier;
+        private volatile T value;
+
+        // should not be called directly
+<span class="fc" id="L247">        private Defined(Supplier&lt;? extends T&gt; supplier) {</span>
+<span class="fc" id="L248">            this.supplier = supplier;</span>
+<span class="fc" id="L249">        }</span>
+
+        @Override
+        public T get() {
+<span class="fc bfc" id="L253" title="All 2 branches covered.">            if (!isEvaluated()) {</span>
+<span class="fc" id="L254">                synchronized (this) {</span>
+<span class="fc bfc" id="L255" title="All 2 branches covered.">                    if (!isEvaluated()) {</span>
+<span class="fc" id="L256">                        value = supplier.get();</span>
+<span class="fc" id="L257">                        supplier = null; // free mem</span>
+                    }
+<span class="fc" id="L259">                }</span>
+            }
+<span class="fc" id="L261">            return value;</span>
+        }
+
+        @Override
+        public boolean isEmpty() {
+<span class="fc" id="L266">            return false;</span>
+        }
+
+        @Override
+        public boolean isEvaluated() {
+<span class="fc bfc" id="L271" title="All 2 branches covered.">            return supplier == null;</span>
+        }
+
+        @Override
+        public Iterator&lt;T&gt; iterator() {
+<span class="fc" id="L276">            return Iterator.of(get());</span>
+        }
+
+        @Override
+        public boolean equals(Object o) {
+<span class="fc bfc" id="L281" title="All 6 branches covered.">            return (o == this) || (o instanceof Lazy &amp;&amp; Objects.equals(((Lazy&lt;?&gt;) o).get(), get()));</span>
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L286">            return Objects.hash(get());</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="fc bfc" id="L291" title="All 2 branches covered.">            return stringPrefix() + &quot;(&quot; + (!isEvaluated() ? &quot;?&quot; : value) + &quot;)&quot;;</span>
+        }
+
+        /**
+         * Ensures that the value is evaluated before serialization.
+         *
+         * @param s An object serialization stream.
+         * @throws java.io.IOException If an error occurs writing to the stream.
+         */
+        private void writeObject(ObjectOutputStream s) throws IOException {
+<span class="fc" id="L301">            get(); // evaluates the lazy value if it isn't evaluated yet!</span>
+<span class="fc" id="L302">            s.defaultWriteObject();</span>
+<span class="fc" id="L303">        }</span>
+    }
+
+    /**
+     * The singleton undefined lazy value.
+     *
+     * @param &lt;T&gt; Type of the value.
+     */
+    final class Undefined&lt;T&gt; implements Lazy&lt;T&gt;, Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+<span class="fc" id="L315">        private static final Undefined&lt;?&gt; INSTANCE = new Undefined&lt;&gt;();</span>
+
+        // hidden
+<span class="fc" id="L318">        private Undefined() {</span>
+<span class="fc" id="L319">        }</span>
+
+        @SuppressWarnings(&quot;unchecked&quot;)
+        static &lt;T&gt; Undefined&lt;T&gt; instance() {
+<span class="fc" id="L323">            return (Undefined&lt;T&gt;) INSTANCE;</span>
+        }
+
+        @Override
+        public T get() {
+<span class="fc" id="L328">            throw new NoSuchElementException(&quot;get on Undefined&quot;);</span>
+        }
+
+        @Override
+        public boolean isEmpty() {
+<span class="fc" id="L333">            return true;</span>
+        }
+
+        @Override
+        public boolean isEvaluated() {
+<span class="fc" id="L338">            throw new UnsupportedOperationException(&quot;isEvaluated on Undefined&quot;);</span>
+        }
+
+        @Override
+        public Iterator&lt;T&gt; iterator() {
+<span class="fc" id="L343">            return Iterator.empty();</span>
+        }
+
+        @Override
+        public boolean equals(Object o) {
+<span class="fc bfc" id="L348" title="All 2 branches covered.">            return o == this;</span>
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L353">            return -13;</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="fc" id="L358">            return stringPrefix() + &quot;()&quot;;</span>
+        }
+
+        /**
+         * Instance control for object serialization.
+         *
+         * @return The singleton instance of Nil.
+         * @see java.io.Serializable
+         */
+        private Object readResolve() {
+<span class="fc" id="L368">            return INSTANCE;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

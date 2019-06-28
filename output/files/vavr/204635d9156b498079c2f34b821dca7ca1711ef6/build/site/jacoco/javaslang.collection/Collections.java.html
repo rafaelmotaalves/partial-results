@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Collections.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang.collection</a> &gt; <span class="el_source">Collections.java</span></div><h1>Collections.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang.collection;
+
+import java.util.Objects;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+/**
+ * Internal class, containing helpers.
+ *
+ * @author Daniel Dietrich
+ * @since 2.0.0
+ */
+<span class="nc" id="L19">final class Collections {</span>
+
+    static &lt;K, V&gt; Map&lt;K, V&gt; mergeMaps(Map&lt;K, V&gt; map1, Map&lt;? extends K, ? extends V&gt; map2,
+                                      Function&lt;Map&lt;? extends K, ? extends V&gt;, Map&lt;K, V&gt;&gt; converter) {
+<span class="fc" id="L23">        Objects.requireNonNull(map2, &quot;that is null&quot;);</span>
+<span class="fc bfc" id="L24" title="All 2 branches covered.">        if (map1.isEmpty()) {</span>
+<span class="fc" id="L25">            return converter.apply(map2);</span>
+<span class="fc bfc" id="L26" title="All 2 branches covered.">        } else if (map2.isEmpty()) {</span>
+<span class="fc" id="L27">            return map1;</span>
+        } else {
+<span class="fc bfc" id="L29" title="All 2 branches covered.">            return map2.foldLeft(map1, (map, entry) -&gt; !map.containsKey(entry._1) ? map.put(entry) : map);</span>
+        }
+    }
+
+    static &lt;K, V, U extends V&gt; Map&lt;K, V&gt; mergeMaps(Map&lt;K, V&gt; map1, Map&lt;? extends K, U&gt; map2,
+                                                   Function&lt;Map&lt;? extends K, U&gt;, Map&lt;K, V&gt;&gt; converter,
+                                                   BiFunction&lt;? super V, ? super U, ? extends V&gt; collisionResolution) {
+<span class="fc" id="L36">        Objects.requireNonNull(map2, &quot;that is null&quot;);</span>
+<span class="fc" id="L37">        Objects.requireNonNull(collisionResolution, &quot;collisionResolution is null&quot;);</span>
+<span class="fc bfc" id="L38" title="All 2 branches covered.">        if (map1.isEmpty()) {</span>
+<span class="fc" id="L39">            return converter.apply(map2);</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        } else if (map2.isEmpty()) {</span>
+<span class="fc" id="L41">            return map1;</span>
+        } else {
+<span class="fc" id="L43">            return map2.foldLeft(map1, (map, entry) -&gt; {</span>
+<span class="fc" id="L44">                final K key = entry._1;</span>
+<span class="fc" id="L45">                final U value = entry._2;</span>
+<span class="fc" id="L46">                final V newValue = map.get(key).map(v -&gt; (V) collisionResolution.apply(v, value)).orElse(value);</span>
+<span class="fc" id="L47">                return map.put(key, newValue);</span>
+            });
+        }
+    }
+
+    static &lt;T, U, C extends Iterable&lt;U&gt;, R extends Traversable&lt;U&gt;&gt; R scanLeft(
+            Iterable&lt;? extends T&gt; elements,
+            U zero, BiFunction&lt;? super U, ? super T, ? extends U&gt; operation,
+            C cumulativeResult, BiFunction&lt;C, U, C&gt; combiner, Function&lt;C, R&gt; finisher) {
+<span class="fc" id="L56">        U acc = zero;</span>
+<span class="fc" id="L57">        cumulativeResult = combiner.apply(cumulativeResult, acc);</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        for (T a : elements) {</span>
+<span class="fc" id="L59">            acc = operation.apply(acc, a);</span>
+<span class="fc" id="L60">            cumulativeResult = combiner.apply(cumulativeResult, acc);</span>
+<span class="fc" id="L61">        }</span>
+<span class="fc" id="L62">        return finisher.apply(cumulativeResult);</span>
+    }
+
+    static &lt;T, U, C extends Iterable&lt;U&gt;, R extends Traversable&lt;U&gt;&gt; R scanRight(
+            Iterable&lt;? extends T&gt; elements,
+            U zero, BiFunction&lt;? super T, ? super U, ? extends U&gt; operation,
+            C cumulativeResult, BiFunction&lt;C, U, C&gt; combiner, Function&lt;C, R&gt; finisher) {
+<span class="fc" id="L69">        final Iterator&lt;? extends T&gt; reversedElements = Seq.ofAll(elements).reverseIterator();</span>
+<span class="fc" id="L70">        return scanLeft(reversedElements, zero, (u, t) -&gt; operation.apply(t, u), cumulativeResult, combiner, finisher);</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    static &lt;T&gt; Iterator&lt;Seq&lt;T&gt;&gt; crossProduct(Seq&lt;? extends T&gt; seq, int power) {
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">        if (power &lt; 0) {</span>
+<span class="nc" id="L76">            throw new IllegalArgumentException(&quot;negative power&quot;);</span>
+        }
+<span class="fc" id="L78">        return Iterator</span>
+<span class="fc" id="L79">                .range(1, power)</span>
+<span class="fc" id="L80">                .foldLeft((Iterator&lt;Seq&lt;T&gt;&gt;) seq.sliding(1), (product, ignored) -&gt; product.flatMap(tuple -&gt; seq.map(tuple::append)));</span>
+    }
+
+    static &lt;C extends Traversable&lt;T&gt;, T&gt; C tabulate(int n, Function&lt;? super Integer, ? extends T&gt; f, C empty, Function&lt;T[], C&gt; of) {
+<span class="fc" id="L84">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="fc" id="L85">        Objects.requireNonNull(empty, &quot;empty is null&quot;);</span>
+<span class="fc" id="L86">        Objects.requireNonNull(of, &quot;of is null&quot;);</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        if (n &lt;= 0) {</span>
+<span class="fc" id="L88">            return empty;</span>
+        } else {
+            @SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L91">            T[] elements = (T[]) new Object[n];</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">            for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L93">                elements[i] = f.apply(i);</span>
+            }
+<span class="fc" id="L95">            return of.apply(elements);</span>
+        }
+    }
+
+    static &lt;C extends Traversable&lt;T&gt;, T&gt; C fill(int n, Supplier&lt;? extends T&gt; s, C empty, Function&lt;T[], C&gt; of) {
+<span class="fc" id="L100">        Objects.requireNonNull(s, &quot;s is null&quot;);</span>
+<span class="fc" id="L101">        Objects.requireNonNull(empty, &quot;empty is null&quot;);</span>
+<span class="fc" id="L102">        Objects.requireNonNull(of, &quot;of is null&quot;);</span>
+<span class="fc" id="L103">        return tabulate(n, anything -&gt; s.get(), empty, of);</span>
+    }
+
+    static &lt;T&gt; Iterator&lt;T&gt; tabulate(int n, Function&lt;? super Integer, ? extends T&gt; f) {
+<span class="fc" id="L107">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">        if (n &lt;= 0) {</span>
+<span class="fc" id="L109">            return Iterator.empty();</span>
+        } else {
+<span class="fc" id="L111">            return new AbstractIterator&lt;T&gt;() {</span>
+
+<span class="fc" id="L113">                int i = 0;</span>
+
+                @Override
+                public boolean hasNext() {
+<span class="fc bfc" id="L117" title="All 2 branches covered.">                    return i &lt; n;</span>
+                }
+
+                @Override
+                protected T getNext() {
+<span class="fc" id="L122">                    return f.apply(i++);</span>
+                }
+            };
+        }
+    }
+
+    static &lt;T&gt; Iterator&lt;T&gt; fill(int n, Supplier&lt;? extends T&gt; s) {
+<span class="fc" id="L129">        Objects.requireNonNull(s, &quot;s is null&quot;);</span>
+<span class="fc" id="L130">        return tabulate(n, anything -&gt; s.get());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

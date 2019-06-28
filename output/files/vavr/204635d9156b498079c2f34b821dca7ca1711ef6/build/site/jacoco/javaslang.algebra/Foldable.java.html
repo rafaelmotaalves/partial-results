@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Foldable.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang.algebra</a> &gt; <span class="el_source">Foldable.java</span></div><h1>Foldable.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang.algebra;
+
+import javaslang.control.Option;
+
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+
+/**
+ * Folding is an application of {@code Monoid}s.
+ * &lt;p&gt;
+ * &lt;strong&gt;Example:&lt;/strong&gt;
+ *
+ * &lt;pre&gt;&lt;code&gt;
+ * Monoid&amp;lt;String&amp;gt; concat = Monoid.of(&quot;&quot;, (a1, a2) -&amp;gt; a1 + a2);
+ * Stream.of(&quot;1&quot;, &quot;2&quot;, &quot;3&quot;).fold(concat);
+ * &lt;/code&gt;&lt;/pre&gt;
+ *
+ * is the same as
+ *
+ * &lt;pre&gt;&lt;code&gt;
+ * Stream.of(&quot;1&quot;, &quot;2&quot;, &quot;3&quot;).fold(&quot;&quot;, (a1, a2) -&amp;gt; a1 + a2);
+ * &lt;/code&gt;&lt;/pre&gt;
+ *
+ * @param &lt;T&gt; Component type of this foldable
+ * @author Daniel Dietrich
+ * @since 2.0.0
+ */
+public interface Foldable&lt;T&gt; {
+
+    /**
+     * Folds this elements from the left, starting with {@code monoid.zero()} and successively calling {@code monoid::combine}.
+     *
+     * @param monoid A monoid, providing a {@code zero} and a {@code combine} function.
+     * @return a folded value
+     * @throws NullPointerException if {@code monoid} is null
+     */
+    default T fold(Monoid&lt;T&gt; monoid) {
+<span class="fc" id="L45">        Objects.requireNonNull(monoid, &quot;fold monoid is null&quot;);</span>
+<span class="fc" id="L46">        return foldLeft(monoid.zero(), monoid::combine);</span>
+    }
+
+    /**
+     * Folds this elements from the left, starting with {@code zero} and successively calling {@code combine}.
+     *
+     * @param zero    A zero element to start with.
+     * @param combine A function which combines elements.
+     * @return a folded value
+     * @throws NullPointerException if {@code combine} is null
+     */
+    default T fold(T zero, BiFunction&lt;? super T, ? super T, ? extends T&gt; combine) {
+<span class="fc" id="L58">        Objects.requireNonNull(combine, &quot;fold combine is null&quot;);</span>
+<span class="fc" id="L59">        return foldLeft(zero, combine);</span>
+    }
+
+    /**
+     * Folds this elements from the left, starting with {@code monoid.zero()} and successively calling {@code monoid::combine}.
+     *
+     * @param monoid A monoid, providing a {@code zero} and a {@code combine} function.
+     * @return a folded value
+     * @throws NullPointerException if {@code monoid} is null
+     */
+    default T foldLeft(Monoid&lt;T&gt; monoid) {
+<span class="fc" id="L70">        Objects.requireNonNull(monoid, &quot;foldLeft monoid is null&quot;);</span>
+<span class="fc" id="L71">        return foldLeft(monoid.zero(), monoid::combine);</span>
+    }
+
+    /**
+     * Folds this elements from the left, starting with {@code zero} and successively calling {@code combine}.
+     *
+     * @param &lt;U&gt;     the type to fold over
+     * @param zero    A zero element to start with.
+     * @param combine A function which combines elements.
+     * @return a folded value
+     * @throws NullPointerException if {@code combine} is null
+     */
+    &lt;U&gt; U foldLeft(U zero, BiFunction&lt;? super U, ? super T, ? extends U&gt; combine);
+
+    /**
+     * Maps this elements to a {@code Monoid} and applies {@code foldLeft}, starting with {@code monoid.zero()}:
+     * &lt;pre&gt;&lt;code&gt;
+     *  foldLeft(monoid.zero(), (ys, x) -&amp;gt; monoid.combine(ys, mapper.apply(x)));
+     * &lt;/code&gt;&lt;/pre&gt;
+     *
+     * @param monoid A Monoid
+     * @param mapper A mapper
+     * @param &lt;U&gt;    Component type of the given monoid.
+     * @return the folded monoid value.
+     * @throws NullPointerException if {@code monoid} or {@code mapper} is null
+     */
+    default &lt;U&gt; U foldMap(Monoid&lt;U&gt; monoid, Function&lt;? super T, ? extends U&gt; mapper) {
+<span class="fc" id="L98">        Objects.requireNonNull(monoid, &quot;monoid is null&quot;);</span>
+<span class="fc" id="L99">        Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+<span class="fc" id="L100">        return foldLeft(monoid.zero(), (ys, x) -&gt; monoid.combine(ys, mapper.apply(x)));</span>
+    }
+
+    /**
+     * Folds this elements from the right, starting with {@code monoid.zero()} and successively calling {@code monoid::combine}.
+     *
+     * @param monoid A monoid, providing a {@code zero} and a {@code combine} function.
+     * @return a folded value
+     * @throws NullPointerException if {@code monoid} is null
+     */
+    default T foldRight(Monoid&lt;T&gt; monoid) {
+<span class="fc" id="L111">        Objects.requireNonNull(monoid, &quot;foldRight monoid is null&quot;);</span>
+<span class="fc" id="L112">        return foldRight(monoid.zero(), monoid::combine);</span>
+    }
+
+    /**
+     * Folds this elements from the right, starting with {@code zero} and successively calling {@code combine}.
+     *
+     * @param &lt;U&gt;     the type of the folded value
+     * @param zero    A zero element to start with.
+     * @param combine A function which combines elements.
+     * @return a folded value
+     * @throws NullPointerException if {@code combine} is null
+     */
+    &lt;U&gt; U foldRight(U zero, BiFunction&lt;? super T, ? super U, ? extends U&gt; combine);
+
+    /**
+     * Accumulates the elements of this Foldable by successively calling the given operation {@code op}.
+     * The order of element iteration is undetermined.
+     *
+     * @param op A BiFunction of type T
+     * @return the reduced value.
+     * @throws NoSuchElementException if this is empty
+     * @throws NullPointerException   if {@code op} is null
+     */
+    default T reduce(BiFunction&lt;? super T, ? super T, ? extends T&gt; op) {
+<span class="fc" id="L136">        Objects.requireNonNull(op, &quot;op is null&quot;);</span>
+<span class="fc" id="L137">        return reduceLeft(op);</span>
+    }
+
+    /**
+     * Accumulates the elements of this Foldable by successively calling the given operation {@code op}.
+     * The order of element iteration is undetermined.
+     *
+     * @param op A BiFunction of type T
+     * @return Some of reduced value or None if the Foldable is empty.
+     * @throws NullPointerException if {@code op} is null
+     */
+    default Option&lt;T&gt; reduceOption(BiFunction&lt;? super T, ? super T, ? extends T&gt; op) {
+<span class="fc" id="L149">        Objects.requireNonNull(op, &quot;op is null&quot;);</span>
+<span class="fc" id="L150">        return reduceLeftOption(op);</span>
+    }
+
+    /**
+     * Accumulates the elements of this Foldable by successively calling the given operation {@code op} from the left.
+     *
+     * @param op A BiFunction of type T
+     * @return the reduced value.
+     * @throws NoSuchElementException if this is empty
+     * @throws NullPointerException   if {@code op} is null
+     */
+    T reduceLeft(BiFunction&lt;? super T, ? super T, ? extends T&gt; op);
+
+    /**
+     * Accumulates the elements of this Foldable by successively calling the given operation {@code op} from the left.
+     *
+     * @param op A BiFunction of type T
+     * @return Some of reduced value or None if the Foldable is empty.
+     * @throws NullPointerException if {@code op} is null
+     */
+    Option&lt;T&gt; reduceLeftOption(BiFunction&lt;? super T, ? super T, ? extends T&gt; op);
+
+    /**
+     * Accumulates the elements of this Foldable by successively calling the given operation {@code op} from the right.
+     *
+     * @param op An operation of type T
+     * @return the reduced value.
+     * @throws NoSuchElementException if this is empty
+     * @throws NullPointerException   if {@code op} is null
+     */
+    T reduceRight(BiFunction&lt;? super T, ? super T, ? extends T&gt; op);
+
+    /**
+     * Accumulates the elements of this Foldable by successively calling the given operation {@code op} from the right.
+     *
+     * @param op An operation of type T
+     * @return Some of reduced value or None.
+     * @throws NullPointerException if {@code op} is null
+     */
+    Option&lt;T&gt; reduceRightOption(BiFunction&lt;? super T, ? super T, ? extends T&gt; op);
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

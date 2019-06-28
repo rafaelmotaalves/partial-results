@@ -1,0 +1,2404 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CharSeq.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang.collection</a> &gt; <span class="el_source">CharSeq.java</span></div><h1>CharSeq.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang.collection;
+
+import javaslang.Function1;
+import javaslang.Tuple;
+import javaslang.Tuple2;
+import javaslang.Tuple3;
+import javaslang.collection.CharSeqModule.Combinations;
+import javaslang.control.Match;
+import javaslang.control.Option;
+
+import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
+import java.util.*;
+import java.util.HashSet;
+import java.util.function.*;
+import java.util.regex.PatternSyntaxException;
+import java.util.stream.Collector;
+
+/**
+ * The CharSeq (read: character sequence) collection essentially is a rich String wrapper having all operations
+ * we know from the functional Javaslang collections.
+ *
+ * @author Ruslan Sennov, Daniel Dietrich
+ * @since 2.0.0
+ */
+public final class CharSeq implements CharSequence, IndexedSeq&lt;Character&gt;, Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+<span class="fc" id="L36">    private static final CharSeq EMPTY = new CharSeq(&quot;&quot;);</span>
+
+    private final String back;
+
+<span class="fc" id="L40">    private CharSeq(String javaString) {</span>
+<span class="fc" id="L41">        this.back = javaString;</span>
+<span class="fc" id="L42">    }</span>
+
+    public static CharSeq empty() {
+<span class="fc" id="L45">        return EMPTY;</span>
+    }
+
+    /**
+     * Returns a {@link java.util.stream.Collector} which may be used in conjunction with
+     * {@link java.util.stream.Stream#collect(java.util.stream.Collector)} to obtain a {@link CharSeq}.
+     *
+     * @return A {@code CharSeq} Collector.
+     */
+    public static Collector&lt;Character, ArrayList&lt;Character&gt;, CharSeq&gt; collector() {
+<span class="fc" id="L55">        final Supplier&lt;ArrayList&lt;Character&gt;&gt; supplier = ArrayList::new;</span>
+<span class="fc" id="L56">        final BiConsumer&lt;ArrayList&lt;Character&gt;, Character&gt; accumulator = ArrayList::add;</span>
+<span class="fc" id="L57">        final BinaryOperator&lt;ArrayList&lt;Character&gt;&gt; combiner = (left, right) -&gt; {</span>
+<span class="fc" id="L58">            left.addAll(right);</span>
+<span class="fc" id="L59">            return left;</span>
+        };
+<span class="fc" id="L61">        final Function&lt;ArrayList&lt;Character&gt;, CharSeq&gt; finisher = CharSeq::ofAll;</span>
+<span class="fc" id="L62">        return Collector.of(supplier, accumulator, combiner, finisher);</span>
+    }
+
+    /**
+     * Creates a String of {@code CharSequence}.
+     *
+     * @param sequence {@code CharSequence} instance.
+     * @return A new {@code javaslang.String}
+     */
+    // DEV-NOTE: Needs to be 'of' instead of 'ofAll' because 'ofAll(CharSeq)' is ambiguous.
+    public static CharSeq of(CharSequence sequence) {
+<span class="fc" id="L73">        Objects.requireNonNull(sequence, &quot;sequence is null&quot;);</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        if (sequence instanceof CharSeq) {</span>
+<span class="fc" id="L75">            return (CharSeq) sequence;</span>
+        } else {
+<span class="fc bfc" id="L77" title="All 2 branches covered.">            return sequence.length() == 0 ? empty() : new CharSeq(sequence.toString());</span>
+        }
+    }
+
+    /**
+     * Returns a singleton {@code CharSeq}, i.e. a {@code CharSeq} of one character.
+     *
+     * @param character A character.
+     * @return A new {@code CharSeq} instance containing the given element
+     */
+    public static CharSeq of(char character) {
+<span class="fc" id="L88">        return new CharSeq(new String(new char[] { character }));</span>
+    }
+
+    /**
+     * Creates a String of the given characters.
+     *
+     * @param characters Zero or more characters.
+     * @return A string containing the given characters in the same order.
+     * @throws NullPointerException if {@code elements} is null
+     */
+    public static CharSeq of(char... characters) {
+<span class="fc" id="L99">        Objects.requireNonNull(characters, &quot;characters is null&quot;);</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        if (characters.length == 0) {</span>
+<span class="fc" id="L101">            return empty();</span>
+        } else {
+<span class="fc" id="L103">            final char[] chrs = new char[characters.length];</span>
+<span class="fc" id="L104">            System.arraycopy(characters, 0, chrs, 0, characters.length);</span>
+<span class="fc" id="L105">            return new CharSeq(new String(chrs));</span>
+        }
+    }
+
+    /**
+     * Creates a String of the given elements.
+     *
+     * The resulting string has the same iteration order as the given iterable of elements
+     * if the iteration order of the elements is stable.
+     *
+     * @param elements An Iterable of elements.
+     * @return A string containing the given elements in the same order.
+     * @throws NullPointerException if {@code elements} is null
+     */
+    public static CharSeq ofAll(Iterable&lt;? extends Character&gt; elements) {
+<span class="fc" id="L120">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc" id="L121">        final StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">        for (Character character : elements) {</span>
+<span class="fc" id="L123">            sb.append(character);</span>
+<span class="fc" id="L124">        }</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">        return sb.length() == 0 ? EMPTY : of(sb.toString());</span>
+    }
+
+    /**
+     * Returns a CharSeq containing {@code n} values of a given Function {@code f}
+     * over a range of integer values from 0 to {@code n - 1}.
+     *
+     * @param n The number of elements in the CharSeq
+     * @param f The Function computing element values
+     * @return A CharSeq consisting of elements {@code f(0),f(1), ..., f(n - 1)}
+     * @throws NullPointerException if {@code f} is null
+     */
+    public static CharSeq tabulate(int n, Function&lt;? super Integer, ? extends Character&gt; f) {
+<span class="fc" id="L138">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="fc" id="L139">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L141">            sb.append(f.apply(i));</span>
+        }
+<span class="fc" id="L143">        return of(sb);</span>
+    }
+
+    /**
+     * Returns a CharSeq containing {@code n} values supplied by a given Supplier {@code s}.
+     *
+     * @param n The number of elements in the CharSeq
+     * @param s The Supplier computing element values
+     * @return A CharSeq of size {@code n}, where each element contains the result supplied by {@code s}.
+     * @throws NullPointerException if {@code s} is null
+     */
+    public static CharSeq fill(int n, Supplier&lt;? extends Character&gt; s) {
+<span class="fc" id="L155">        return tabulate(n, anything -&gt; s.get());</span>
+    }
+
+    /**
+     * Creates a CharSeq starting from character {@code from}, extending to character {@code toExclusive - 1}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * CharSeq.range('a', 'c')  // = &quot;ab&quot;
+     * CharSeq.range('c', 'a')  // = &quot;&quot;
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first character
+     * @param toExclusive the successor of the last character
+     * @return a range of characters as specified or the empty range if {@code from &gt;= toExclusive}
+     */
+    public static CharSeq range(char from, char toExclusive) {
+<span class="fc" id="L174">        return new CharSeq(Iterator.range(from, toExclusive).mkString());</span>
+    }
+
+    public static CharSeq rangeBy(char from, char toExclusive, int step) {
+<span class="fc" id="L178">        return new CharSeq(Iterator.rangeBy(from, toExclusive, step).mkString());</span>
+    }
+
+    /**
+     * Creates a CharSeq starting from character {@code from}, extending to character {@code toInclusive}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * CharSeq.rangeClosed('a', 'c')  // = &quot;abc&quot;
+     * CharSeq.rangeClosed('c', 'a')  // = &quot;&quot;
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first character
+     * @param toInclusive the last character
+     * @return a range of characters as specified or the empty range if {@code from &gt; toInclusive}
+     */
+    public static CharSeq rangeClosed(char from, char toInclusive) {
+<span class="fc" id="L197">        return new CharSeq(Iterator.rangeClosed(from, toInclusive).mkString());</span>
+    }
+
+    /**
+     * Creates a CharSeq starting from character {@code from}, extending to character {@code toInclusive},
+     * with {@code step}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * CharSeq.rangeClosedBy('a', 'c', 1)  // = ('a', 'b', 'c')
+     * CharSeq.rangeClosedBy('a', 'd', 2)  // = ('a', 'c')
+     * CharSeq.rangeClosedBy('d', 'a', -2) // = ('d', 'b')
+     * CharSeq.rangeClosedBy('d', 'a', 2)  // = ()
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first character
+     * @param toInclusive the last character
+     * @param step        the step
+     * @return a range of characters as specified or the empty range if {@code step * (from - toInclusive) &gt; 0}.
+     * @throws IllegalArgumentException if {@code step} is zero
+     */
+    public static CharSeq rangeClosedBy(char from, char toInclusive, int step) {
+<span class="fc" id="L221">        return new CharSeq(Iterator.rangeClosedBy(from, toInclusive, step).mkString());</span>
+    }
+
+    private Tuple2&lt;CharSeq, CharSeq&gt; splitByBuilder(StringBuilder sb) {
+<span class="fc bfc" id="L225" title="All 2 branches covered.">        if (sb.length() == 0) {</span>
+<span class="fc" id="L226">            return Tuple.of(EMPTY, this);</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">        } else if (sb.length() == length()) {</span>
+<span class="fc" id="L228">            return Tuple.of(this, EMPTY);</span>
+        } else {
+<span class="fc" id="L230">            return Tuple.of(of(sb.toString()), of(back.substring(sb.length())));</span>
+        }
+    }
+
+    /**
+     * Repeats a character {@code times} times.
+     *
+     * @param character A character
+     * @param times     Repetition count
+     * @return A CharSeq representing {@code character * times}
+     */
+    public static CharSeq repeat(char character, int times) {
+<span class="fc" id="L242">        final int length = Math.max(times, 0);</span>
+<span class="fc" id="L243">        final char[] characters = new char[length];</span>
+<span class="fc" id="L244">        Arrays.fill(characters, character);</span>
+<span class="fc" id="L245">        return new CharSeq(String.valueOf(characters));</span>
+    }
+
+    /**
+     * Repeats this CharSeq {@code times} times.
+     * &lt;p&gt;
+     * Example: {@code CharSeq.of(&quot;ja&quot;).repeat(13) = &quot;jajajajajajajajajajajajaja&quot;}
+     *
+     * @param times Repetition count
+     * @return A CharSeq representing {@code this * times}
+     */
+    public CharSeq repeat(int times) {
+<span class="fc" id="L257">        final StringBuilder builder = new StringBuilder();</span>
+<span class="fc bfc" id="L258" title="All 2 branches covered.">        for (int i = 0; i &lt; times; i++) {</span>
+<span class="fc" id="L259">            builder.append(back);</span>
+        }
+<span class="fc" id="L261">        return new CharSeq(builder.toString());</span>
+    }
+
+    //
+    //
+    // IndexedSeq
+    //
+    //
+
+    @Override
+    public CharSeq append(Character element) {
+<span class="fc" id="L272">        return of(back + element);</span>
+    }
+
+    @Override
+    public CharSeq appendAll(Iterable&lt;? extends Character&gt; elements) {
+<span class="fc" id="L277">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc" id="L278">        final StringBuilder sb = new StringBuilder(back);</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">        for (char element : elements) {</span>
+<span class="fc" id="L280">            sb.append(element);</span>
+<span class="fc" id="L281">        }</span>
+<span class="fc" id="L282">        return of(sb.toString());</span>
+    }
+
+    @Override
+    public CharSeq clear() {
+<span class="fc" id="L287">        return EMPTY;</span>
+    }
+
+    @Override
+    public IndexedSeq&lt;CharSeq&gt; combinations() {
+<span class="fc" id="L292">        return Vector.rangeClosed(0, length()).map(this::combinations).flatMap(Function.identity());</span>
+    }
+
+    @Override
+    public IndexedSeq&lt;CharSeq&gt; combinations(int k) {
+<span class="fc" id="L297">        return Combinations.apply(this, Math.max(k, 0));</span>
+    }
+
+    @Override
+    public IndexedSeq&lt;Tuple2&lt;Character, Character&gt;&gt; crossProduct() {
+<span class="fc" id="L302">        return crossProduct(this);</span>
+    }
+
+    @Override
+    public IndexedSeq&lt;CharSeq&gt; crossProduct(int power) {
+<span class="fc" id="L307">        return Collections.crossProduct(this, power).map(CharSeq::ofAll).toVector();</span>
+    }
+
+    @Override
+    public &lt;U&gt; IndexedSeq&lt;Tuple2&lt;Character, U&gt;&gt; crossProduct(Iterable&lt;? extends U&gt; that) {
+<span class="fc" id="L312">        Objects.requireNonNull(that, &quot;that is null&quot;);</span>
+<span class="fc" id="L313">        final IndexedSeq&lt;U&gt; other = Vector.ofAll(that);</span>
+<span class="fc" id="L314">        return flatMap(a -&gt; other.map(b -&gt; Tuple.of(a, b)));</span>
+    }
+
+    @Override
+    public CharSeq distinct() {
+<span class="fc" id="L319">        return distinctBy(Function.identity());</span>
+    }
+
+    @Override
+    public CharSeq distinctBy(Comparator&lt;? super Character&gt; comparator) {
+<span class="fc" id="L324">        Objects.requireNonNull(comparator, &quot;comparator is null&quot;);</span>
+<span class="fc" id="L325">        final java.util.Set&lt;Character&gt; seen = new java.util.TreeSet&lt;&gt;(comparator);</span>
+<span class="fc" id="L326">        return filter(seen::add);</span>
+    }
+
+    @Override
+    public &lt;U&gt; CharSeq distinctBy(Function&lt;? super Character, ? extends U&gt; keyExtractor) {
+<span class="fc" id="L331">        Objects.requireNonNull(keyExtractor, &quot;keyExtractor is null&quot;);</span>
+<span class="fc" id="L332">        final java.util.Set&lt;U&gt; seen = new java.util.HashSet&lt;&gt;();</span>
+<span class="fc" id="L333">        return filter(t -&gt; seen.add(keyExtractor.apply(t)));</span>
+    }
+
+    @Override
+    public CharSeq drop(int n) {
+<span class="fc bfc" id="L338" title="All 2 branches covered.">        if (n &lt;= 0) {</span>
+<span class="fc" id="L339">            return this;</span>
+<span class="fc bfc" id="L340" title="All 2 branches covered.">        } else if (n &gt;= length()) {</span>
+<span class="fc" id="L341">            return EMPTY;</span>
+        } else {
+<span class="fc" id="L343">            return of(back.substring(n));</span>
+        }
+    }
+
+    @Override
+    public CharSeq dropRight(int n) {
+<span class="fc bfc" id="L349" title="All 2 branches covered.">        if (n &lt;= 0) {</span>
+<span class="fc" id="L350">            return this;</span>
+<span class="fc bfc" id="L351" title="All 2 branches covered.">        } else if (n &gt;= length()) {</span>
+<span class="fc" id="L352">            return EMPTY;</span>
+        } else {
+<span class="fc" id="L354">            return of(back.substring(0, length() - n));</span>
+        }
+    }
+
+    @Override
+    public CharSeq dropUntil(Predicate&lt;? super Character&gt; predicate) {
+<span class="fc" id="L360">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L361">        return dropWhile(predicate.negate());</span>
+    }
+
+    @Override
+    public CharSeq dropWhile(Predicate&lt;? super Character&gt; predicate) {
+<span class="fc" id="L366">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L367">        int index = 0;</span>
+<span class="fc bfc" id="L368" title="All 4 branches covered.">        while (index &lt; length() &amp;&amp; predicate.test(charAt(index))) {</span>
+<span class="fc" id="L369">            index++;</span>
+        }
+<span class="fc bfc" id="L371" title="All 4 branches covered.">        return index &lt; length() ? (index == 0 ? this : of(back.substring(index))) : empty();</span>
+    }
+
+    @Override
+    public CharSeq filter(Predicate&lt;? super Character&gt; predicate) {
+<span class="fc" id="L376">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L377">        final StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L378" title="All 2 branches covered.">        for (int i = 0; i &lt; back.length(); i++) {</span>
+<span class="fc" id="L379">            final char ch = back.charAt(i);</span>
+<span class="fc bfc" id="L380" title="All 2 branches covered.">            if (predicate.test(ch)) {</span>
+<span class="fc" id="L381">                sb.append(ch);</span>
+            }
+        }
+<span class="fc bfc" id="L384" title="All 4 branches covered.">        return sb.length() == 0 ? EMPTY : sb.length() == length() ? this : of(sb.toString());</span>
+    }
+
+    @Override
+    public CharSeq filterNot(Predicate&lt;? super Character&gt; predicate) {
+<span class="fc" id="L389">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L390">        return filter(predicate.negate());</span>
+    }
+
+    @Override
+    public &lt;U&gt; IndexedSeq&lt;U&gt; flatMap(Function&lt;? super Character, ? extends Iterable&lt;? extends U&gt;&gt; mapper) {
+<span class="fc" id="L395">        Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+<span class="fc bfc" id="L396" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L397">            return Vector.empty();</span>
+        } else {
+<span class="fc" id="L399">            IndexedSeq&lt;U&gt; result = Vector.empty();</span>
+<span class="fc bfc" id="L400" title="All 2 branches covered.">            for (int i = 0; i &lt; length(); i++) {</span>
+<span class="fc bfc" id="L401" title="All 2 branches covered.">                for (U u : mapper.apply(get(i))) {</span>
+<span class="fc" id="L402">                    result = result.append(u);</span>
+<span class="fc" id="L403">                }</span>
+            }
+<span class="fc" id="L405">            return result;</span>
+        }
+    }
+
+    public CharSeq flatMapChars(CharFunction&lt;? extends CharSequence&gt; mapper) {
+<span class="fc" id="L410">        Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+<span class="fc bfc" id="L411" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L412">            return this;</span>
+        } else {
+<span class="fc" id="L414">            final StringBuilder builder = new StringBuilder();</span>
+<span class="fc" id="L415">            back.chars().forEach(c -&gt; builder.append(mapper.apply((char) c)));</span>
+<span class="fc" id="L416">            return new CharSeq(builder.toString());</span>
+        }
+    }
+
+    @Override
+    public &lt;C&gt; Map&lt;C, CharSeq&gt; groupBy(Function&lt;? super Character, ? extends C&gt; classifier) {
+<span class="fc" id="L422">        Objects.requireNonNull(classifier, &quot;classifier is null&quot;);</span>
+<span class="fc" id="L423">        return iterator().groupBy(classifier).map((c, it) -&gt; Tuple.of(c, CharSeq.ofAll(it)));</span>
+    }
+
+    @Override
+    public Iterator&lt;CharSeq&gt; grouped(int size) {
+<span class="fc" id="L428">        return sliding(size, size);</span>
+    }
+
+    @Override
+    public boolean hasDefiniteSize() {
+<span class="fc" id="L433">        return true;</span>
+    }
+
+    @Override
+    public CharSeq init() {
+<span class="fc bfc" id="L438" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L439">            throw new UnsupportedOperationException(&quot;init of empty string&quot;);</span>
+        } else {
+<span class="fc" id="L441">            return of(back.substring(0, length() - 1));</span>
+        }
+    }
+
+    @Override
+    public Option&lt;CharSeq&gt; initOption() {
+<span class="fc bfc" id="L447" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L448">            return Option.none();</span>
+        } else {
+<span class="fc" id="L450">            return Option.some(init());</span>
+        }
+    }
+
+    @Override
+    public CharSeq insert(int index, Character element) {
+<span class="fc bfc" id="L456" title="All 2 branches covered.">        if (index &lt; 0) {</span>
+<span class="fc" id="L457">            throw new IndexOutOfBoundsException(&quot;insert(&quot; + index + &quot;, e)&quot;);</span>
+        }
+<span class="fc bfc" id="L459" title="All 2 branches covered.">        if (index &gt; length()) {</span>
+<span class="fc" id="L460">            throw new IndexOutOfBoundsException(&quot;insert(&quot; + index + &quot;, e) on String of length &quot; + length());</span>
+        }
+<span class="fc" id="L462">        return of(new StringBuilder(back).insert(index, element).toString());</span>
+    }
+
+    @Override
+    public CharSeq insertAll(int index, Iterable&lt;? extends Character&gt; elements) {
+<span class="fc" id="L467">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc bfc" id="L468" title="All 2 branches covered.">        if (index &lt; 0) {</span>
+<span class="fc" id="L469">            throw new IndexOutOfBoundsException(&quot;insertAll(&quot; + index + &quot;, elements)&quot;);</span>
+        }
+<span class="fc bfc" id="L471" title="All 2 branches covered.">        if (index &gt; length()) {</span>
+<span class="fc" id="L472">            throw new IndexOutOfBoundsException(&quot;insertAll(&quot; + index + &quot;, elements) on String of length &quot; + length());</span>
+        }
+<span class="fc" id="L474">        final String javaString = back;</span>
+<span class="fc" id="L475">        final StringBuilder sb = new StringBuilder(javaString.substring(0, index));</span>
+<span class="fc bfc" id="L476" title="All 2 branches covered.">        for (Character element : elements) {</span>
+<span class="fc" id="L477">            sb.append(element);</span>
+<span class="fc" id="L478">        }</span>
+<span class="fc" id="L479">        sb.append(javaString.substring(index));</span>
+<span class="fc" id="L480">        return of(sb.toString());</span>
+    }
+
+    @Override
+    public Iterator&lt;Character&gt; iterator() {
+<span class="fc" id="L485">        return new AbstractIterator&lt;Character&gt;() {</span>
+<span class="fc" id="L486">            private int index = 0;</span>
+
+            @Override
+            public boolean hasNext() {
+<span class="fc bfc" id="L490" title="All 2 branches covered.">                return index &lt; back.length();</span>
+            }
+
+            @Override
+            public Character getNext() {
+<span class="fc" id="L495">                return back.charAt(index++);</span>
+            }
+        };
+    }
+
+    @Override
+    public CharSeq intersperse(Character element) {
+<span class="fc" id="L502">        final StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L503" title="All 2 branches covered.">        for (int i = 0; i &lt; length(); i++) {</span>
+<span class="fc bfc" id="L504" title="All 2 branches covered.">            if (i &gt; 0) {</span>
+<span class="fc" id="L505">                sb.append(element);</span>
+            }
+<span class="fc" id="L507">            sb.append(get(i));</span>
+        }
+<span class="fc bfc" id="L509" title="All 2 branches covered.">        return sb.length() == 0 ? EMPTY : of(sb.toString());</span>
+    }
+
+    @Override
+    public &lt;U&gt; IndexedSeq&lt;U&gt; map(Function&lt;? super Character, ? extends U&gt; mapper) {
+<span class="fc" id="L514">        Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+<span class="fc" id="L515">        IndexedSeq&lt;U&gt; result = Vector.empty();</span>
+<span class="fc bfc" id="L516" title="All 2 branches covered.">        for (int i = 0; i &lt; length(); i++) {</span>
+<span class="fc" id="L517">            result = result.append(mapper.apply(get(i)));</span>
+        }
+<span class="fc" id="L519">        return result;</span>
+    }
+
+    @Override
+    public CharSeq padTo(int length, Character element) {
+<span class="fc bfc" id="L524" title="All 2 branches covered.">        if (length &lt;= back.length()) {</span>
+<span class="fc" id="L525">            return this;</span>
+        }
+<span class="fc" id="L527">        final StringBuilder sb = new StringBuilder(back);</span>
+<span class="fc" id="L528">        final int limit = length - back.length();</span>
+<span class="fc bfc" id="L529" title="All 2 branches covered.">        for (int i = 0; i &lt; limit; i++) {</span>
+<span class="fc" id="L530">            sb.append(element);</span>
+        }
+<span class="fc" id="L532">        return new CharSeq(sb.toString());</span>
+    }
+
+    @Override
+    public CharSeq patch(int from, Iterable&lt;? extends Character&gt; that, int replaced) {
+<span class="fc bfc" id="L537" title="All 4 branches covered.">        from = from &lt; 0 ? 0 : from &gt; length() ? length() : from;</span>
+<span class="fc bfc" id="L538" title="All 2 branches covered.">        replaced = replaced &lt; 0 ? 0 : replaced;</span>
+<span class="fc" id="L539">        final StringBuilder sb = new StringBuilder(back.substring(0, from));</span>
+<span class="fc bfc" id="L540" title="All 2 branches covered.">        for (Character character : that) {</span>
+<span class="fc" id="L541">            sb.append(character);</span>
+<span class="fc" id="L542">        }</span>
+<span class="fc" id="L543">        from += replaced;</span>
+<span class="fc bfc" id="L544" title="All 2 branches covered.">        if (from &lt; length()) {</span>
+<span class="fc" id="L545">            sb.append(back.substring(from));</span>
+        }
+<span class="fc bfc" id="L547" title="All 2 branches covered.">        return sb.length() == 0 ? EMPTY : new CharSeq(sb.toString());</span>
+    }
+
+    public CharSeq mapChars(CharUnaryOperator mapper) {
+<span class="fc" id="L551">        Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+<span class="fc bfc" id="L552" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L553">            return this;</span>
+        } else {
+<span class="fc" id="L555">            final char[] chars = back.toCharArray();</span>
+<span class="fc bfc" id="L556" title="All 2 branches covered.">            for (int i = 0; i &lt; chars.length; i++) {</span>
+<span class="fc" id="L557">                chars[i] = mapper.apply(chars[i]);</span>
+            }
+<span class="fc" id="L559">            return CharSeq.of(chars);</span>
+        }
+    }
+
+    @Override
+    public Match.MatchMonad.Of&lt;CharSeq&gt; match() {
+<span class="nc" id="L565">        return Match.of(this);</span>
+    }
+
+    @Override
+    public Tuple2&lt;CharSeq, CharSeq&gt; partition(Predicate&lt;? super Character&gt; predicate) {
+<span class="fc" id="L570">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc bfc" id="L571" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L572">            return Tuple.of(EMPTY, EMPTY);</span>
+        }
+<span class="fc" id="L574">        final StringBuilder left = new StringBuilder();</span>
+<span class="fc" id="L575">        final StringBuilder right = new StringBuilder();</span>
+<span class="fc bfc" id="L576" title="All 2 branches covered.">        for (int i = 0; i &lt; length(); i++) {</span>
+<span class="fc" id="L577">            Character t = get(i);</span>
+<span class="fc bfc" id="L578" title="All 2 branches covered.">            (predicate.test(t) ? left : right).append(t);</span>
+        }
+<span class="fc bfc" id="L580" title="All 2 branches covered.">        if (left.length() == 0) {</span>
+<span class="fc" id="L581">            return Tuple.of(EMPTY, of(right.toString()));</span>
+<span class="fc bfc" id="L582" title="All 2 branches covered.">        } else if (right.length() == 0) {</span>
+<span class="fc" id="L583">            return Tuple.of(of(left.toString()), EMPTY);</span>
+        } else {
+<span class="fc" id="L585">            return Tuple.of(of(left.toString()), of(right.toString()));</span>
+        }
+    }
+
+    @Override
+    public CharSeq peek(Consumer&lt;? super Character&gt; action) {
+<span class="fc" id="L591">        Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="fc bfc" id="L592" title="All 2 branches covered.">        if (!isEmpty()) {</span>
+<span class="fc" id="L593">            action.accept(back.charAt(0));</span>
+        }
+<span class="fc" id="L595">        return this;</span>
+    }
+
+    @Override
+    public IndexedSeq&lt;CharSeq&gt; permutations() {
+<span class="fc bfc" id="L600" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L601">            return Vector.empty();</span>
+        } else {
+<span class="fc bfc" id="L603" title="All 2 branches covered.">            if (length() == 1) {</span>
+<span class="fc" id="L604">                return Vector.of(this);</span>
+            } else {
+<span class="fc" id="L606">                IndexedSeq&lt;CharSeq&gt; result = Vector.empty();</span>
+<span class="fc bfc" id="L607" title="All 2 branches covered.">                for (Character t : distinct()) {</span>
+<span class="fc bfc" id="L608" title="All 2 branches covered.">                    for (CharSeq ts : remove(t).permutations()) {</span>
+<span class="fc" id="L609">                        result = result.append(CharSeq.of(t).appendAll(ts));</span>
+<span class="fc" id="L610">                    }</span>
+<span class="fc" id="L611">                }</span>
+<span class="fc" id="L612">                return result;</span>
+            }
+        }
+    }
+
+    @Override
+    public CharSeq prepend(Character element) {
+<span class="fc" id="L619">        return of(element + back);</span>
+    }
+
+    @Override
+    public CharSeq prependAll(Iterable&lt;? extends Character&gt; elements) {
+<span class="fc" id="L624">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc" id="L625">        final StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L626" title="All 2 branches covered.">        for (Character element : elements) {</span>
+<span class="fc" id="L627">            sb.append(element);</span>
+<span class="fc" id="L628">        }</span>
+<span class="fc" id="L629">        sb.append(back);</span>
+<span class="fc bfc" id="L630" title="All 2 branches covered.">        return sb.length() == 0 ? EMPTY : of(sb.toString());</span>
+    }
+
+    @Override
+    public CharSeq remove(Character element) {
+<span class="fc" id="L635">        final StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L636">        boolean found = false;</span>
+<span class="fc bfc" id="L637" title="All 2 branches covered.">        for (int i = 0; i &lt; length(); i++) {</span>
+<span class="fc" id="L638">            char c = get(i);</span>
+<span class="fc bfc" id="L639" title="All 4 branches covered.">            if (!found &amp;&amp; c == element) {</span>
+<span class="fc" id="L640">                found = true;</span>
+            } else {
+<span class="fc" id="L642">                sb.append(c);</span>
+            }
+        }
+<span class="fc bfc" id="L645" title="All 4 branches covered.">        return sb.length() == 0 ? EMPTY : sb.length() == length() ? this : of(sb.toString());</span>
+    }
+
+    @Override
+    public CharSeq removeFirst(Predicate&lt;Character&gt; predicate) {
+<span class="fc" id="L650">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L651">        final StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L652">        boolean found = false;</span>
+<span class="fc bfc" id="L653" title="All 2 branches covered.">        for (int i = 0; i &lt; back.length(); i++) {</span>
+<span class="fc" id="L654">            final char ch = back.charAt(i);</span>
+<span class="fc bfc" id="L655" title="All 2 branches covered.">            if (predicate.test(ch)) {</span>
+<span class="fc bfc" id="L656" title="All 2 branches covered.">                if (found) {</span>
+<span class="fc" id="L657">                    sb.append(ch);</span>
+                }
+<span class="fc" id="L659">                found = true;</span>
+            } else {
+<span class="fc" id="L661">                sb.append(ch);</span>
+            }
+        }
+<span class="fc bfc" id="L664" title="All 4 branches covered.">        return found ? (sb.length() == 0 ? EMPTY : of(sb.toString())) : this;</span>
+    }
+
+    @Override
+    public CharSeq removeLast(Predicate&lt;Character&gt; predicate) {
+<span class="fc" id="L669">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc bfc" id="L670" title="All 2 branches covered.">        for (int i = length() - 1; i &gt;= 0; i--) {</span>
+<span class="fc bfc" id="L671" title="All 2 branches covered.">            if (predicate.test(back.charAt(i))) {</span>
+<span class="fc" id="L672">                return removeAt(i);</span>
+            }
+        }
+<span class="fc" id="L675">        return this;</span>
+    }
+
+    @Override
+    public CharSeq removeAt(int index) {
+<span class="fc" id="L680">        final String removed = back.substring(0, index) + back.substring(index + 1);</span>
+<span class="fc bfc" id="L681" title="All 2 branches covered.">        return removed.isEmpty() ? EMPTY : of(removed);</span>
+    }
+
+    @Override
+    public CharSeq removeAll(Character element) {
+<span class="fc" id="L686">        final StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L687" title="All 2 branches covered.">        for (int i = 0; i &lt; length(); i++) {</span>
+<span class="fc" id="L688">            final char c = back.charAt(i);</span>
+<span class="fc bfc" id="L689" title="All 2 branches covered.">            if (c != element) {</span>
+<span class="fc" id="L690">                sb.append(c);</span>
+            }
+        }
+<span class="fc bfc" id="L693" title="All 4 branches covered.">        return sb.length() == 0 ? EMPTY : sb.length() == length() ? this : of(sb.toString());</span>
+    }
+
+    @Override
+    public CharSeq removeAll(Iterable&lt;? extends Character&gt; elements) {
+<span class="fc" id="L698">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc" id="L699">        final java.util.Set&lt;Character&gt; distinct = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L700" title="All 2 branches covered.">        for (Character element : elements) {</span>
+<span class="fc" id="L701">            distinct.add(element);</span>
+<span class="fc" id="L702">        }</span>
+<span class="fc" id="L703">        final StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L704" title="All 2 branches covered.">        for (int i = 0; i &lt; length(); i++) {</span>
+<span class="fc" id="L705">            final char c = back.charAt(i);</span>
+<span class="fc bfc" id="L706" title="All 2 branches covered.">            if (!distinct.contains(c)) {</span>
+<span class="fc" id="L707">                sb.append(c);</span>
+            }
+        }
+<span class="fc bfc" id="L710" title="All 4 branches covered.">        return sb.length() == 0 ? EMPTY : sb.length() == length() ? this : of(sb.toString());</span>
+    }
+
+    @Override
+    public CharSeq replace(Character currentElement, Character newElement) {
+<span class="fc" id="L715">        final StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L716">        boolean found = false;</span>
+<span class="fc bfc" id="L717" title="All 2 branches covered.">        for (int i = 0; i &lt; length(); i++) {</span>
+<span class="fc" id="L718">            final char c = back.charAt(i);</span>
+<span class="fc bfc" id="L719" title="All 4 branches covered.">            if (c == currentElement &amp;&amp; !found) {</span>
+<span class="fc" id="L720">                sb.append(newElement);</span>
+<span class="fc" id="L721">                found = true;</span>
+            } else {
+<span class="fc" id="L723">                sb.append(c);</span>
+            }
+        }
+<span class="fc bfc" id="L726" title="All 2 branches covered.">        return found ? of(sb.toString()) : this;</span>
+    }
+
+    @Override
+    public CharSeq replaceAll(Character currentElement, Character newElement) {
+<span class="fc" id="L731">        final StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L732">        boolean found = false;</span>
+<span class="fc bfc" id="L733" title="All 2 branches covered.">        for (int i = 0; i &lt; length(); i++) {</span>
+<span class="fc" id="L734">            final char c = back.charAt(i);</span>
+<span class="fc bfc" id="L735" title="All 2 branches covered.">            if (c == currentElement) {</span>
+<span class="fc" id="L736">                sb.append(newElement);</span>
+<span class="fc" id="L737">                found = true;</span>
+            } else {
+<span class="fc" id="L739">                sb.append(c);</span>
+            }
+        }
+<span class="fc bfc" id="L742" title="All 2 branches covered.">        return found ? of(sb.toString()) : this;</span>
+    }
+
+    @Override
+    public CharSeq retainAll(Iterable&lt;? extends Character&gt; elements) {
+<span class="fc" id="L747">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc" id="L748">        final java.util.Set&lt;Character&gt; kept = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L749" title="All 2 branches covered.">        for (Character element : elements) {</span>
+<span class="fc" id="L750">            kept.add(element);</span>
+<span class="fc" id="L751">        }</span>
+<span class="fc" id="L752">        final StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L753" title="All 2 branches covered.">        for (int i = 0; i &lt; length(); i++) {</span>
+<span class="fc" id="L754">            final char c = back.charAt(i);</span>
+<span class="fc bfc" id="L755" title="All 2 branches covered.">            if (kept.contains(c)) {</span>
+<span class="fc" id="L756">                sb.append(c);</span>
+            }
+        }
+<span class="fc bfc" id="L759" title="All 2 branches covered.">        return sb.length() == 0 ? EMPTY : of(sb.toString());</span>
+    }
+
+    @Override
+    public CharSeq reverse() {
+<span class="fc" id="L764">        return of(new StringBuilder(back).reverse().toString());</span>
+    }
+
+    @Override
+    public IndexedSeq&lt;Character&gt; scan(Character zero, BiFunction&lt;? super Character, ? super Character, ? extends Character&gt; operation) {
+<span class="fc" id="L769">        return scanLeft(zero, operation);</span>
+    }
+
+    @Override
+    public &lt;U&gt; IndexedSeq&lt;U&gt; scanLeft(U zero, BiFunction&lt;? super U, ? super Character, ? extends U&gt; operation) {
+<span class="fc" id="L774">        Objects.requireNonNull(operation, &quot;operation is null&quot;);</span>
+<span class="fc" id="L775">        return Collections.scanLeft(this, zero, operation, Vector.empty(), Vector::append, Function.identity());</span>
+    }
+
+    @Override
+    public &lt;U&gt; IndexedSeq&lt;U&gt; scanRight(U zero, BiFunction&lt;? super Character, ? super U, ? extends U&gt; operation) {
+<span class="fc" id="L780">        Objects.requireNonNull(operation, &quot;operation is null&quot;);</span>
+<span class="fc" id="L781">        return Collections.scanRight(this, zero, operation, Vector.empty(), Vector::prepend, Function.identity());</span>
+    }
+
+    @Override
+    public CharSeq slice(int beginIndex, int endIndex) {
+<span class="fc bfc" id="L786" title="All 2 branches covered.">        final int from = beginIndex &lt; 0 ? 0 : beginIndex;</span>
+<span class="fc bfc" id="L787" title="All 2 branches covered.">        final int to = endIndex &gt; length() ? length() : endIndex;</span>
+<span class="fc bfc" id="L788" title="All 2 branches covered.">        if (from &gt;= to) {</span>
+<span class="fc" id="L789">            return EMPTY;</span>
+        }
+<span class="fc bfc" id="L791" title="All 4 branches covered.">        if (from &lt;= 0 &amp;&amp; to &gt;= length()) {</span>
+<span class="fc" id="L792">            return this;</span>
+        }
+<span class="fc" id="L794">        return CharSeq.of(back.substring(from, to));</span>
+    }
+
+    @Override
+    public Iterator&lt;CharSeq&gt; sliding(int size) {
+<span class="fc" id="L799">        return sliding(size, 1);</span>
+    }
+
+    @Override
+    public Iterator&lt;CharSeq&gt; sliding(int size, int step) {
+<span class="fc" id="L804">        return iterator().sliding(size, step).map(CharSeq::ofAll);</span>
+    }
+
+    @Override
+    public CharSeq sort() {
+<span class="fc bfc" id="L809" title="All 2 branches covered.">        return isEmpty() ? this : toJavaStream().sorted().collect(CharSeq.collector());</span>
+    }
+
+    @Override
+    public CharSeq sort(Comparator&lt;? super Character&gt; comparator) {
+<span class="fc" id="L814">        Objects.requireNonNull(comparator, &quot;comparator is null&quot;);</span>
+<span class="fc bfc" id="L815" title="All 2 branches covered.">        return isEmpty() ? this : toJavaStream().sorted(comparator).collect(CharSeq.collector());</span>
+    }
+
+    @Override
+    public &lt;U extends Comparable&lt;? super U&gt;&gt; CharSeq sortBy(Function&lt;? super Character, ? extends U&gt; mapper) {
+<span class="fc" id="L820">        return sortBy(U::compareTo, mapper);</span>
+    }
+
+    @Override
+    public &lt;U&gt; CharSeq sortBy(Comparator&lt;? super U&gt; comparator, Function&lt;? super Character, ? extends U&gt; mapper) {
+<span class="fc" id="L825">        final Function&lt;? super Character, ? extends U&gt; domain = Function1.of(mapper::apply).memoized();</span>
+<span class="fc" id="L826">        return toJavaStream()</span>
+<span class="fc" id="L827">                .sorted((e1, e2) -&gt; comparator.compare(domain.apply(e1), domain.apply(e2)))</span>
+<span class="fc" id="L828">                .collect(collector());</span>
+    }
+
+    @Override
+    public Tuple2&lt;CharSeq, CharSeq&gt; span(Predicate&lt;? super Character&gt; predicate) {
+<span class="fc" id="L833">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L834">        final StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L835" title="All 2 branches covered.">        for (int i = 0; i &lt; length(); i++) {</span>
+<span class="fc" id="L836">            final char c = back.charAt(i);</span>
+<span class="fc bfc" id="L837" title="All 2 branches covered.">            if (predicate.test(c)) {</span>
+<span class="fc" id="L838">                sb.append(c);</span>
+            } else {
+                break;
+            }
+        }
+<span class="fc" id="L843">        return splitByBuilder(sb);</span>
+    }
+
+    @Override
+    public Spliterator&lt;Character&gt; spliterator() {
+<span class="fc" id="L848">        return Spliterators.spliterator(iterator(), length(), Spliterator.ORDERED | Spliterator.IMMUTABLE);</span>
+    }
+
+    @Override
+    public CharSeq subSequence(int beginIndex) {
+<span class="fc bfc" id="L853" title="All 4 branches covered.">        if (beginIndex &lt; 0 || beginIndex &gt; length()) {</span>
+<span class="fc" id="L854">            throw new IndexOutOfBoundsException(&quot;begin index &quot; + beginIndex + &quot; &lt; 0&quot;);</span>
+        }
+<span class="fc bfc" id="L856" title="All 2 branches covered.">        if (beginIndex == 0) {</span>
+<span class="fc" id="L857">            return this;</span>
+<span class="fc bfc" id="L858" title="All 2 branches covered.">        } else if (beginIndex == length()) {</span>
+<span class="fc" id="L859">            return EMPTY;</span>
+        } else {
+<span class="fc" id="L861">            return CharSeq.of(back.substring(beginIndex));</span>
+        }
+    }
+
+    @Override
+    public CharSeq tail() {
+<span class="fc bfc" id="L867" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L868">            throw new UnsupportedOperationException(&quot;tail of empty string&quot;);</span>
+        } else {
+<span class="fc" id="L870">            return CharSeq.of(back.substring(1));</span>
+        }
+    }
+
+    @Override
+    public Option&lt;CharSeq&gt; tailOption() {
+<span class="fc bfc" id="L876" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L877">            return Option.none();</span>
+        } else {
+<span class="fc" id="L879">            return Option.some(CharSeq.of(back.substring(1)));</span>
+        }
+    }
+
+    @Override
+    public CharSeq take(int n) {
+<span class="fc bfc" id="L885" title="All 2 branches covered.">        if (n &lt;= 0) {</span>
+<span class="fc" id="L886">            return EMPTY;</span>
+<span class="fc bfc" id="L887" title="All 2 branches covered.">        } else if (n &gt;= length()) {</span>
+<span class="fc" id="L888">            return this;</span>
+        } else {
+<span class="fc" id="L890">            return CharSeq.of(back.substring(0, n));</span>
+        }
+    }
+
+    @Override
+    public CharSeq takeRight(int n) {
+<span class="fc bfc" id="L896" title="All 2 branches covered.">        if (n &lt;= 0) {</span>
+<span class="fc" id="L897">            return EMPTY;</span>
+<span class="fc bfc" id="L898" title="All 2 branches covered.">        } else if (n &gt;= length()) {</span>
+<span class="fc" id="L899">            return this;</span>
+        } else {
+<span class="fc" id="L901">            return CharSeq.of(back.substring(length() - n));</span>
+        }
+    }
+
+    @Override
+    public CharSeq takeUntil(Predicate&lt;? super Character&gt; predicate) {
+<span class="fc" id="L907">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L908">        return takeWhile(predicate.negate());</span>
+    }
+
+    @Override
+    public CharSeq takeWhile(Predicate&lt;? super Character&gt; predicate) {
+<span class="fc" id="L913">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L914">        final StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L915" title="All 2 branches covered.">        for (int i = 0; i &lt; length(); i++) {</span>
+<span class="fc" id="L916">            char c = back.charAt(i);</span>
+<span class="fc bfc" id="L917" title="All 2 branches covered.">            if (!predicate.test(c)) {</span>
+<span class="fc" id="L918">                break;</span>
+            }
+<span class="fc" id="L920">            sb.append(c);</span>
+        }
+<span class="fc bfc" id="L922" title="All 4 branches covered.">        return sb.length() == length() ? this : sb.length() == 0 ? EMPTY : of(sb.toString());</span>
+    }
+
+    @Override
+    public &lt;U&gt; IndexedSeq&lt;U&gt; unit(Iterable&lt;? extends U&gt; iterable) {
+<span class="fc" id="L927">        return Vector.ofAll(iterable);</span>
+    }
+
+    @Override
+    public &lt;T1, T2&gt; Tuple2&lt;IndexedSeq&lt;T1&gt;, IndexedSeq&lt;T2&gt;&gt; unzip(
+            Function&lt;? super Character, Tuple2&lt;? extends T1, ? extends T2&gt;&gt; unzipper) {
+<span class="fc" id="L933">        Objects.requireNonNull(unzipper, &quot;unzipper is null&quot;);</span>
+<span class="fc" id="L934">        IndexedSeq&lt;T1&gt; xs = Vector.empty();</span>
+<span class="fc" id="L935">        IndexedSeq&lt;T2&gt; ys = Vector.empty();</span>
+<span class="fc bfc" id="L936" title="All 2 branches covered.">        for (int i = 0; i &lt; length(); i++) {</span>
+<span class="fc" id="L937">            final Tuple2&lt;? extends T1, ? extends T2&gt; t = unzipper.apply(back.charAt(i));</span>
+<span class="fc" id="L938">            xs = xs.append(t._1);</span>
+<span class="fc" id="L939">            ys = ys.append(t._2);</span>
+        }
+<span class="fc" id="L941">        return Tuple.of(xs, ys);</span>
+    }
+
+    @Override
+    public &lt;T1, T2, T3&gt; Tuple3&lt;IndexedSeq&lt;T1&gt;, IndexedSeq&lt;T2&gt;, IndexedSeq&lt;T3&gt;&gt; unzip3(
+            Function&lt;? super Character, Tuple3&lt;? extends T1, ? extends T2, ? extends T3&gt;&gt; unzipper) {
+<span class="fc" id="L947">        Objects.requireNonNull(unzipper, &quot;unzipper is null&quot;);</span>
+<span class="fc" id="L948">        IndexedSeq&lt;T1&gt; xs = Vector.empty();</span>
+<span class="fc" id="L949">        IndexedSeq&lt;T2&gt; ys = Vector.empty();</span>
+<span class="fc" id="L950">        IndexedSeq&lt;T3&gt; zs = Vector.empty();</span>
+<span class="fc bfc" id="L951" title="All 2 branches covered.">        for (int i = 0; i &lt; length(); i++) {</span>
+<span class="fc" id="L952">            final Tuple3&lt;? extends T1, ? extends T2, ? extends T3&gt; t = unzipper.apply(back.charAt(i));</span>
+<span class="fc" id="L953">            xs = xs.append(t._1);</span>
+<span class="fc" id="L954">            ys = ys.append(t._2);</span>
+<span class="fc" id="L955">            zs = zs.append(t._3);</span>
+        }
+<span class="fc" id="L957">        return Tuple.of(xs, ys, zs);</span>
+    }
+
+    @Override
+    public CharSeq update(int index, Character element) {
+<span class="fc bfc" id="L962" title="All 2 branches covered.">        if (index &lt; 0) {</span>
+<span class="fc" id="L963">            throw new IndexOutOfBoundsException(&quot;update(&quot; + index + &quot;)&quot;);</span>
+        }
+<span class="fc bfc" id="L965" title="All 2 branches covered.">        if (index &gt;= length()) {</span>
+<span class="fc" id="L966">            throw new IndexOutOfBoundsException(&quot;update(&quot; + index + &quot;)&quot;);</span>
+        }
+<span class="fc" id="L968">        return of(back.substring(0, index) + element + back.substring(index + 1));</span>
+    }
+
+    @Override
+    public &lt;U&gt; IndexedSeq&lt;Tuple2&lt;Character, U&gt;&gt; zip(Iterable&lt;U&gt; that) {
+<span class="fc" id="L973">        Objects.requireNonNull(that, &quot;that is null&quot;);</span>
+<span class="fc" id="L974">        IndexedSeq&lt;Tuple2&lt;Character, U&gt;&gt; result = Vector.empty();</span>
+<span class="fc" id="L975">        Iterator&lt;Character&gt; list1 = iterator();</span>
+<span class="fc" id="L976">        java.util.Iterator&lt;U&gt; list2 = that.iterator();</span>
+<span class="fc bfc" id="L977" title="All 4 branches covered.">        while (list1.hasNext() &amp;&amp; list2.hasNext()) {</span>
+<span class="fc" id="L978">            result = result.append(Tuple.of(list1.next(), list2.next()));</span>
+        }
+<span class="fc" id="L980">        return result;</span>
+    }
+
+    @Override
+    public &lt;U&gt; IndexedSeq&lt;Tuple2&lt;Character, U&gt;&gt; zipAll(Iterable&lt;U&gt; that, Character thisElem, U thatElem) {
+<span class="fc" id="L985">        Objects.requireNonNull(that, &quot;that is null&quot;);</span>
+<span class="fc" id="L986">        IndexedSeq&lt;Tuple2&lt;Character, U&gt;&gt; result = Vector.empty();</span>
+<span class="fc" id="L987">        Iterator&lt;Character&gt; list1 = iterator();</span>
+<span class="fc" id="L988">        java.util.Iterator&lt;U&gt; list2 = that.iterator();</span>
+<span class="fc bfc" id="L989" title="All 4 branches covered.">        while (list1.hasNext() || list2.hasNext()) {</span>
+<span class="fc bfc" id="L990" title="All 2 branches covered.">            final Character elem1 = list1.hasNext() ? list1.next() : thisElem;</span>
+<span class="fc bfc" id="L991" title="All 2 branches covered.">            final U elem2 = list2.hasNext() ? list2.next() : thatElem;</span>
+<span class="fc" id="L992">            result = result.append(Tuple.of(elem1, elem2));</span>
+<span class="fc" id="L993">        }</span>
+<span class="fc" id="L994">        return result;</span>
+    }
+
+    @Override
+    public IndexedSeq&lt;Tuple2&lt;Character, Integer&gt;&gt; zipWithIndex() {
+<span class="fc" id="L999">        IndexedSeq&lt;Tuple2&lt;Character, Integer&gt;&gt; result = Vector.empty();</span>
+<span class="fc bfc" id="L1000" title="All 2 branches covered.">        for (int i = 0; i &lt; length(); i++) {</span>
+<span class="fc" id="L1001">            result = result.append(Tuple.of(get(i), i));</span>
+        }
+<span class="fc" id="L1003">        return result;</span>
+    }
+
+    @Override
+    public Character get(int index) {
+<span class="fc" id="L1008">        return back.charAt(index);</span>
+    }
+
+    @Override
+    public int indexOf(Character element, int from) {
+<span class="fc" id="L1013">        return back.indexOf(element, from);</span>
+    }
+
+    @Override
+    public int lastIndexOf(Character element, int end) {
+<span class="fc" id="L1018">        return back.lastIndexOf(element, end);</span>
+    }
+
+    @Override
+    public Tuple2&lt;CharSeq, CharSeq&gt; splitAt(int n) {
+<span class="fc bfc" id="L1023" title="All 2 branches covered.">        if (n &lt;= 0) {</span>
+<span class="fc" id="L1024">            return Tuple.of(EMPTY, this);</span>
+<span class="fc bfc" id="L1025" title="All 2 branches covered.">        } else if (n &gt;= length()) {</span>
+<span class="fc" id="L1026">            return Tuple.of(this, EMPTY);</span>
+        } else {
+<span class="fc" id="L1028">            return Tuple.of(of(back.substring(0, n)), of(back.substring(n)));</span>
+        }
+    }
+
+    @Override
+    public Tuple2&lt;CharSeq, CharSeq&gt; splitAt(Predicate&lt;? super Character&gt; predicate) {
+<span class="fc" id="L1034">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc bfc" id="L1035" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L1036">            return Tuple.of(EMPTY, EMPTY);</span>
+        }
+<span class="fc" id="L1038">        final StringBuilder left = new StringBuilder();</span>
+<span class="fc bfc" id="L1039" title="All 2 branches covered.">        for (int i = 0; i &lt; length(); i++) {</span>
+<span class="fc" id="L1040">            Character t = get(i);</span>
+<span class="fc bfc" id="L1041" title="All 2 branches covered.">            if (!predicate.test(t)) {</span>
+<span class="fc" id="L1042">                left.append(t);</span>
+            } else {
+                break;
+            }
+        }
+<span class="fc" id="L1047">        return splitByBuilder(left);</span>
+    }
+
+    @Override
+    public Tuple2&lt;CharSeq, CharSeq&gt; splitAtInclusive(Predicate&lt;? super Character&gt; predicate) {
+<span class="fc" id="L1052">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc bfc" id="L1053" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L1054">            return Tuple.of(EMPTY, EMPTY);</span>
+        }
+<span class="fc" id="L1056">        final StringBuilder left = new StringBuilder();</span>
+<span class="fc bfc" id="L1057" title="All 2 branches covered.">        for (int i = 0; i &lt; length(); i++) {</span>
+<span class="fc" id="L1058">            Character t = get(i);</span>
+<span class="fc" id="L1059">            left.append(t);</span>
+<span class="fc bfc" id="L1060" title="All 2 branches covered.">            if (predicate.test(t)) {</span>
+<span class="fc" id="L1061">                break;</span>
+            }
+        }
+<span class="fc" id="L1064">        return splitByBuilder(left);</span>
+    }
+
+    @Override
+    public boolean startsWith(Iterable&lt;? extends Character&gt; that, int offset) {
+<span class="fc" id="L1069">        return startsWith(CharSeq.ofAll(that), offset);</span>
+    }
+
+    @Override
+    public Character head() {
+<span class="fc bfc" id="L1074" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L1075">            throw new NoSuchElementException(&quot;head of empty string&quot;);</span>
+        } else {
+<span class="fc" id="L1077">            return back.charAt(0);</span>
+        }
+    }
+
+    @Override
+    public Option&lt;Character&gt; headOption() {
+<span class="fc bfc" id="L1083" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L1084">            return Option.none();</span>
+        } else {
+<span class="fc" id="L1086">            return Option.some(back.charAt(0));</span>
+        }
+    }
+
+    @Override
+    public boolean isEmpty() {
+<span class="fc" id="L1092">        return back.isEmpty();</span>
+    }
+
+    @Override
+    public boolean isTraversableAgain() {
+<span class="fc" id="L1097">        return true;</span>
+    }
+
+    private Object readResolve() {
+<span class="fc bfc" id="L1101" title="All 2 branches covered.">        return isEmpty() ? EMPTY : this;</span>
+    }
+
+    @Override
+    public boolean equals(Object o) {
+<span class="fc bfc" id="L1106" title="All 2 branches covered.">        if (o == this) {</span>
+<span class="fc" id="L1107">            return true;</span>
+<span class="fc bfc" id="L1108" title="All 2 branches covered.">        } else if (o instanceof CharSeq) {</span>
+<span class="fc" id="L1109">            return ((CharSeq) o).back.equals(back);</span>
+        } else {
+<span class="fc" id="L1111">            return false;</span>
+        }
+    }
+
+    @Override
+    public int hashCode() {
+<span class="fc" id="L1117">        return back.hashCode();</span>
+    }
+
+    //
+    //
+    // java.lang.CharSequence
+    //
+    //
+
+    /**
+     * Returns the {@code char} value at the
+     * specified index. An index ranges from {@code 0} to
+     * {@code length() - 1}. The first {@code char} value of the sequence
+     * is at index {@code 0}, the next at index {@code 1},
+     * and so on, as for array indexing.
+     *
+     * &lt;p&gt;If the {@code char} value specified by the index is a
+     * &lt;a href=&quot;Character.html#unicode&quot;&gt;surrogate&lt;/a&gt;, the surrogate
+     * value is returned.
+     *
+     * @param index the index of the {@code char} value.
+     * @return the {@code char} value at the specified index of this string.
+     * The first {@code char} value is at index {@code 0}.
+     * @throws IndexOutOfBoundsException if the {@code index}
+     *                                   argument is negative or not less than the length of this
+     *                                   string.
+     */
+    @Override
+    public char charAt(int index) {
+<span class="fc" id="L1146">        return back.charAt(index);</span>
+    }
+
+    /**
+     * Returns the length of this string.
+     * The length is equal to the number of &lt;a href=&quot;Character.html#unicode&quot;&gt;Unicode
+     * code units&lt;/a&gt; in the string.
+     *
+     * @return the length of the sequence of characters represented by this
+     * object.
+     */
+    @Override
+    public int length() {
+<span class="fc" id="L1159">        return back.length();</span>
+    }
+
+    //
+    //
+    // String
+    //
+    //
+
+    /**
+     * Returns the character (Unicode code point) at the specified
+     * index. The index refers to {@code char} values
+     * (Unicode code units) and ranges from {@code 0} to
+     * {@link #length()}{@code  - 1}.
+     *
+     * &lt;p&gt; If the {@code char} value specified at the given index
+     * is in the high-surrogate range, the following index is less
+     * than the length of this {@code CharSeq}, and the
+     * {@code char} value at the following index is in the
+     * low-surrogate range, then the supplementary code point
+     * corresponding to this surrogate pair is returned. Otherwise,
+     * the {@code char} value at the given index is returned.
+     *
+     * @param index the index to the {@code char} values
+     * @return the code point value of the character at the
+     * {@code index}
+     * @throws IndexOutOfBoundsException if the {@code index}
+     *                                   argument is negative or not less than the length of this
+     *                                   string.
+     */
+    public int codePointAt(int index) {
+<span class="fc" id="L1190">        return back.codePointAt(index);</span>
+    }
+
+    /**
+     * Returns the character (Unicode code point) before the specified
+     * index. The index refers to {@code char} values
+     * (Unicode code units) and ranges from {@code 1} to {@link
+     * CharSequence#length() length}.
+     *
+     * &lt;p&gt; If the {@code char} value at {@code (index - 1)}
+     * is in the low-surrogate range, {@code (index - 2)} is not
+     * negative, and the {@code char} value at {@code (index -
+     * 2)} is in the high-surrogate range, then the
+     * supplementary code point value of the surrogate pair is
+     * returned. If the {@code char} value at {@code index -
+     * 1} is an unpaired low-surrogate or a high-surrogate, the
+     * surrogate value is returned.
+     *
+     * @param index the index following the code point that should be returned
+     * @return the Unicode code point value before the given index.
+     * @throws IndexOutOfBoundsException if the {@code index}
+     *                                   argument is less than 1 or greater than the length
+     *                                   of this string.
+     */
+    public int codePointBefore(int index) {
+<span class="fc" id="L1215">        return back.codePointBefore(index);</span>
+    }
+
+    /**
+     * Returns the number of Unicode code points in the specified text
+     * range of this {@code CharSeq}. The text range begins at the
+     * specified {@code beginIndex} and extends to the
+     * {@code char} at index {@code endIndex - 1}. Thus the
+     * length (in {@code char}s) of the text range is
+     * {@code endIndex-beginIndex}. Unpaired surrogates within
+     * the text range count as one code point each.
+     *
+     * @param beginIndex the index to the first {@code char} of
+     *                   the text range.
+     * @param endIndex   the index after the last {@code char} of
+     *                   the text range.
+     * @return the number of Unicode code points in the specified text
+     * range
+     * @throws IndexOutOfBoundsException if the
+     *                                   {@code beginIndex} is negative, or {@code endIndex}
+     *                                   is larger than the length of this {@code CharSeq}, or
+     *                                   {@code beginIndex} is larger than {@code endIndex}.
+     */
+    public int codePointCount(int beginIndex, int endIndex) {
+<span class="fc" id="L1239">        return back.codePointCount(beginIndex, endIndex);</span>
+    }
+
+    /**
+     * Returns the index within this {@code CharSeq} that is
+     * offset from the given {@code index} by
+     * {@code codePointOffset} code points. Unpaired surrogates
+     * within the text range given by {@code index} and
+     * {@code codePointOffset} count as one code point each.
+     *
+     * @param index           the index to be offset
+     * @param codePointOffset the offset in code points
+     * @return the index within this {@code CharSeq}
+     * @throws IndexOutOfBoundsException if {@code index}
+     *                                   is negative or larger then the length of this
+     *                                   {@code CharSeq}, or if {@code codePointOffset} is positive
+     *                                   and the substring starting with {@code index} has fewer
+     *                                   than {@code codePointOffset} code points,
+     *                                   or if {@code codePointOffset} is negative and the substring
+     *                                   before {@code index} has fewer than the absolute value
+     *                                   of {@code codePointOffset} code points.
+     */
+    public int offsetByCodePoints(int index, int codePointOffset) {
+<span class="fc" id="L1262">        return back.offsetByCodePoints(index, codePointOffset);</span>
+    }
+
+    /**
+     * Copies characters from this string into the destination character
+     * array.
+     * &lt;p&gt;
+     * The first character to be copied is at index {@code srcBegin};
+     * the last character to be copied is at index {@code srcEnd-1}
+     * (thus the total number of characters to be copied is
+     * {@code srcEnd-srcBegin}). The characters are copied into the
+     * subarray of {@code dst} starting at index {@code dstBegin}
+     * and ending at index:
+     * &lt;blockquote&gt;&lt;pre&gt;
+     *     dstbegin + (srcEnd-srcBegin) - 1
+     * &lt;/pre&gt;&lt;/blockquote&gt;
+     *
+     * @param srcBegin index of the first character in the string
+     *                 to copy.
+     * @param srcEnd   index after the last character in the string
+     *                 to copy.
+     * @param dst      the destination array.
+     * @param dstBegin the start offset in the destination array.
+     * @throws IndexOutOfBoundsException If any of the following
+     *                                   is true:
+     *                                   &lt;ul&gt;&lt;li&gt;{@code srcBegin} is negative.
+     *                                   &lt;li&gt;{@code srcBegin} is greater than {@code srcEnd}
+     *                                   &lt;li&gt;{@code srcEnd} is greater than the length of this
+     *                                   string
+     *                                   &lt;li&gt;{@code dstBegin} is negative
+     *                                   &lt;li&gt;{@code dstBegin+(srcEnd-srcBegin)} is larger than
+     *                                   {@code dst.length}&lt;/ul&gt;
+     */
+    public void getChars(int srcBegin, int srcEnd, char dst[], int dstBegin) {
+<span class="fc" id="L1296">        back.getChars(srcBegin, srcEnd, dst, dstBegin);</span>
+<span class="fc" id="L1297">    }</span>
+
+    /**
+     * Encodes this {@code CharSeq} into a sequence of bytes using the named
+     * charset, storing the result into a new byte array.
+     *
+     * &lt;p&gt; The behavior of this method when this string cannot be encoded in
+     * the given charset is unspecified.  The {@link
+     * java.nio.charset.CharsetEncoder} class should be used when more control
+     * over the encoding process is required.
+     *
+     * @param charsetName The name of a supported {@linkplain java.nio.charset.Charset
+     *                    charset}
+     * @return The resultant byte array
+     * @throws UnsupportedEncodingException If the named charset is not supported
+     */
+    public byte[] getBytes(String charsetName) throws UnsupportedEncodingException {
+<span class="fc" id="L1314">        return back.getBytes(charsetName);</span>
+    }
+
+    /**
+     * Encodes this {@code CharSeq} into a sequence of bytes using the given
+     * {@linkplain java.nio.charset.Charset charset}, storing the result into a
+     * new byte array.
+     *
+     * &lt;p&gt; This method always replaces malformed-input and unmappable-character
+     * sequences with this charset's default replacement byte array.  The
+     * {@link java.nio.charset.CharsetEncoder} class should be used when more
+     * control over the encoding process is required.
+     *
+     * @param charset The {@linkplain java.nio.charset.Charset} to be used to encode
+     *                the {@code CharSeq}
+     * @return The resultant byte array
+     */
+    public byte[] getBytes(Charset charset) {
+<span class="fc" id="L1332">        return back.getBytes(charset);</span>
+    }
+
+    /**
+     * Encodes this {@code CharSeq} into a sequence of bytes using the
+     * platform's default charset, storing the result into a new byte array.
+     *
+     * &lt;p&gt; The behavior of this method when this string cannot be encoded in
+     * the default charset is unspecified.  The {@link
+     * java.nio.charset.CharsetEncoder} class should be used when more control
+     * over the encoding process is required.
+     *
+     * @return The resultant byte array
+     */
+    public byte[] getBytes() {
+<span class="fc" id="L1347">        return back.getBytes();</span>
+    }
+
+    /**
+     * Compares this string to the specified {@code StringBuffer}.  The result
+     * is {@code true} if and only if this {@code CharSeq} represents the same
+     * sequence of characters as the specified {@code StringBuffer}. This method
+     * synchronizes on the {@code StringBuffer}.
+     *
+     * @param sb The {@code StringBuffer} to compare this {@code CharSeq} against
+     * @return {@code true} if this {@code CharSeq} represents the same
+     * sequence of characters as the specified {@code StringBuffer},
+     * {@code false} otherwise
+     */
+    public boolean contentEquals(StringBuffer sb) {
+<span class="fc" id="L1362">        return back.contentEquals(sb);</span>
+    }
+
+    /**
+     * Compares this string to the specified {@code CharSequence}.  The
+     * result is {@code true} if and only if this {@code CharSeq} represents the
+     * same sequence of char values as the specified sequence. Note that if the
+     * {@code CharSequence} is a {@code StringBuffer} then the method
+     * synchronizes on it.
+     *
+     * @param cs The sequence to compare this {@code CharSeq} against
+     * @return {@code true} if this {@code CharSeq} represents the same
+     * sequence of char values as the specified sequence, {@code
+     * false} otherwise
+     */
+    public boolean contentEquals(CharSequence cs) {
+<span class="fc" id="L1378">        return back.contentEquals(cs);</span>
+    }
+
+    /**
+     * Compares this {@code CharSeq} to another {@code CharSeq}, ignoring case
+     * considerations.  Two strings are considered equal ignoring case if they
+     * are of the same length and corresponding characters in the two strings
+     * are equal ignoring case.
+     *
+     * &lt;p&gt; Two characters {@code c1} and {@code c2} are considered the same
+     * ignoring case if at least one of the following is true:
+     * &lt;ul&gt;
+     * &lt;li&gt; The two characters are the same (as compared by the
+     * {@code ==} operator)
+     * &lt;li&gt; Applying the method {@link
+     * java.lang.Character#toUpperCase(char)} to each character
+     * produces the same result
+     * &lt;li&gt; Applying the method {@link
+     * java.lang.Character#toLowerCase(char)} to each character
+     * produces the same result
+     * &lt;/ul&gt;
+     *
+     * @param anotherString The {@code CharSeq} to compare this {@code CharSeq} against
+     * @return {@code true} if the argument is not {@code null} and it
+     * represents an equivalent {@code CharSeq} ignoring case; {@code
+     * false} otherwise
+     * @see #equals(Object)
+     */
+    public boolean equalsIgnoreCase(CharSeq anotherString) {
+<span class="fc" id="L1407">        return back.equalsIgnoreCase(anotherString.back);</span>
+    }
+
+    /**
+     * Compares two strings lexicographically.
+     * The comparison is based on the Unicode value of each character in
+     * the strings. The character sequence represented by this
+     * {@code CharSeq} object is compared lexicographically to the
+     * character sequence represented by the argument string. The result is
+     * a negative integer if this {@code CharSeq} object
+     * lexicographically precedes the argument string. The result is a
+     * positive integer if this {@code CharSeq} object lexicographically
+     * follows the argument string. The result is zero if the strings
+     * are equal; {@code compareTo} returns {@code 0} exactly when
+     * the {@link #equals(Object)} method would return {@code true}.
+     * &lt;p&gt;
+     * This is the definition of lexicographic ordering. If two strings are
+     * different, then either they have different characters at some index
+     * that is a valid index for both strings, or their lengths are different,
+     * or both. If they have different characters at one or more index
+     * positions, let &lt;i&gt;k&lt;/i&gt; be the smallest such index; then the string
+     * whose character at position &lt;i&gt;k&lt;/i&gt; has the smaller value, as
+     * determined by using the &amp;lt; operator, lexicographically precedes the
+     * other string. In this case, {@code compareTo} returns the
+     * difference of the two character values at position {@code k} in
+     * the two string -- that is, the value:
+     * &lt;blockquote&gt;&lt;pre&gt;
+     * this.charAt(k)-anotherString.charAt(k)
+     * &lt;/pre&gt;&lt;/blockquote&gt;
+     * If there is no index position at which they differ, then the shorter
+     * string lexicographically precedes the longer string. In this case,
+     * {@code compareTo} returns the difference of the lengths of the
+     * strings -- that is, the value:
+     * &lt;blockquote&gt;&lt;pre&gt;
+     * this.length()-anotherString.length()
+     * &lt;/pre&gt;&lt;/blockquote&gt;
+     *
+     * @param anotherString the {@code CharSeq} to be compared.
+     * @return the value {@code 0} if the argument string is equal to
+     * this string; a value less than {@code 0} if this string
+     * is lexicographically less than the string argument; and a
+     * value greater than {@code 0} if this string is
+     * lexicographically greater than the string argument.
+     */
+    public int compareTo(CharSeq anotherString) {
+<span class="fc" id="L1452">        return back.compareTo(anotherString.back);</span>
+    }
+
+    /**
+     * Compares two strings lexicographically, ignoring case
+     * differences. This method returns an integer whose sign is that of
+     * calling {@code compareTo} with normalized versions of the strings
+     * where case differences have been eliminated by calling
+     * {@code Character.toLowerCase(Character.toUpperCase(character))} on
+     * each character.
+     * &lt;p&gt;
+     * Note that this method does &lt;em&gt;not&lt;/em&gt; take locale into account,
+     * and will result in an unsatisfactory ordering for certain locales.
+     * The java.text package provides &lt;em&gt;collators&lt;/em&gt; to allow
+     * locale-sensitive ordering.
+     *
+     * @param str the {@code CharSeq} to be compared.
+     * @return a negative integer, zero, or a positive integer as the
+     * specified String is greater than, equal to, or less
+     * than this String, ignoring case considerations.
+     */
+    public int compareToIgnoreCase(CharSeq str) {
+<span class="fc" id="L1474">        return back.compareToIgnoreCase(str.back);</span>
+    }
+
+    /**
+     * Tests if two string regions are equal.
+     * &lt;p&gt;
+     * A substring of this {@code CharSeq} object is compared to a substring
+     * of the argument other. The result is true if these substrings
+     * represent identical character sequences. The substring of this
+     * {@code CharSeq} object to be compared begins at index {@code toffset}
+     * and has length {@code len}. The substring of other to be compared
+     * begins at index {@code ooffset} and has length {@code len}. The
+     * result is {@code false} if and only if at least one of the following
+     * is true:
+     * &lt;ul&gt;&lt;li&gt;{@code toffset} is negative.
+     * &lt;li&gt;{@code ooffset} is negative.
+     * &lt;li&gt;{@code toffset+len} is greater than the length of this
+     * {@code CharSeq} object.
+     * &lt;li&gt;{@code ooffset+len} is greater than the length of the other
+     * argument.
+     * &lt;li&gt;There is some nonnegative integer &lt;i&gt;k&lt;/i&gt; less than {@code len}
+     * such that:
+     * {@code this.charAt(toffset + }&lt;i&gt;k&lt;/i&gt;{@code ) != other.charAt(ooffset + }
+     * &lt;i&gt;k&lt;/i&gt;{@code )}
+     * &lt;/ul&gt;
+     *
+     * @param toffset the starting offset of the subregion in this string.
+     * @param other   the string argument.
+     * @param ooffset the starting offset of the subregion in the string
+     *                argument.
+     * @param len     the number of characters to compare.
+     * @return {@code true} if the specified subregion of this string
+     * exactly matches the specified subregion of the string argument;
+     * {@code false} otherwise.
+     */
+    public boolean regionMatches(int toffset, CharSeq other, int ooffset, int len) {
+<span class="fc" id="L1510">        return back.regionMatches(toffset, other.back, ooffset, len);</span>
+    }
+
+    /**
+     * Tests if two string regions are equal.
+     * &lt;p&gt;
+     * A substring of this {@code CharSeq} object is compared to a substring
+     * of the argument {@code other}. The result is {@code true} if these
+     * substrings represent character sequences that are the same, ignoring
+     * case if and only if {@code ignoreCase} is true. The substring of
+     * this {@code CharSeq} object to be compared begins at index
+     * {@code toffset} and has length {@code len}. The substring of
+     * {@code other} to be compared begins at index {@code ooffset} and
+     * has length {@code len}. The result is {@code false} if and only if
+     * at least one of the following is true:
+     * &lt;ul&gt;&lt;li&gt;{@code toffset} is negative.
+     * &lt;li&gt;{@code ooffset} is negative.
+     * &lt;li&gt;{@code toffset+len} is greater than the length of this
+     * {@code CharSeq} object.
+     * &lt;li&gt;{@code ooffset+len} is greater than the length of the other
+     * argument.
+     * &lt;li&gt;{@code ignoreCase} is {@code false} and there is some nonnegative
+     * integer &lt;i&gt;k&lt;/i&gt; less than {@code len} such that:
+     * &lt;blockquote&gt;&lt;pre&gt;
+     * this.charAt(toffset+k) != other.charAt(ooffset+k)
+     * &lt;/pre&gt;&lt;/blockquote&gt;
+     * &lt;li&gt;{@code ignoreCase} is {@code true} and there is some nonnegative
+     * integer &lt;i&gt;k&lt;/i&gt; less than {@code len} such that:
+     * &lt;blockquote&gt;&lt;pre&gt;
+     * Character.toLowerCase(this.charAt(toffset+k)) !=
+     * Character.toLowerCase(other.charAt(ooffset+k))
+     * &lt;/pre&gt;&lt;/blockquote&gt;
+     * and:
+     * &lt;blockquote&gt;&lt;pre&gt;
+     * Character.toUpperCase(this.charAt(toffset+k)) !=
+     *         Character.toUpperCase(other.charAt(ooffset+k))
+     * &lt;/pre&gt;&lt;/blockquote&gt;
+     * &lt;/ul&gt;
+     *
+     * @param ignoreCase if {@code true}, ignore case when comparing
+     *                   characters.
+     * @param toffset    the starting offset of the subregion in this
+     *                   string.
+     * @param other      the string argument.
+     * @param ooffset    the starting offset of the subregion in the string
+     *                   argument.
+     * @param len        the number of characters to compare.
+     * @return {@code true} if the specified subregion of this string
+     * matches the specified subregion of the string argument;
+     * {@code false} otherwise. Whether the matching is exact
+     * or case insensitive depends on the {@code ignoreCase}
+     * argument.
+     */
+    public boolean regionMatches(boolean ignoreCase, int toffset, CharSeq other, int ooffset, int len) {
+<span class="fc" id="L1564">        return back.regionMatches(ignoreCase, toffset, other.back, ooffset, len);</span>
+    }
+
+    @Override
+    public CharSeq subSequence(int beginIndex, int endIndex) {
+<span class="fc bfc" id="L1569" title="All 2 branches covered.">        if (beginIndex &lt; 0) {</span>
+<span class="fc" id="L1570">            throw new IndexOutOfBoundsException(&quot;begin index &quot; + beginIndex + &quot; &lt; 0&quot;);</span>
+        }
+<span class="fc bfc" id="L1572" title="All 2 branches covered.">        if (endIndex &gt; length()) {</span>
+<span class="fc" id="L1573">            throw new IndexOutOfBoundsException(&quot;endIndex &quot; + endIndex + &quot; &gt; length &quot; + length());</span>
+        }
+<span class="fc" id="L1575">        int subLen = endIndex - beginIndex;</span>
+<span class="fc bfc" id="L1576" title="All 2 branches covered.">        if (subLen &lt; 0) {</span>
+<span class="fc" id="L1577">            throw new IndexOutOfBoundsException(&quot;beginIndex &quot; + beginIndex + &quot; &gt; endIndex &quot; + endIndex);</span>
+        }
+<span class="fc bfc" id="L1579" title="All 4 branches covered.">        if (beginIndex == 0 &amp;&amp; endIndex == length()) {</span>
+<span class="fc" id="L1580">            return this;</span>
+        } else {
+<span class="fc" id="L1582">            return CharSeq.of(back.subSequence(beginIndex, endIndex));</span>
+        }
+    }
+
+    /**
+     * Tests if the substring of this string beginning at the
+     * specified index starts with the specified prefix.
+     *
+     * @param prefix  the prefix.
+     * @param toffset where to begin looking in this string.
+     * @return {@code true} if the character sequence represented by the
+     * argument is a prefix of the substring of this object starting
+     * at index {@code toffset}; {@code false} otherwise.
+     * The result is {@code false} if {@code toffset} is
+     * negative or greater than the length of this
+     * {@code CharSeq} object; otherwise the result is the same
+     * as the result of the expression
+     * &lt;pre&gt;
+     *          this.substring(toffset).startsWith(prefix)
+     *          &lt;/pre&gt;
+     */
+    public boolean startsWith(CharSeq prefix, int toffset) {
+<span class="fc" id="L1604">        return back.startsWith(prefix.back, toffset);</span>
+    }
+
+    /**
+     * Tests if this string starts with the specified prefix.
+     *
+     * @param prefix the prefix.
+     * @return {@code true} if the character sequence represented by the
+     * argument is a prefix of the character sequence represented by
+     * this string; {@code false} otherwise.
+     * Note also that {@code true} will be returned if the
+     * argument is an empty string or is equal to this
+     * {@code CharSeq} object as determined by the
+     * {@link #equals(Object)} method.
+     */
+    public boolean startsWith(CharSeq prefix) {
+<span class="fc" id="L1620">        return back.startsWith(prefix.back);</span>
+    }
+
+    /**
+     * Tests if this string ends with the specified suffix.
+     *
+     * @param suffix the suffix.
+     * @return {@code true} if the character sequence represented by the
+     * argument is a suffix of the character sequence represented by
+     * this object; {@code false} otherwise. Note that the
+     * result will be {@code true} if the argument is the
+     * empty string or is equal to this {@code CharSeq} object
+     * as determined by the {@link #equals(Object)} method.
+     */
+    public boolean endsWith(CharSeq suffix) {
+<span class="fc" id="L1635">        return back.endsWith(suffix.back);</span>
+    }
+
+    /**
+     * Returns the index within this string of the first occurrence of
+     * the specified character. If a character with value
+     * {@code ch} occurs in the character sequence represented by
+     * this {@code CharSeq} object, then the index (in Unicode
+     * code units) of the first such occurrence is returned. For
+     * values of {@code ch} in the range from 0 to 0xFFFF
+     * (inclusive), this is the smallest value &lt;i&gt;k&lt;/i&gt; such that:
+     * &lt;blockquote&gt;&lt;pre&gt;
+     * this.charAt(&lt;i&gt;k&lt;/i&gt;) == ch
+     * &lt;/pre&gt;&lt;/blockquote&gt;
+     * is true. For other values of {@code ch}, it is the
+     * smallest value &lt;i&gt;k&lt;/i&gt; such that:
+     * &lt;blockquote&gt;&lt;pre&gt;
+     * this.codePointAt(&lt;i&gt;k&lt;/i&gt;) == ch
+     * &lt;/pre&gt;&lt;/blockquote&gt;
+     * is true. In either case, if no such character occurs in this
+     * string, then {@code -1} is returned.
+     *
+     * @param ch a character (Unicode code point).
+     * @return the index of the first occurrence of the character in the
+     * character sequence represented by this object, or
+     * {@code -1} if the character does not occur.
+     */
+    public int indexOf(int ch) {
+<span class="fc" id="L1663">        return back.indexOf(ch);</span>
+    }
+
+    /**
+     * Returns the index within this string of the first occurrence of the
+     * specified character, starting the search at the specified index.
+     * &lt;p&gt;
+     * If a character with value {@code ch} occurs in the
+     * character sequence represented by this {@code CharSeq}
+     * object at an index no smaller than {@code fromIndex}, then
+     * the index of the first such occurrence is returned. For values
+     * of {@code ch} in the range from 0 to 0xFFFF (inclusive),
+     * this is the smallest value &lt;i&gt;k&lt;/i&gt; such that:
+     * &lt;blockquote&gt;&lt;pre&gt;
+     * (this.charAt(&lt;i&gt;k&lt;/i&gt;) == ch) {@code &amp;&amp;} (&lt;i&gt;k&lt;/i&gt; &amp;gt;= fromIndex)
+     * &lt;/pre&gt;&lt;/blockquote&gt;
+     * is true. For other values of {@code ch}, it is the
+     * smallest value &lt;i&gt;k&lt;/i&gt; such that:
+     * &lt;blockquote&gt;&lt;pre&gt;
+     * (this.codePointAt(&lt;i&gt;k&lt;/i&gt;) == ch) {@code &amp;&amp;} (&lt;i&gt;k&lt;/i&gt; &amp;gt;= fromIndex)
+     * &lt;/pre&gt;&lt;/blockquote&gt;
+     * is true. In either case, if no such character occurs in this
+     * string at or after position {@code fromIndex}, then
+     * {@code -1} is returned.
+     *
+     * &lt;p&gt;
+     * There is no restriction on the value of {@code fromIndex}. If it
+     * is negative, it has the same effect as if it were zero: this entire
+     * string may be searched. If it is greater than the length of this
+     * string, it has the same effect as if it were equal to the length of
+     * this string: {@code -1} is returned.
+     *
+     * &lt;p&gt;All indices are specified in {@code char} values
+     * (Unicode code units).
+     *
+     * @param ch        a character (Unicode code point).
+     * @param fromIndex the index to start the search from.
+     * @return the index of the first occurrence of the character in the
+     * character sequence represented by this object that is greater
+     * than or equal to {@code fromIndex}, or {@code -1}
+     * if the character does not occur.
+     */
+    public int indexOf(int ch, int fromIndex) {
+<span class="fc" id="L1706">        return back.indexOf(ch, fromIndex);</span>
+    }
+
+    /**
+     * Returns the index within this string of the last occurrence of
+     * the specified character. For values of {@code ch} in the
+     * range from 0 to 0xFFFF (inclusive), the index (in Unicode code
+     * units) returned is the largest value &lt;i&gt;k&lt;/i&gt; such that:
+     * &lt;blockquote&gt;&lt;pre&gt;
+     * this.charAt(&lt;i&gt;k&lt;/i&gt;) == ch
+     * &lt;/pre&gt;&lt;/blockquote&gt;
+     * is true. For other values of {@code ch}, it is the
+     * largest value &lt;i&gt;k&lt;/i&gt; such that:
+     * &lt;blockquote&gt;&lt;pre&gt;
+     * this.codePointAt(&lt;i&gt;k&lt;/i&gt;) == ch
+     * &lt;/pre&gt;&lt;/blockquote&gt;
+     * is true.  In either case, if no such character occurs in this
+     * string, then {@code -1} is returned.  The
+     * {@code CharSeq} is searched backwards starting at the last
+     * character.
+     *
+     * @param ch a character (Unicode code point).
+     * @return the index of the last occurrence of the character in the
+     * character sequence represented by this object, or
+     * {@code -1} if the character does not occur.
+     */
+    public int lastIndexOf(int ch) {
+<span class="fc" id="L1733">        return back.lastIndexOf(ch);</span>
+    }
+
+    /**
+     * Returns the index within this string of the last occurrence of
+     * the specified character, searching backward starting at the
+     * specified index. For values of {@code ch} in the range
+     * from 0 to 0xFFFF (inclusive), the index returned is the largest
+     * value &lt;i&gt;k&lt;/i&gt; such that:
+     * &lt;blockquote&gt;&lt;pre&gt;
+     * (this.charAt(&lt;i&gt;k&lt;/i&gt;) == ch) {@code &amp;&amp;} (&lt;i&gt;k&lt;/i&gt; &amp;lt;= fromIndex)
+     * &lt;/pre&gt;&lt;/blockquote&gt;
+     * is true. For other values of {@code ch}, it is the
+     * largest value &lt;i&gt;k&lt;/i&gt; such that:
+     * &lt;blockquote&gt;&lt;pre&gt;
+     * (this.codePointAt(&lt;i&gt;k&lt;/i&gt;) == ch) {@code &amp;&amp;} (&lt;i&gt;k&lt;/i&gt; &amp;lt;= fromIndex)
+     * &lt;/pre&gt;&lt;/blockquote&gt;
+     * is true. In either case, if no such character occurs in this
+     * string at or before position {@code fromIndex}, then
+     * {@code -1} is returned.
+     *
+     * &lt;p&gt;All indices are specified in {@code char} values
+     * (Unicode code units).
+     *
+     * @param ch        a character (Unicode code point).
+     * @param fromIndex the index to start the search from. There is no
+     *                  restriction on the value of {@code fromIndex}. If it is
+     *                  greater than or equal to the length of this string, it has
+     *                  the same effect as if it were equal to one less than the
+     *                  length of this string: this entire string may be searched.
+     *                  If it is negative, it has the same effect as if it were -1:
+     *                  -1 is returned.
+     * @return the index of the last occurrence of the character in the
+     * character sequence represented by this object that is less
+     * than or equal to {@code fromIndex}, or {@code -1}
+     * if the character does not occur before that point.
+     */
+    public int lastIndexOf(int ch, int fromIndex) {
+<span class="fc" id="L1771">        return back.lastIndexOf(ch, fromIndex);</span>
+    }
+
+    /**
+     * Returns the index within this string of the first occurrence of the
+     * specified substring.
+     *
+     * &lt;p&gt;The returned index is the smallest value &lt;i&gt;k&lt;/i&gt; for which:
+     * &lt;blockquote&gt;&lt;pre&gt;
+     * this.startsWith(str, &lt;i&gt;k&lt;/i&gt;)
+     * &lt;/pre&gt;&lt;/blockquote&gt;
+     * If no such value of &lt;i&gt;k&lt;/i&gt; exists, then {@code -1} is returned.
+     *
+     * @param str the substring to search for.
+     * @return the index of the first occurrence of the specified substring,
+     * or {@code -1} if there is no such occurrence.
+     */
+    public int indexOf(CharSeq str) {
+<span class="fc" id="L1789">        return back.indexOf(str.back);</span>
+    }
+
+    /**
+     * Returns the index within this string of the first occurrence of the
+     * specified substring, starting at the specified index.
+     *
+     * &lt;p&gt;The returned index is the smallest value &lt;i&gt;k&lt;/i&gt; for which:
+     * &lt;blockquote&gt;&lt;pre&gt;
+     * &lt;i&gt;k&lt;/i&gt; &amp;gt;= fromIndex {@code &amp;&amp;} this.startsWith(str, &lt;i&gt;k&lt;/i&gt;)
+     * &lt;/pre&gt;&lt;/blockquote&gt;
+     * If no such value of &lt;i&gt;k&lt;/i&gt; exists, then {@code -1} is returned.
+     *
+     * @param str       the substring to search for.
+     * @param fromIndex the index from which to start the search.
+     * @return the index of the first occurrence of the specified substring,
+     * starting at the specified index,
+     * or {@code -1} if there is no such occurrence.
+     */
+    public int indexOf(CharSeq str, int fromIndex) {
+<span class="fc" id="L1809">        return back.indexOf(str.back, fromIndex);</span>
+    }
+
+    /**
+     * Returns the index within this string of the last occurrence of the
+     * specified substring.  The last occurrence of the empty string &quot;&quot;
+     * is considered to occur at the index value {@code this.length()}.
+     *
+     * &lt;p&gt;The returned index is the largest value &lt;i&gt;k&lt;/i&gt; for which:
+     * &lt;blockquote&gt;&lt;pre&gt;
+     * this.startsWith(str, &lt;i&gt;k&lt;/i&gt;)
+     * &lt;/pre&gt;&lt;/blockquote&gt;
+     * If no such value of &lt;i&gt;k&lt;/i&gt; exists, then {@code -1} is returned.
+     *
+     * @param str the substring to search for.
+     * @return the index of the last occurrence of the specified substring,
+     * or {@code -1} if there is no such occurrence.
+     */
+    public int lastIndexOf(CharSeq str) {
+<span class="fc" id="L1828">        return back.lastIndexOf(str.back);</span>
+    }
+
+    /**
+     * Returns the index within this string of the last occurrence of the
+     * specified substring, searching backward starting at the specified index.
+     *
+     * &lt;p&gt;The returned index is the largest value &lt;i&gt;k&lt;/i&gt; for which:
+     * &lt;blockquote&gt;&lt;pre&gt;
+     * &lt;i&gt;k&lt;/i&gt; {@code &lt;=} fromIndex {@code &amp;&amp;} this.startsWith(str, &lt;i&gt;k&lt;/i&gt;)
+     * &lt;/pre&gt;&lt;/blockquote&gt;
+     * If no such value of &lt;i&gt;k&lt;/i&gt; exists, then {@code -1} is returned.
+     *
+     * @param str       the substring to search for.
+     * @param fromIndex the index to start the search from.
+     * @return the index of the last occurrence of the specified substring,
+     * searching backward from the specified index,
+     * or {@code -1} if there is no such occurrence.
+     */
+    public int lastIndexOf(CharSeq str, int fromIndex) {
+<span class="fc" id="L1848">        return back.lastIndexOf(str.back, fromIndex);</span>
+    }
+
+    /**
+     * Returns a string that is a substring of this string. The
+     * substring begins with the character at the specified index and
+     * extends to the end of this string. &lt;p&gt;
+     * Examples:
+     * &lt;blockquote&gt;&lt;pre&gt;
+     * &quot;unhappy&quot;.substring(2) returns &quot;happy&quot;
+     * &quot;Harbison&quot;.substring(3) returns &quot;bison&quot;
+     * &quot;emptiness&quot;.substring(9) returns &quot;&quot; (an empty string)
+     * &lt;/pre&gt;&lt;/blockquote&gt;
+     *
+     * @param beginIndex the beginning index, inclusive.
+     * @return the specified substring.
+     * @throws IndexOutOfBoundsException if
+     *                                   {@code beginIndex} is negative or larger than the
+     *                                   length of this {@code CharSeq} object.
+     */
+    public CharSeq substring(int beginIndex) {
+<span class="fc" id="L1869">        return CharSeq.of(back.substring(beginIndex));</span>
+    }
+
+    /**
+     * Returns a string that is a substring of this string. The
+     * substring begins at the specified {@code beginIndex} and
+     * extends to the character at index {@code endIndex - 1}.
+     * Thus the length of the substring is {@code endIndex-beginIndex}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;blockquote&gt;&lt;pre&gt;
+     * &quot;hamburger&quot;.substring(4, 8) returns &quot;urge&quot;
+     * &quot;smiles&quot;.substring(1, 5) returns &quot;mile&quot;
+     * &lt;/pre&gt;&lt;/blockquote&gt;
+     *
+     * @param beginIndex the beginning index, inclusive.
+     * @param endIndex   the ending index, exclusive.
+     * @return the specified substring.
+     * @throws IndexOutOfBoundsException if the
+     *                                   {@code beginIndex} is negative, or
+     *                                   {@code endIndex} is larger than the length of
+     *                                   this {@code CharSeq} object, or
+     *                                   {@code beginIndex} is larger than
+     *                                   {@code endIndex}.
+     */
+    public CharSeq substring(int beginIndex, int endIndex) {
+<span class="fc" id="L1895">        return CharSeq.of(back.substring(beginIndex, endIndex));</span>
+    }
+
+    @Override
+    public String stringPrefix() {
+<span class="fc" id="L1900">        return &quot;CharSeq&quot;;</span>
+    }
+
+    /**
+     * Returns a string containing the characters in this sequence in the same
+     * order as this sequence.  The length of the string will be the length of
+     * this sequence.
+     *
+     * @return a string consisting of exactly this sequence of characters
+     */
+    @Override
+    public String toString() {
+<span class="fc" id="L1912">        return back;</span>
+    }
+
+    /**
+     * Concatenates the specified string to the end of this string.
+     * &lt;p&gt;
+     * If the length of the argument string is {@code 0}, then this
+     * {@code CharSeq} object is returned. Otherwise, a
+     * {@code CharSeq} object is returned that represents a character
+     * sequence that is the concatenation of the character sequence
+     * represented by this {@code CharSeq} object and the character
+     * sequence represented by the argument string.&lt;p&gt;
+     * Examples:
+     * &lt;blockquote&gt;&lt;pre&gt;
+     * &quot;cares&quot;.concat(&quot;s&quot;) returns &quot;caress&quot;
+     * &quot;to&quot;.concat(&quot;get&quot;).concat(&quot;her&quot;) returns &quot;together&quot;
+     * &lt;/pre&gt;&lt;/blockquote&gt;
+     *
+     * @param str the {@code CharSeq} that is concatenated to the end
+     *            of this {@code CharSeq}.
+     * @return a string that represents the concatenation of this object's
+     * characters followed by the string argument's characters.
+     */
+    public CharSeq concat(CharSeq str) {
+<span class="fc" id="L1936">        return CharSeq.of(back.concat(str.back));</span>
+    }
+
+    /**
+     * Tells whether or not this string matches the given &lt;a
+     * href=&quot;../util/regex/Pattern.html#sum&quot;&gt;regular expression&lt;/a&gt;.
+     *
+     * &lt;p&gt; An invocation of this method of the form
+     * &lt;i&gt;str&lt;/i&gt;{@code .matches(}&lt;i&gt;regex&lt;/i&gt;{@code )} yields exactly the
+     * same result as the expression
+     *
+     * &lt;blockquote&gt;
+     * {@link java.util.regex.Pattern}.{@link java.util.regex.Pattern#matches(String, CharSequence)
+     * matches(&lt;i&gt;regex&lt;/i&gt;, &lt;i&gt;str&lt;/i&gt;)}
+     * &lt;/blockquote&gt;
+     *
+     * @param regex the regular expression to which this string is to be matched
+     * @return {@code true} if, and only if, this string matches the
+     * given regular expression
+     * @throws PatternSyntaxException if the regular expression's syntax is invalid
+     * @see java.util.regex.Pattern
+     */
+    public boolean matches(String regex) {
+<span class="fc" id="L1959">        return back.matches(regex);</span>
+    }
+
+    /**
+     * Returns true if and only if this string contains the specified
+     * sequence of char values.
+     *
+     * @param s the sequence to search for
+     * @return true if this string contains {@code s}, false otherwise
+     */
+    public boolean contains(CharSequence s) {
+<span class="fc" id="L1970">        return back.contains(s);</span>
+    }
+
+    /**
+     * Replaces the first substring of this string that matches the given &lt;a
+     * href=&quot;../util/regex/Pattern.html#sum&quot;&gt;regular expression&lt;/a&gt; with the
+     * given replacement.
+     *
+     * &lt;p&gt; An invocation of this method of the form
+     * &lt;i&gt;str&lt;/i&gt;{@code .replaceFirst(}&lt;i&gt;regex&lt;/i&gt;{@code ,} &lt;i&gt;repl&lt;/i&gt;{@code )}
+     * yields exactly the same result as the expression
+     *
+     * &lt;blockquote&gt;
+     * &lt;code&gt;
+     * {@link java.util.regex.Pattern}.{@link
+     * java.util.regex.Pattern#compile compile}(&lt;i&gt;regex&lt;/i&gt;).{@link
+     * java.util.regex.Pattern#matcher(java.lang.CharSequence) matcher}(&lt;i&gt;str&lt;/i&gt;).{@link
+     * java.util.regex.Matcher#replaceFirst replaceFirst}(&lt;i&gt;repl&lt;/i&gt;)
+     * &lt;/code&gt;
+     * &lt;/blockquote&gt;
+     *
+     * &lt;p&gt;
+     * Note that backslashes ({@code \}) and dollar signs ({@code $}) in the
+     * replacement string may cause the results to be different than if it were
+     * being treated as a literal replacement string; see
+     * {@link java.util.regex.Matcher#replaceFirst}.
+     * Use {@link java.util.regex.Matcher#quoteReplacement} to suppress the special
+     * meaning of these characters, if desired.
+     *
+     * @param regex       the regular expression to which this string is to be matched
+     * @param replacement the string to be substituted for the first match
+     * @return The resulting {@code CharSeq}
+     * @throws PatternSyntaxException if the regular expression's syntax is invalid
+     * @see java.util.regex.Pattern
+     */
+    public CharSeq replaceFirst(String regex, String replacement) {
+<span class="fc" id="L2006">        return CharSeq.of(back.replaceFirst(regex, replacement));</span>
+    }
+
+    /**
+     * Replaces each substring of this string that matches the given &lt;a
+     * href=&quot;../util/regex/Pattern.html#sum&quot;&gt;regular expression&lt;/a&gt; with the
+     * given replacement.
+     *
+     * &lt;p&gt; An invocation of this method of the form
+     * &lt;i&gt;str&lt;/i&gt;{@code .replaceAll(}&lt;i&gt;regex&lt;/i&gt;{@code ,} &lt;i&gt;repl&lt;/i&gt;{@code )}
+     * yields exactly the same result as the expression
+     *
+     * &lt;blockquote&gt;
+     * &lt;code&gt;
+     * {@link java.util.regex.Pattern}.{@link
+     * java.util.regex.Pattern#compile compile}(&lt;i&gt;regex&lt;/i&gt;).{@link
+     * java.util.regex.Pattern#matcher(java.lang.CharSequence) matcher}(&lt;i&gt;str&lt;/i&gt;).{@link
+     * java.util.regex.Matcher#replaceAll replaceAll}(&lt;i&gt;repl&lt;/i&gt;)
+     * &lt;/code&gt;
+     * &lt;/blockquote&gt;
+     *
+     * &lt;p&gt;
+     * Note that backslashes ({@code \}) and dollar signs ({@code $}) in the
+     * replacement string may cause the results to be different than if it were
+     * being treated as a literal replacement string; see
+     * {@link java.util.regex.Matcher#replaceAll Matcher.replaceAll}.
+     * Use {@link java.util.regex.Matcher#quoteReplacement} to suppress the special
+     * meaning of these characters, if desired.
+     *
+     * @param regex       the regular expression to which this string is to be matched
+     * @param replacement the string to be substituted for each match
+     * @return The resulting {@code CharSeq}
+     * @throws PatternSyntaxException if the regular expression's syntax is invalid
+     * @see java.util.regex.Pattern
+     */
+    public CharSeq replaceAll(String regex, String replacement) {
+<span class="fc" id="L2042">        return CharSeq.of(back.replaceAll(regex, replacement));</span>
+    }
+
+    /**
+     * Replaces each substring of this string that matches the literal target
+     * sequence with the specified literal replacement sequence. The
+     * replacement proceeds from the beginning of the string to the end, for
+     * example, replacing &quot;aa&quot; with &quot;b&quot; in the string &quot;aaa&quot; will result in
+     * &quot;ba&quot; rather than &quot;ab&quot;.
+     *
+     * @param target      The sequence of char values to be replaced
+     * @param replacement The replacement sequence of char values
+     * @return The resulting string
+     */
+    public CharSeq replace(CharSequence target, CharSequence replacement) {
+<span class="fc" id="L2057">        return CharSeq.of(back.replace(target, replacement));</span>
+    }
+
+    /**
+     * Splits this string around matches of the given
+     * &lt;a href=&quot;../util/regex/Pattern.html#sum&quot;&gt;regular expression&lt;/a&gt;.
+     *
+     * &lt;p&gt; The array returned by this method contains each substring of this
+     * string that is terminated by another substring that matches the given
+     * expression or is terminated by the end of the string.  The substrings in
+     * the array are in the order in which they occur in this string.  If the
+     * expression does not match any part of the input then the resulting array
+     * has just one element, namely this string.
+     *
+     * &lt;p&gt; When there is a positive-width match at the beginning of this
+     * string then an empty leading substring is included at the beginning
+     * of the resulting array. A zero-width match at the beginning however
+     * never produces such empty leading substring.
+     *
+     * &lt;p&gt; The {@code limit} parameter controls the number of times the
+     * pattern is applied and therefore affects the length of the resulting
+     * array.  If the limit &lt;i&gt;n&lt;/i&gt; is greater than zero then the pattern
+     * will be applied at most &lt;i&gt;n&lt;/i&gt;&amp;nbsp;-&amp;nbsp;1 times, the array's
+     * length will be no greater than &lt;i&gt;n&lt;/i&gt;, and the array's last entry
+     * will contain all input beyond the last matched delimiter.  If &lt;i&gt;n&lt;/i&gt;
+     * is non-positive then the pattern will be applied as many times as
+     * possible and the array can have any length.  If &lt;i&gt;n&lt;/i&gt; is zero then
+     * the pattern will be applied as many times as possible, the array can
+     * have any length, and trailing empty strings will be discarded.
+     *
+     * &lt;p&gt; The string {@code &quot;boo:and:foo&quot;}, for example, yields the
+     * following results with these parameters:
+     *
+     * &lt;blockquote&gt;&lt;table cellpadding=1 cellspacing=0 summary=&quot;Split example showing regex, limit, and result&quot;&gt;
+     * &lt;tr&gt;
+     * &lt;th&gt;Regex&lt;/th&gt;
+     * &lt;th&gt;Limit&lt;/th&gt;
+     * &lt;th&gt;Result&lt;/th&gt;
+     * &lt;/tr&gt;
+     * &lt;tr&gt;&lt;td align=center&gt;:&lt;/td&gt;
+     * &lt;td align=center&gt;2&lt;/td&gt;
+     * &lt;td&gt;{@code { &quot;boo&quot;, &quot;and:foo&quot; }}&lt;/td&gt;&lt;/tr&gt;
+     * &lt;tr&gt;&lt;td align=center&gt;:&lt;/td&gt;
+     * &lt;td align=center&gt;5&lt;/td&gt;
+     * &lt;td&gt;{@code { &quot;boo&quot;, &quot;and&quot;, &quot;foo&quot; }}&lt;/td&gt;&lt;/tr&gt;
+     * &lt;tr&gt;&lt;td align=center&gt;:&lt;/td&gt;
+     * &lt;td align=center&gt;-2&lt;/td&gt;
+     * &lt;td&gt;{@code { &quot;boo&quot;, &quot;and&quot;, &quot;foo&quot; }}&lt;/td&gt;&lt;/tr&gt;
+     * &lt;tr&gt;&lt;td align=center&gt;o&lt;/td&gt;
+     * &lt;td align=center&gt;5&lt;/td&gt;
+     * &lt;td&gt;{@code { &quot;b&quot;, &quot;&quot;, &quot;:and:f&quot;, &quot;&quot;, &quot;&quot; }}&lt;/td&gt;&lt;/tr&gt;
+     * &lt;tr&gt;&lt;td align=center&gt;o&lt;/td&gt;
+     * &lt;td align=center&gt;-2&lt;/td&gt;
+     * &lt;td&gt;{@code { &quot;b&quot;, &quot;&quot;, &quot;:and:f&quot;, &quot;&quot;, &quot;&quot; }}&lt;/td&gt;&lt;/tr&gt;
+     * &lt;tr&gt;&lt;td align=center&gt;o&lt;/td&gt;
+     * &lt;td align=center&gt;0&lt;/td&gt;
+     * &lt;td&gt;{@code { &quot;b&quot;, &quot;&quot;, &quot;:and:f&quot; }}&lt;/td&gt;&lt;/tr&gt;
+     * &lt;/table&gt;&lt;/blockquote&gt;
+     *
+     * &lt;p&gt; An invocation of this method of the form
+     * &lt;i&gt;str.&lt;/i&gt;{@code split(}&lt;i&gt;regex&lt;/i&gt;{@code ,}&amp;nbsp;&lt;i&gt;n&lt;/i&gt;{@code )}
+     * yields the same result as the expression
+     *
+     * &lt;blockquote&gt;
+     * &lt;code&gt;
+     * {@link java.util.regex.Pattern}.{@link
+     * java.util.regex.Pattern#compile compile}(&lt;i&gt;regex&lt;/i&gt;).{@link
+     * java.util.regex.Pattern#split(java.lang.CharSequence, int) split}(&lt;i&gt;str&lt;/i&gt;,&amp;nbsp;&lt;i&gt;n&lt;/i&gt;)
+     * &lt;/code&gt;
+     * &lt;/blockquote&gt;
+     *
+     * @param regex the delimiting regular expression
+     * @param limit the result threshold, as described above
+     * @return the array of strings computed by splitting this string
+     * around matches of the given regular expression
+     * @throws PatternSyntaxException if the regular expression's syntax is invalid
+     * @see java.util.regex.Pattern
+     */
+    public CharSeq[] split(String regex, int limit) {
+<span class="fc" id="L2136">        final String[] javaStrings = back.split(regex, limit);</span>
+<span class="fc" id="L2137">        final CharSeq[] strings = new CharSeq[javaStrings.length];</span>
+<span class="fc bfc" id="L2138" title="All 2 branches covered.">        for (int i = 0; i &lt; strings.length; i++) {</span>
+<span class="fc" id="L2139">            strings[i] = of(javaStrings[i]);</span>
+        }
+<span class="fc" id="L2141">        return strings;</span>
+    }
+
+    /**
+     * Splits this string around matches of the given &lt;a
+     * href=&quot;../util/regex/Pattern.html#sum&quot;&gt;regular expression&lt;/a&gt;.
+     *
+     * &lt;p&gt; This method works as if by invoking the two-argument {@link
+     * #split(String, int) split} method with the given expression and a limit
+     * argument of zero.  Trailing empty strings are therefore not included in
+     * the resulting array.
+     *
+     * &lt;p&gt; The string {@code &quot;boo:and:foo&quot;}, for example, yields the following
+     * results with these expressions:
+     *
+     * &lt;blockquote&gt;&lt;table cellpadding=1 cellspacing=0 summary=&quot;Split examples showing regex and result&quot;&gt;
+     * &lt;tr&gt;
+     * &lt;th&gt;Regex&lt;/th&gt;
+     * &lt;th&gt;Result&lt;/th&gt;
+     * &lt;/tr&gt;
+     * &lt;tr&gt;&lt;td align=center&gt;:&lt;/td&gt;
+     * &lt;td&gt;{@code { &quot;boo&quot;, &quot;and&quot;, &quot;foo&quot; }}&lt;/td&gt;&lt;/tr&gt;
+     * &lt;tr&gt;&lt;td align=center&gt;o&lt;/td&gt;
+     * &lt;td&gt;{@code { &quot;b&quot;, &quot;&quot;, &quot;:and:f&quot; }}&lt;/td&gt;&lt;/tr&gt;
+     * &lt;/table&gt;&lt;/blockquote&gt;
+     *
+     * @param regex the delimiting regular expression
+     * @return the array of strings computed by splitting this string
+     * around matches of the given regular expression
+     * @throws PatternSyntaxException if the regular expression's syntax is invalid
+     * @see java.util.regex.Pattern
+     */
+    public CharSeq[] split(String regex) {
+<span class="fc" id="L2174">        return split(regex, 0);</span>
+    }
+
+    /**
+     * Converts all of the characters in this {@code CharSeq} to lower
+     * case using the rules of the given {@code Locale}.  Case mapping is based
+     * on the Unicode Standard version specified by the {@link java.lang.Character Character}
+     * class. Since case mappings are not always 1:1 char mappings, the resulting
+     * {@code CharSeq} may be a different length than the original {@code CharSeq}.
+     * &lt;p&gt;
+     * Examples of lowercase  mappings are in the following table:
+     * &lt;table border=&quot;1&quot; summary=&quot;Lowercase mapping examples showing language code of locale, upper case, lower case, and description&quot;&gt;
+     * &lt;tr&gt;
+     * &lt;th&gt;Language Code of Locale&lt;/th&gt;
+     * &lt;th&gt;Upper Case&lt;/th&gt;
+     * &lt;th&gt;Lower Case&lt;/th&gt;
+     * &lt;th&gt;Description&lt;/th&gt;
+     * &lt;/tr&gt;
+     * &lt;tr&gt;
+     * &lt;td&gt;tr (Turkish)&lt;/td&gt;
+     * &lt;td&gt;&amp;#92;u0130&lt;/td&gt;
+     * &lt;td&gt;&amp;#92;u0069&lt;/td&gt;
+     * &lt;td&gt;capital letter I with dot above -&amp;gt; small letter i&lt;/td&gt;
+     * &lt;/tr&gt;
+     * &lt;tr&gt;
+     * &lt;td&gt;tr (Turkish)&lt;/td&gt;
+     * &lt;td&gt;&amp;#92;u0049&lt;/td&gt;
+     * &lt;td&gt;&amp;#92;u0131&lt;/td&gt;
+     * &lt;td&gt;capital letter I -&amp;gt; small letter dotless i &lt;/td&gt;
+     * &lt;/tr&gt;
+     * &lt;tr&gt;
+     * &lt;td&gt;(all)&lt;/td&gt;
+     * &lt;td&gt;French Fries&lt;/td&gt;
+     * &lt;td&gt;french fries&lt;/td&gt;
+     * &lt;td&gt;lowercased all chars in String&lt;/td&gt;
+     * &lt;/tr&gt;
+     * &lt;tr&gt;
+     * &lt;td&gt;(all)&lt;/td&gt;
+     * &lt;td&gt;&lt;img src=&quot;doc-files/capiota.gif&quot; alt=&quot;capiota&quot;&gt;&lt;img src=&quot;doc-files/capchi.gif&quot; alt=&quot;capchi&quot;&gt;
+     * &lt;img src=&quot;doc-files/captheta.gif&quot; alt=&quot;captheta&quot;&gt;&lt;img src=&quot;doc-files/capupsil.gif&quot; alt=&quot;capupsil&quot;&gt;
+     * &lt;img src=&quot;doc-files/capsigma.gif&quot; alt=&quot;capsigma&quot;&gt;&lt;/td&gt;
+     * &lt;td&gt;&lt;img src=&quot;doc-files/iota.gif&quot; alt=&quot;iota&quot;&gt;&lt;img src=&quot;doc-files/chi.gif&quot; alt=&quot;chi&quot;&gt;
+     * &lt;img src=&quot;doc-files/theta.gif&quot; alt=&quot;theta&quot;&gt;&lt;img src=&quot;doc-files/upsilon.gif&quot; alt=&quot;upsilon&quot;&gt;
+     * &lt;img src=&quot;doc-files/sigma1.gif&quot; alt=&quot;sigma&quot;&gt;&lt;/td&gt;
+     * &lt;td&gt;lowercased all chars in String&lt;/td&gt;
+     * &lt;/tr&gt;
+     * &lt;/table&gt;
+     *
+     * @param locale use the case transformation rules for this locale
+     * @return the {@code CharSeq}, converted to lowercase.
+     * @see String#toLowerCase()
+     * @see String#toUpperCase()
+     * @see String#toUpperCase(Locale)
+     */
+    public CharSeq toLowerCase(Locale locale) {
+<span class="fc" id="L2229">        return CharSeq.of(back.toLowerCase(locale));</span>
+    }
+
+    /**
+     * Converts all of the characters in this {@code CharSeq} to lower
+     * case using the rules of the default locale. This is equivalent to calling
+     * {@code toLowerCase(Locale.getDefault())}.
+     * &lt;p&gt;
+     * &lt;b&gt;Note:&lt;/b&gt; This method is locale sensitive, and may produce unexpected
+     * results if used for strings that are intended to be interpreted locale
+     * independently.
+     * Examples are programming language identifiers, protocol keys, and HTML
+     * tags.
+     * For instance, {@code &quot;TITLE&quot;.toLowerCase()} in a Turkish locale
+     * returns {@code &quot;t\u005Cu0131tle&quot;}, where '\u005Cu0131' is the
+     * LATIN SMALL LETTER DOTLESS I character.
+     * To obtain correct results for locale insensitive strings, use
+     * {@code toLowerCase(Locale.ROOT)}.
+     * &lt;p&gt;
+     *
+     * @return the {@code CharSeq}, converted to lowercase.
+     * @see String#toLowerCase(Locale)
+     */
+    public CharSeq toLowerCase() {
+<span class="fc" id="L2253">        return CharSeq.of(back.toLowerCase(Locale.getDefault()));</span>
+    }
+
+    /**
+     * Converts all of the characters in this {@code CharSeq} to upper
+     * case using the rules of the given {@code Locale}. Case mapping is based
+     * on the Unicode Standard version specified by the {@link java.lang.Character Character}
+     * class. Since case mappings are not always 1:1 char mappings, the resulting
+     * {@code CharSeq} may be a different length than the original {@code CharSeq}.
+     * &lt;p&gt;
+     * Examples of locale-sensitive and 1:M case mappings are in the following table.
+     *
+     * &lt;table border=&quot;1&quot; summary=&quot;Examples of locale-sensitive and 1:M case mappings. Shows Language code of locale, lower case, upper case, and description.&quot;&gt;
+     * &lt;tr&gt;
+     * &lt;th&gt;Language Code of Locale&lt;/th&gt;
+     * &lt;th&gt;Lower Case&lt;/th&gt;
+     * &lt;th&gt;Upper Case&lt;/th&gt;
+     * &lt;th&gt;Description&lt;/th&gt;
+     * &lt;/tr&gt;
+     * &lt;tr&gt;
+     * &lt;td&gt;tr (Turkish)&lt;/td&gt;
+     * &lt;td&gt;&amp;#92;u0069&lt;/td&gt;
+     * &lt;td&gt;&amp;#92;u0130&lt;/td&gt;
+     * &lt;td&gt;small letter i -&amp;gt; capital letter I with dot above&lt;/td&gt;
+     * &lt;/tr&gt;
+     * &lt;tr&gt;
+     * &lt;td&gt;tr (Turkish)&lt;/td&gt;
+     * &lt;td&gt;&amp;#92;u0131&lt;/td&gt;
+     * &lt;td&gt;&amp;#92;u0049&lt;/td&gt;
+     * &lt;td&gt;small letter dotless i -&amp;gt; capital letter I&lt;/td&gt;
+     * &lt;/tr&gt;
+     * &lt;tr&gt;
+     * &lt;td&gt;(all)&lt;/td&gt;
+     * &lt;td&gt;&amp;#92;u00df&lt;/td&gt;
+     * &lt;td&gt;&amp;#92;u0053 &amp;#92;u0053&lt;/td&gt;
+     * &lt;td&gt;small letter sharp s -&amp;gt; two letters: SS&lt;/td&gt;
+     * &lt;/tr&gt;
+     * &lt;tr&gt;
+     * &lt;td&gt;(all)&lt;/td&gt;
+     * &lt;td&gt;Fahrvergn&amp;uuml;gen&lt;/td&gt;
+     * &lt;td&gt;FAHRVERGN&amp;Uuml;GEN&lt;/td&gt;
+     * &lt;td&gt;&lt;/td&gt;
+     * &lt;/tr&gt;
+     * &lt;/table&gt;
+     *
+     * @param locale use the case transformation rules for this locale
+     * @return the {@code CharSeq}, converted to uppercase.
+     * @see String#toUpperCase()
+     * @see String#toLowerCase()
+     * @see String#toLowerCase(Locale)
+     */
+    public CharSeq toUpperCase(Locale locale) {
+<span class="fc" id="L2305">        return CharSeq.of(back.toUpperCase(locale));</span>
+    }
+
+    /**
+     * Converts all of the characters in this {@code CharSeq} to upper
+     * case using the rules of the default locale. This method is equivalent to
+     * {@code toUpperCase(Locale.getDefault())}.
+     * &lt;p&gt;
+     * &lt;b&gt;Note:&lt;/b&gt; This method is locale sensitive, and may produce unexpected
+     * results if used for strings that are intended to be interpreted locale
+     * independently.
+     * Examples are programming language identifiers, protocol keys, and HTML
+     * tags.
+     * For instance, {@code &quot;title&quot;.toUpperCase()} in a Turkish locale
+     * returns {@code &quot;T\u005Cu0130TLE&quot;}, where '\u005Cu0130' is the
+     * LATIN CAPITAL LETTER I WITH DOT ABOVE character.
+     * To obtain correct results for locale insensitive strings, use
+     * {@code toUpperCase(Locale.ROOT)}.
+     * &lt;p&gt;
+     *
+     * @return the {@code CharSeq}, converted to uppercase.
+     * @see String#toUpperCase(Locale)
+     */
+    public CharSeq toUpperCase() {
+<span class="fc" id="L2329">        return CharSeq.of(back.toUpperCase(Locale.getDefault()));</span>
+    }
+
+    /**
+     * Returns a string whose value is this string, with any leading and trailing
+     * whitespace removed.
+     * &lt;p&gt;
+     * If this {@code CharSeq} object represents an empty character
+     * sequence, or the first and last characters of character sequence
+     * represented by this {@code CharSeq} object both have codes
+     * greater than {@code '\u005Cu0020'} (the space character), then a
+     * reference to this {@code CharSeq} object is returned.
+     * &lt;p&gt;
+     * Otherwise, if there is no character with a code greater than
+     * {@code '\u005Cu0020'} in the string, then a
+     * {@code CharSeq} object representing an empty string is
+     * returned.
+     * &lt;p&gt;
+     * Otherwise, let &lt;i&gt;k&lt;/i&gt; be the index of the first character in the
+     * string whose code is greater than {@code '\u005Cu0020'}, and let
+     * &lt;i&gt;m&lt;/i&gt; be the index of the last character in the string whose code
+     * is greater than {@code '\u005Cu0020'}. A {@code CharSeq}
+     * object is returned, representing the substring of this string that
+     * begins with the character at index &lt;i&gt;k&lt;/i&gt; and ends with the
+     * character at index &lt;i&gt;m&lt;/i&gt;-that is, the result of
+     * {@code this.substring(k, m + 1)}.
+     * &lt;p&gt;
+     * This method may be used to trim whitespace (as defined above) from
+     * the beginning and end of a string.
+     *
+     * @return A string whose value is this string, with any leading and trailing white
+     * space removed, or this string if it has no leading or
+     * trailing white space.
+     */
+    public CharSeq trim() {
+<span class="fc" id="L2364">        return of(back.trim());</span>
+    }
+
+    /**
+     * Converts this string to a new character array.
+     *
+     * @return a newly allocated character array whose length is the length
+     * of this string and whose contents are initialized to contain
+     * the character sequence represented by this string.
+     */
+    public char[] toCharArray() {
+<span class="fc" id="L2375">        return back.toCharArray();</span>
+    }
+
+    @FunctionalInterface
+    interface CharUnaryOperator {
+        char apply(char c);
+    }
+
+    @FunctionalInterface
+    interface CharFunction&lt;R&gt; {
+        R apply(char c);
+    }
+}
+
+interface CharSeqModule {
+
+    interface Combinations {
+
+        static IndexedSeq&lt;CharSeq&gt; apply(CharSeq elements, int k) {
+<span class="fc bfc" id="L2394" title="All 2 branches covered.">            if (k == 0) {</span>
+<span class="fc" id="L2395">                return Vector.of(CharSeq.empty());</span>
+            } else {
+<span class="fc" id="L2397">                return elements.zipWithIndex().flatMap(</span>
+<span class="fc" id="L2398">                        t -&gt; apply(elements.drop(t._2 + 1), (k - 1)).map((CharSeq c) -&gt; c.prepend(t._1))</span>
+                );
+            }
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

@@ -1,0 +1,414 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Gen.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang.test</a> &gt; <span class="el_source">Gen.java</span></div><h1>Gen.java</h1><pre class="source lang-java linenums">/*     / \____  _    ______   _____ / \____   ____  _____
+ *    /  \__  \/ \  / \__  \ /  __//  \__  \ /    \/ __  \   Javaslang
+ *  _/  // _\  \  \/  / _\  \\_  \/  // _\  \  /\  \__/  /   Copyright 2014-2015 Daniel Dietrich
+ * /___/ \_____/\____/\_____/____/\___\_____/_/  \_/____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang.test;
+
+import javaslang.Function1;
+import javaslang.Tuple2;
+import javaslang.Value;
+import javaslang.algebra.Monad;
+import javaslang.collection.Iterator;
+import javaslang.collection.Stream;
+import javaslang.control.Match;
+
+import java.util.Objects;
+import java.util.Random;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
+/**
+ * Generators are the building blocks for providing arbitrary objects.
+ * &lt;p&gt;
+ * To ease the creation of Arbitraries, Gen is a FunctionalInterface which extends {@code Function&lt;Random, T&gt;}.
+ * &lt;p&gt;
+ * Gen objects are obtained via one of the methods {@code choose}, {@code fail}, {@code frequency}, {@code of} and
+ * {@code oneOf}.
+ * &lt;p&gt;
+ * Given Gen objects may be transformed using one of the methods {@code filter}, {@code map} and {@code flatMap}.
+ * &lt;p&gt;
+ * A simple way to obtain an Arbitrary of a Gen is to call {@linkplain javaslang.test.Gen#arbitrary()}.
+ * This will ignore the size hint of Arbitrary.
+ *
+ * @param &lt;T&gt; type of generated objects
+ * @author Daniel Dietrich
+ * @see javaslang.test.Arbitrary
+ * @since 1.2.0
+ */
+@FunctionalInterface
+public interface Gen&lt;T&gt; extends Monad&lt;T&gt;, Value&lt;T&gt;, Function1&lt;Random, T&gt;, Supplier&lt;T&gt; {
+
+    long serialVersionUID = 1L;
+
+    int FILTER_THRESHOLD = Integer.MAX_VALUE;
+
+    /**
+     * Functional interface of this generator.
+     *
+     * @param random a random number generator
+     * @return A generated value of type T.
+     */
+    @Override
+    T apply(Random random);
+
+    /**
+     * A generator which constantly returns t.
+     *
+     * @param t   A value.
+     * @param &lt;T&gt; Type of t.
+     * @return A new T generator
+     */
+    static &lt;T&gt; Gen&lt;T&gt; of(T t) {
+<span class="fc" id="L65">        return ignored -&gt; t;</span>
+    }
+
+    static &lt;T&gt; Gen&lt;T&gt; of(T seed, Function&lt;? super T, ? extends T&gt; next) {
+<span class="fc" id="L69">        final Iterator&lt;T&gt; iterator = Stream.gen(seed, next).iterator();</span>
+<span class="fc" id="L70">        return ignored -&gt; iterator.next();</span>
+    }
+
+    /**
+     * Chooses an int between min and max, bounds inclusive and numbers distributed according to the distribution of
+     * the underlying random number generator.
+     * &lt;p&gt;
+     * Note: min and max are internally swapped if min &amp;gt; max.
+     *
+     * @param min lower bound
+     * @param max upper bound
+     * @return A new int generator
+     */
+    static Gen&lt;Integer&gt; choose(int min, int max) {
+<span class="fc bfc" id="L84" title="All 2 branches covered.">        if (min == max) {</span>
+<span class="fc" id="L85">            return ignored -&gt; min;</span>
+        } else {
+<span class="fc" id="L87">            final int _min = Math.min(min, max);</span>
+<span class="fc" id="L88">            final int _max = Math.max(min, max);</span>
+<span class="fc" id="L89">            return rng -&gt; rng.nextInt(Math.abs(_max - _min) + 1) + _min;</span>
+        }
+    }
+
+    /**
+     * Chooses a long between min and max, bounds inclusive and numbers distributed according to the distribution of
+     * the underlying random number generator.
+     * &lt;p&gt;
+     * Note: min and max are internally swapped if min &amp;gt; max.
+     *
+     * @param min lower bound
+     * @param max upper bound
+     * @return A new long generator
+     */
+    static Gen&lt;Long&gt; choose(long min, long max) {
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        if (min == max) {</span>
+<span class="fc" id="L105">            return ignored -&gt; min;</span>
+        } else {
+<span class="fc" id="L107">            return random -&gt; {</span>
+<span class="fc" id="L108">                final double d = random.nextDouble();</span>
+<span class="fc" id="L109">                final long _min = Math.min(min, max);</span>
+<span class="fc" id="L110">                final long _max = Math.max(min, max);</span>
+<span class="fc" id="L111">                return (long) ((d * _max) + ((1.0 - d) * _min) + d);</span>
+            };
+        }
+    }
+
+    /**
+     * Chooses a double between min and max, bounds inclusive and numbers distributed according to the distribution
+     * of the underlying random number generator.
+     * &lt;p&gt;
+     * Note: min and max are internally swapped if min &amp;gt; max.
+     *
+     * @param min lower bound
+     * @param max upper bound
+     * @return A new double generator
+     * @throws IllegalArgumentException if min or max is infinite, min or max is not a number (NaN)
+     */
+    static Gen&lt;Double&gt; choose(double min, double max) {
+<span class="fc bfc" id="L128" title="All 2 branches covered.">        if (Double.isInfinite(min)) {</span>
+<span class="fc" id="L129">            throw new IllegalArgumentException(&quot;min is infinite&quot;);</span>
+        }
+<span class="fc bfc" id="L131" title="All 2 branches covered.">        if (Double.isInfinite(max)) {</span>
+<span class="fc" id="L132">            throw new IllegalArgumentException(&quot;max is infinite&quot;);</span>
+        }
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        if (Double.isNaN(min)) {</span>
+<span class="fc" id="L135">            throw new IllegalArgumentException(&quot;min is not a number (NaN)&quot;);</span>
+        }
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        if (Double.isNaN(max)) {</span>
+<span class="fc" id="L138">            throw new IllegalArgumentException(&quot;max is not a number (NaN)&quot;);</span>
+        }
+<span class="fc bfc" id="L140" title="All 2 branches covered.">        if (min == max) {</span>
+<span class="fc" id="L141">            return ignored -&gt; min;</span>
+        } else {
+<span class="fc" id="L143">            return random -&gt; {</span>
+<span class="fc" id="L144">                final double d = random.nextDouble();</span>
+<span class="fc" id="L145">                final double _min = Math.min(min, max);</span>
+<span class="fc" id="L146">                final double _max = Math.max(min, max);</span>
+<span class="fc" id="L147">                return d * _max + (1.0 - d) * _min;</span>
+            };
+        }
+    }
+
+    /**
+     * Chooses a char between min and max, bounds inclusive and chars distributed according to the underlying random
+     * number generator.
+     * &lt;p&gt;
+     * Note: min and max are internally swapped if min &amp;gt; max.
+     *
+     * @param min lower bound
+     * @param max upper bound
+     * @return A new char generator
+     */
+    static Gen&lt;Character&gt; choose(char min, char max) {
+<span class="fc bfc" id="L163" title="All 2 branches covered.">        if (min == max) {</span>
+<span class="fc" id="L164">            return ignored -&gt; min;</span>
+        } else {
+<span class="fc" id="L166">            return random -&gt; (char) (int) Gen.choose((int) min, (int) max).apply(random);</span>
+        }
+    }
+
+    /**
+     * A failing generator which throws a RuntimeException(&quot;failed&quot;).
+     *
+     * @param &lt;T&gt; Type of values theoretically generated.
+     * @return A new generator which always fails with the message &quot;failed&quot;
+     */
+    static &lt;T&gt; Gen&lt;T&gt; fail() {
+<span class="fc" id="L177">        return fail(&quot;failed&quot;);</span>
+    }
+
+    /**
+     * A failing generator which throws a RuntimeException.
+     *
+     * @param message Message thrown.
+     * @param &lt;T&gt;     Type of values theoretically generated.
+     * @return A new generator which always fails with the given message
+     */
+    static &lt;T&gt; Gen&lt;T&gt; fail(String message) {
+<span class="fc" id="L188">        return ignored -&gt; {</span>
+<span class="fc" id="L189">            throw new RuntimeException(message);</span>
+        };
+    }
+
+    /**
+     * Chooses one of the given generators according to their frequency.
+     *
+     * @param generators A non-empty array of Tuples (frequency, generator)
+     * @param &lt;T&gt;        Type to be generated
+     * @return A new T generator
+     * @throws java.lang.NullPointerException     if generators is null
+     * @throws java.lang.IllegalArgumentException if generators is empty
+     */
+    @SuppressWarnings(&quot;varargs&quot;)
+    @SafeVarargs
+    static &lt;T&gt; Gen&lt;T&gt; frequency(Tuple2&lt;Integer, Gen&lt;T&gt;&gt;... generators) {
+<span class="fc" id="L205">        Objects.requireNonNull(generators, &quot;generators is null&quot;);</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">        if (generators.length == 0) {</span>
+<span class="fc" id="L207">            throw new IllegalArgumentException(&quot;generators is empty&quot;);</span>
+        }
+<span class="fc" id="L209">        final Iterable&lt;Tuple2&lt;Integer, Gen&lt;T&gt;&gt;&gt; iterable = Stream.of(generators);</span>
+<span class="fc" id="L210">        return frequency(iterable);</span>
+    }
+
+    /**
+     * Chooses one of the given generators according to their frequency.
+     *
+     * @param generators A non-empty traversable of Tuples (frequency, generator)
+     * @param &lt;T&gt;        Type to be generated
+     * @return A new T generator
+     * @throws java.lang.NullPointerException     if generators is null
+     * @throws java.lang.IllegalArgumentException if generators is empty
+     */
+    static &lt;T&gt; Gen&lt;T&gt; frequency(Iterable&lt;Tuple2&lt;Integer, Gen&lt;T&gt;&gt;&gt; generators) {
+<span class="fc" id="L223">        Objects.requireNonNull(generators, &quot;generators is null&quot;);</span>
+<span class="fc" id="L224">        final Stream&lt;Tuple2&lt;Integer, Gen&lt;T&gt;&gt;&gt; stream = Stream.ofAll(generators);</span>
+<span class="fc bfc" id="L225" title="All 2 branches covered.">        if (stream.isEmpty()) {</span>
+<span class="fc" id="L226">            throw new IllegalArgumentException(&quot;generators is empty&quot;);</span>
+        }
+<span class="fc" id="L228">        final class Frequency {</span>
+            Gen&lt;T&gt; gen(int n, Stream&lt;Tuple2&lt;Integer, Gen&lt;T&gt;&gt;&gt; stream) {
+<span class="fc" id="L230">                final int k = stream.head()._1;</span>
+<span class="fc bfc" id="L231" title="All 2 branches covered.">                if (k &lt; 0) {</span>
+<span class="fc" id="L232">                    throw new IllegalArgumentException(&quot;negative frequency: &quot; + k);</span>
+                }
+<span class="fc bfc" id="L234" title="All 2 branches covered.">                return (n &lt;= k) ? stream.head()._2 : gen(n - k, stream.tail());</span>
+            }
+        }
+<span class="fc" id="L237">        final int size = stream.map(t -&gt; t._1).sum().intValue();</span>
+<span class="fc" id="L238">        return choose(1, size).flatMap(n -&gt; new Frequency().gen(n, stream));</span>
+    }
+
+    /**
+     * Randomly chooses one of the given generators.
+     *
+     * @param generators A non-empty array of generators
+     * @param &lt;T&gt;        Type to be generated
+     * @return A new T generator
+     * @throws java.lang.NullPointerException     if generators is null
+     * @throws java.lang.IllegalArgumentException if generators is empty
+     */
+    @SafeVarargs
+    static &lt;T&gt; Gen&lt;T&gt; oneOf(Gen&lt;T&gt;... generators) {
+<span class="fc" id="L252">        Objects.requireNonNull(generators, &quot;generators is null&quot;);</span>
+<span class="fc bfc" id="L253" title="All 2 branches covered.">        if (generators.length == 0) {</span>
+<span class="fc" id="L254">            throw new IllegalArgumentException(&quot;generators is empty&quot;);</span>
+        }
+<span class="fc" id="L256">        return choose(0, generators.length - 1).flatMap(i -&gt; generators[i]);</span>
+    }
+
+    /**
+     * Randomly chooses one of the given generators.
+     *
+     * @param generators A non-empty Iterable of generators
+     * @param &lt;T&gt;        Type to be generated
+     * @return A new T generator
+     * @throws java.lang.NullPointerException     if generators is null
+     * @throws java.lang.IllegalArgumentException if generators is empty
+     */
+    static &lt;T&gt; Gen&lt;T&gt; oneOf(Iterable&lt;Gen&lt;T&gt;&gt; generators) {
+<span class="fc" id="L269">        Objects.requireNonNull(generators, &quot;generators is null&quot;);</span>
+<span class="fc" id="L270">        final Stream&lt;Gen&lt;T&gt;&gt; stream = Stream.ofAll(generators);</span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">        if (stream.isEmpty()) {</span>
+<span class="fc" id="L272">            throw new IllegalArgumentException(&quot;generators is empty&quot;);</span>
+        }
+        @SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L275">        final Gen&lt;T&gt;[] array = stream.toJavaArray((Class&lt;Gen&lt;T&gt;&gt;) (Object) Gen.class);</span>
+<span class="fc" id="L276">        return oneOf(array);</span>
+    }
+
+    /**
+     * Converts this Gen to an Arbitrary
+     *
+     * @return An arbitrary which returns this generator regardless of the provided size hint n
+     */
+    default Arbitrary&lt;T&gt; arbitrary() {
+<span class="fc" id="L285">        return n -&gt; this;</span>
+    }
+
+    /**
+     * Returns a generator based on this generator which produces values that fulfill the given predicate.
+     *
+     * @param predicate A predicate
+     * @return A new generator
+     */
+    @Override
+    default Gen&lt;T&gt; filter(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L296">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L297">        return random -&gt; {</span>
+<span class="fc" id="L298">            int count = 0;</span>
+            T t;
+<span class="fc bfc" id="L300" title="All 2 branches covered.">            while (!predicate.test(t = apply(random))) {</span>
+                // it may take a looooooong time to hit this condition!
+<span class="fc bfc" id="L302" title="All 2 branches covered.">                if (++count == FILTER_THRESHOLD) {</span>
+<span class="fc" id="L303">                    throw new IllegalStateException(&quot;empty filter&quot;);</span>
+                }
+            }
+<span class="fc" id="L306">            return t;</span>
+        };
+    }
+
+    @Override
+    default Gen&lt;T&gt; filterNot(Predicate&lt;? super T&gt; predicate) {
+<span class="nc" id="L312">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="nc" id="L313">        return filter(predicate.negate());</span>
+    }
+
+    /**
+     * Maps generated Ts to Us.
+     *
+     * @param mapper A function that maps a generated T to a new generator which generates objects of type U.
+     * @param &lt;U&gt;    Type of generated objects of the new generator
+     * @return A new generator
+     */
+    @Override
+    default &lt;U&gt; Gen&lt;U&gt; flatMap(Function&lt;? super T, ? extends Iterable&lt;? extends U&gt;&gt; mapper) {
+<span class="fc" id="L325">        Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+<span class="fc" id="L326">        return random -&gt; unit(mapper.apply(apply(random))).apply(random);</span>
+    }
+
+    /**
+     * Maps generated Ts to Us.
+     *
+     * @param mapper A function that maps a generated T to an object of type U.
+     * @param &lt;U&gt;    Type of the mapped object
+     * @return A new generator
+     */
+    @Override
+    default &lt;U&gt; Gen&lt;U&gt; map(Function&lt;? super T, ? extends U&gt; mapper) {
+<span class="fc" id="L338">        Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+<span class="fc" id="L339">        return random -&gt; mapper.apply(apply(random));</span>
+    }
+
+    @Override
+    default Match.MatchMonad.Of&lt;Gen&lt;T&gt;&gt; match() {
+<span class="nc" id="L344">        return Match.of(this);</span>
+    }
+
+    @Override
+    default Gen&lt;T&gt; peek(Consumer&lt;? super T&gt; action) {
+<span class="fc" id="L349">        return random -&gt; {</span>
+<span class="fc" id="L350">            final T t = apply(random);</span>
+<span class="fc" id="L351">            action.accept(t);</span>
+<span class="fc" id="L352">            return t;</span>
+        };
+    }
+
+    /**
+     * Transforms this {@code Gen}.
+     *
+     * @param f   A transformation
+     * @param &lt;U&gt; Type of transformation result
+     * @return An instance of type {@code U}
+     * @throws NullPointerException if {@code f} is null
+     */
+    default &lt;U&gt; U transform(Function&lt;? super Gen&lt;? super T&gt;, ? extends U&gt; f) {
+<span class="nc" id="L365">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="nc" id="L366">        return f.apply(this);</span>
+    }
+    
+    @SuppressWarnings(&quot;unchecked&quot;)
+	default &lt;U&gt; Gen&lt;U&gt; unit(Iterable&lt;? extends U&gt; iterable) {
+<span class="pc bpc" id="L371" title="1 of 2 branches missed.">    	if (iterable instanceof Gen) {</span>
+<span class="fc" id="L372">    		return (Gen&lt;U&gt;) iterable;</span>
+    	} else {
+<span class="nc" id="L374">    		final Stream&lt;Gen&lt;U&gt;&gt; generators = Stream.ofAll(iterable).map(u -&gt; Gen.of(u));</span>
+<span class="nc" id="L375">    		return oneOf(generators);</span>
+    	}
+    }
+
+    @Override
+    default T get() {
+<span class="fc" id="L381">        return apply(Checkable.RNG.get());</span>
+    }
+
+    @Override
+    default boolean isEmpty() {
+<span class="fc" id="L386">        return false;</span>
+    }
+
+    /**
+     * This is philosophical. We see a {@code Gen} as single-valued type which holds a variable random value.
+     *
+     * @return {@code true}
+     */
+    @Override
+    default boolean isSingleValued() {
+<span class="nc" id="L396">        return true;</span>
+    }
+
+    /**
+     * Iterator of &lt;em&gt;one&lt;/em&gt; generated value using the default random generator {@link Checkable#RNG}.
+     *
+     * @return A new Iterator having one value.
+     */
+    @Override
+    default Iterator&lt;T&gt; iterator() {
+<span class="fc" id="L406">        return Iterator.of(get());</span>
+    }
+
+    @Override
+    default String stringPrefix() {
+<span class="nc" id="L411">        return &quot;Gen&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

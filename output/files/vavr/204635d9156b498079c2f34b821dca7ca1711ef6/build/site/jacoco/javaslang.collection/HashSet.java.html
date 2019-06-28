@@ -1,0 +1,989 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>HashSet.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang.collection</a> &gt; <span class="el_source">HashSet.java</span></div><h1>HashSet.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang.collection;
+
+import javaslang.Lazy;
+import javaslang.Tuple;
+import javaslang.Tuple2;
+import javaslang.Tuple3;
+import javaslang.control.Match;
+import javaslang.control.Option;
+
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.function.*;
+import java.util.stream.Collector;
+
+/**
+ * An immutable {@code HashSet} implementation.
+ *
+ * @param &lt;T&gt; Component type
+ * @author Ruslan Sennov, Patryk Najda, Daniel Dietrich
+ * @since 2.0.0
+ */
+public final class HashSet&lt;T&gt; implements Set&lt;T&gt;, Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+<span class="fc" id="L34">    private static final HashSet&lt;?&gt; EMPTY = new HashSet&lt;&gt;(HashArrayMappedTrie.empty());</span>
+
+    private final HashArrayMappedTrie&lt;T, T&gt; tree;
+    private final transient Lazy&lt;Integer&gt; hash;
+
+<span class="fc" id="L39">    private HashSet(HashArrayMappedTrie&lt;T, T&gt; tree) {</span>
+<span class="fc" id="L40">        this.tree = tree;</span>
+<span class="fc" id="L41">        this.hash = Lazy.of(() -&gt; Traversable.hash(tree::iterator));</span>
+<span class="fc" id="L42">    }</span>
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    public static &lt;T&gt; HashSet&lt;T&gt; empty() {
+<span class="fc" id="L46">        return (HashSet&lt;T&gt;) EMPTY;</span>
+    }
+
+    /**
+     * Returns a {@link java.util.stream.Collector} which may be used in conjunction with
+     * {@link java.util.stream.Stream#collect(java.util.stream.Collector)} to obtain a {@link javaslang.collection.HashSet}.
+     *
+     * @param &lt;T&gt; Component type of the HashSet.
+     * @return A javaslang.collection.HashSet Collector.
+     */
+    public static &lt;T&gt; Collector&lt;T, ArrayList&lt;T&gt;, HashSet&lt;T&gt;&gt; collector() {
+<span class="fc" id="L57">        final Supplier&lt;ArrayList&lt;T&gt;&gt; supplier = ArrayList::new;</span>
+<span class="fc" id="L58">        final BiConsumer&lt;ArrayList&lt;T&gt;, T&gt; accumulator = ArrayList::add;</span>
+<span class="fc" id="L59">        final BinaryOperator&lt;ArrayList&lt;T&gt;&gt; combiner = (left, right) -&gt; {</span>
+<span class="fc" id="L60">            left.addAll(right);</span>
+<span class="fc" id="L61">            return left;</span>
+        };
+<span class="fc" id="L63">        final Function&lt;ArrayList&lt;T&gt;, HashSet&lt;T&gt;&gt; finisher = HashSet::ofAll;</span>
+<span class="fc" id="L64">        return Collector.of(supplier, accumulator, combiner, finisher);</span>
+    }
+
+    /**
+     * Returns a singleton {@code HashSet}, i.e. a {@code HashSet} of one element.
+     *
+     * @param element An element.
+     * @param &lt;T&gt;     The component type
+     * @return A new HashSet instance containing the given element
+     */
+    public static &lt;T&gt; HashSet&lt;T&gt; of(T element) {
+<span class="fc" id="L75">        return HashSet.&lt;T&gt; empty().add(element);</span>
+    }
+
+    /**
+     * Creates a HashSet of the given elements.
+     *
+     * &lt;pre&gt;&lt;code&gt;HashSet.of(1, 2, 3, 4)&lt;/code&gt;&lt;/pre&gt;
+     *
+     * @param &lt;T&gt;      Component type of the HashSet.
+     * @param elements Zero or more elements.
+     * @return A set containing the given elements.
+     * @throws NullPointerException if {@code elements} is null
+     */
+    @SafeVarargs
+    public static &lt;T&gt; HashSet&lt;T&gt; of(T... elements) {
+<span class="fc" id="L90">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc" id="L91">        HashArrayMappedTrie&lt;T, T&gt; tree = HashArrayMappedTrie.empty();</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        for (T element : elements) {</span>
+<span class="fc" id="L93">            tree = tree.put(element, element);</span>
+        }
+<span class="fc bfc" id="L95" title="All 2 branches covered.">        return tree.isEmpty() ? empty() : new HashSet&lt;&gt;(tree);</span>
+    }
+
+    /**
+     * Returns an HashSet containing {@code n} values of a given Function {@code f}
+     * over a range of integer values from 0 to {@code n - 1}.
+     *
+     * @param &lt;T&gt; Component type of the HashSet
+     * @param n The number of elements in the HashSet
+     * @param f The Function computing element values
+     * @return An HashSet consisting of elements {@code f(0),f(1), ..., f(n - 1)}
+     * @throws NullPointerException if {@code f} is null
+     */
+    public static &lt;T&gt; HashSet&lt;T&gt; tabulate(int n, Function&lt;? super Integer, ? extends T&gt; f) {
+<span class="fc" id="L109">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="fc" id="L110">        return Collections.tabulate(n, f, HashSet.empty(), HashSet::of);</span>
+    }
+
+    /**
+     * Returns an HashSet containing {@code n} values supplied by a given Supplier {@code s}.
+     *
+     * @param &lt;T&gt; Component type of the HashSet
+     * @param n The number of elements in the HashSet
+     * @param s The Supplier computing element values
+     * @return An HashSet of size {@code n}, where each element contains the result supplied by {@code s}.
+     * @throws NullPointerException if {@code s} is null
+     */
+    public static &lt;T&gt; HashSet&lt;T&gt; fill(int n, Supplier&lt;? extends T&gt; s) {
+<span class="fc" id="L123">        Objects.requireNonNull(s, &quot;s is null&quot;);</span>
+<span class="fc" id="L124">        return Collections.fill(n, s, HashSet.empty(), HashSet::of);</span>
+    }
+
+    /**
+     * Creates a HashSet of the given elements.
+     *
+     * @param elements Set elements
+     * @param &lt;T&gt;      The value type
+     * @return A new HashSet containing the given entries
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    public static &lt;T&gt; HashSet&lt;T&gt; ofAll(Iterable&lt;? extends T&gt; elements) {
+<span class="fc" id="L136">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        if (elements instanceof HashSet) {</span>
+<span class="fc" id="L138">            return (HashSet&lt;T&gt;) elements;</span>
+        } else {
+<span class="fc" id="L140">            final HashArrayMappedTrie&lt;T, T&gt; tree = addAll(HashArrayMappedTrie.empty(), elements);</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">            return tree.isEmpty() ? empty() : new HashSet&lt;&gt;(tree);</span>
+        }
+    }
+
+    /**
+     * Creates a HashSet based on the elements of a boolean array.
+     *
+     * @param array a boolean array
+     * @return A new HashSet of Boolean values
+     */
+    public static HashSet&lt;Boolean&gt; ofAll(boolean[] array) {
+<span class="fc" id="L152">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L153">        return HashSet.ofAll(Iterator.ofAll(array));</span>
+    }
+
+    /**
+     * Creates a HashSet based on the elements of a byte array.
+     *
+     * @param array a byte array
+     * @return A new HashSet of Byte values
+     */
+    public static HashSet&lt;Byte&gt; ofAll(byte[] array) {
+<span class="fc" id="L163">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L164">        return HashSet.ofAll(Iterator.ofAll(array));</span>
+    }
+
+    /**
+     * Creates a HashSet based on the elements of a char array.
+     *
+     * @param array a char array
+     * @return A new HashSet of Character values
+     */
+    public static HashSet&lt;Character&gt; ofAll(char[] array) {
+<span class="fc" id="L174">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L175">        return HashSet.ofAll(Iterator.ofAll(array));</span>
+    }
+
+    /**
+     * Creates a HashSet based on the elements of a double array.
+     *
+     * @param array a double array
+     * @return A new HashSet of Double values
+     */
+    public static HashSet&lt;Double&gt; ofAll(double[] array) {
+<span class="fc" id="L185">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L186">        return HashSet.ofAll(Iterator.ofAll(array));</span>
+    }
+
+    /**
+     * Creates a HashSet based on the elements of a float array.
+     *
+     * @param array a float array
+     * @return A new HashSet of Float values
+     */
+    public static HashSet&lt;Float&gt; ofAll(float[] array) {
+<span class="fc" id="L196">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L197">        return HashSet.ofAll(Iterator.ofAll(array));</span>
+    }
+
+    /**
+     * Creates a HashSet based on the elements of an int array.
+     *
+     * @param array an int array
+     * @return A new HashSet of Integer values
+     */
+    public static HashSet&lt;Integer&gt; ofAll(int[] array) {
+<span class="fc" id="L207">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L208">        return HashSet.ofAll(Iterator.ofAll(array));</span>
+    }
+
+    /**
+     * Creates a HashSet based on the elements of a long array.
+     *
+     * @param array a long array
+     * @return A new HashSet of Long values
+     */
+    public static HashSet&lt;Long&gt; ofAll(long[] array) {
+<span class="fc" id="L218">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L219">        return HashSet.ofAll(Iterator.ofAll(array));</span>
+    }
+
+    /**
+     * Creates a HashSet based on the elements of a short array.
+     *
+     * @param array a short array
+     * @return A new HashSet of Short values
+     */
+    public static HashSet&lt;Short&gt; ofAll(short[] array) {
+<span class="fc" id="L229">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L230">        return HashSet.ofAll(Iterator.ofAll(array));</span>
+    }
+
+    /**
+     * Creates a HashSet of int numbers starting from {@code from}, extending to {@code toExclusive - 1}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * HashSet.range(0, 0)  // = HashSet()
+     * HashSet.range(2, 0)  // = HashSet()
+     * HashSet.range(-2, 2) // = HashSet(-2, -1, 0, 1)
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toExclusive the last number + 1
+     * @return a range of int values as specified or the empty range if {@code from &gt;= toExclusive}
+     */
+    public static HashSet&lt;Integer&gt; range(int from, int toExclusive) {
+<span class="fc" id="L250">        return HashSet.ofAll(Iterator.range(from, toExclusive));</span>
+    }
+
+    public static HashSet&lt;Character&gt; range(char from, char toExclusive) {
+<span class="fc" id="L254">        return HashSet.ofAll(Iterator.range(from, toExclusive));</span>
+    }
+
+    /**
+     * Creates a HashSet of int numbers starting from {@code from}, extending to {@code toExclusive - 1},
+     * with {@code step}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * HashSet.rangeBy(1, 3, 1)  // = HashSet(1, 2)
+     * HashSet.rangeBy(1, 4, 2)  // = HashSet(1, 3)
+     * HashSet.rangeBy(4, 1, -2) // = HashSet(4, 2)
+     * HashSet.rangeBy(4, 1, 2)  // = HashSet()
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toExclusive the last number + 1
+     * @param step        the step
+     * @return a range of long values as specified or the empty range if&lt;br&gt;
+     * {@code from &gt;= toInclusive} and {@code step &gt; 0} or&lt;br&gt;
+     * {@code from &lt;= toInclusive} and {@code step &lt; 0}
+     * @throws IllegalArgumentException if {@code step} is zero
+     */
+    public static HashSet&lt;Integer&gt; rangeBy(int from, int toExclusive, int step) {
+<span class="fc" id="L280">        return HashSet.ofAll(Iterator.rangeBy(from, toExclusive, step));</span>
+    }
+
+    public static HashSet&lt;Character&gt; rangeBy(char from, char toExclusive, int step) {
+<span class="fc" id="L284">        return HashSet.ofAll(Iterator.rangeBy(from, toExclusive, step));</span>
+    }
+
+    public static HashSet&lt;Double&gt; rangeBy(double from, double toExclusive, double step) {
+<span class="fc" id="L288">        return HashSet.ofAll(Iterator.rangeBy(from, toExclusive, step));</span>
+    }
+
+    /**
+     * Creates a HashSet of long numbers starting from {@code from}, extending to {@code toExclusive - 1}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * HashSet.range(0L, 0L)  // = HashSet()
+     * HashSet.range(2L, 0L)  // = HashSet()
+     * HashSet.range(-2L, 2L) // = HashSet(-2L, -1L, 0L, 1L)
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toExclusive the last number + 1
+     * @return a range of long values as specified or the empty range if {@code from &gt;= toExclusive}
+     */
+    public static HashSet&lt;Long&gt; range(long from, long toExclusive) {
+<span class="fc" id="L308">        return HashSet.ofAll(Iterator.range(from, toExclusive));</span>
+    }
+
+    /**
+     * Creates a HashSet of long numbers starting from {@code from}, extending to {@code toExclusive - 1},
+     * with {@code step}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * HashSet.rangeBy(1L, 3L, 1L)  // = HashSet(1L, 2L)
+     * HashSet.rangeBy(1L, 4L, 2L)  // = HashSet(1L, 3L)
+     * HashSet.rangeBy(4L, 1L, -2L) // = HashSet(4L, 2L)
+     * HashSet.rangeBy(4L, 1L, 2L)  // = HashSet()
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toExclusive the last number + 1
+     * @param step        the step
+     * @return a range of long values as specified or the empty range if&lt;br&gt;
+     * {@code from &gt;= toInclusive} and {@code step &gt; 0} or&lt;br&gt;
+     * {@code from &lt;= toInclusive} and {@code step &lt; 0}
+     * @throws IllegalArgumentException if {@code step} is zero
+     */
+    public static HashSet&lt;Long&gt; rangeBy(long from, long toExclusive, long step) {
+<span class="fc" id="L334">        return HashSet.ofAll(Iterator.rangeBy(from, toExclusive, step));</span>
+    }
+
+    /**
+     * Creates a HashSet of int numbers starting from {@code from}, extending to {@code toInclusive}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * HashSet.rangeClosed(0, 0)  // = HashSet(0)
+     * HashSet.rangeClosed(2, 0)  // = HashSet()
+     * HashSet.rangeClosed(-2, 2) // = HashSet(-2, -1, 0, 1, 2)
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toInclusive the last number
+     * @return a range of int values as specified or the empty range if {@code from &gt; toInclusive}
+     */
+    public static HashSet&lt;Integer&gt; rangeClosed(int from, int toInclusive) {
+<span class="fc" id="L354">        return HashSet.ofAll(Iterator.rangeClosed(from, toInclusive));</span>
+    }
+
+    public static HashSet&lt;Character&gt; rangeClosed(char from, char toInclusive) {
+<span class="fc" id="L358">        return HashSet.ofAll(Iterator.rangeClosed(from, toInclusive));</span>
+    }
+
+    /**
+     * Creates a HashSet of int numbers starting from {@code from}, extending to {@code toInclusive},
+     * with {@code step}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * HashSet.rangeClosedBy(1, 3, 1)  // = HashSet(1, 2, 3)
+     * HashSet.rangeClosedBy(1, 4, 2)  // = HashSet(1, 3)
+     * HashSet.rangeClosedBy(4, 1, -2) // = HashSet(4, 2)
+     * HashSet.rangeClosedBy(4, 1, 2)  // = HashSet()
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toInclusive the last number
+     * @param step        the step
+     * @return a range of int values as specified or the empty range if&lt;br&gt;
+     * {@code from &gt; toInclusive} and {@code step &gt; 0} or&lt;br&gt;
+     * {@code from &lt; toInclusive} and {@code step &lt; 0}
+     * @throws IllegalArgumentException if {@code step} is zero
+     */
+    public static HashSet&lt;Integer&gt; rangeClosedBy(int from, int toInclusive, int step) {
+<span class="fc" id="L384">        return HashSet.ofAll(Iterator.rangeClosedBy(from, toInclusive, step));</span>
+    }
+
+    public static HashSet&lt;Character&gt; rangeClosedBy(char from, char toInclusive, int step) {
+<span class="fc" id="L388">        return HashSet.ofAll(Iterator.rangeClosedBy(from, toInclusive, step));</span>
+    }
+
+    public static HashSet&lt;Double&gt; rangeClosedBy(double from, double toInclusive, double step) {
+<span class="fc" id="L392">        return HashSet.ofAll(Iterator.rangeClosedBy(from, toInclusive, step));</span>
+    }
+
+    /**
+     * Creates a HashSet of long numbers starting from {@code from}, extending to {@code toInclusive}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * HashSet.rangeClosed(0L, 0L)  // = HashSet(0L)
+     * HashSet.rangeClosed(2L, 0L)  // = HashSet()
+     * HashSet.rangeClosed(-2L, 2L) // = HashSet(-2L, -1L, 0L, 1L, 2L)
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toInclusive the last number
+     * @return a range of long values as specified or the empty range if {@code from &gt; toInclusive}
+     */
+    public static HashSet&lt;Long&gt; rangeClosed(long from, long toInclusive) {
+<span class="fc" id="L412">        return HashSet.ofAll(Iterator.rangeClosed(from, toInclusive));</span>
+    }
+
+    /**
+     * Creates a HashSet of long numbers starting from {@code from}, extending to {@code toInclusive},
+     * with {@code step}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * HashSet.rangeClosedBy(1L, 3L, 1L)  // = HashSet(1L, 2L, 3L)
+     * HashSet.rangeClosedBy(1L, 4L, 2L)  // = HashSet(1L, 3L)
+     * HashSet.rangeClosedBy(4L, 1L, -2L) // = HashSet(4L, 2L)
+     * HashSet.rangeClosedBy(4L, 1L, 2L)  // = HashSet()
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toInclusive the last number
+     * @param step        the step
+     * @return a range of int values as specified or the empty range if&lt;br&gt;
+     * {@code from &gt; toInclusive} and {@code step &gt; 0} or&lt;br&gt;
+     * {@code from &lt; toInclusive} and {@code step &lt; 0}
+     * @throws IllegalArgumentException if {@code step} is zero
+     */
+    public static HashSet&lt;Long&gt; rangeClosedBy(long from, long toInclusive, long step) {
+<span class="fc" id="L438">        return HashSet.ofAll(Iterator.rangeClosedBy(from, toInclusive, step));</span>
+    }
+
+    @Override
+    public HashSet&lt;T&gt; add(T element) {
+<span class="fc" id="L443">        return new HashSet&lt;&gt;(tree.put(element, element));</span>
+    }
+
+    @Override
+    public HashSet&lt;T&gt; addAll(Iterable&lt;? extends T&gt; elements) {
+<span class="fc" id="L448">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc" id="L449">        final HashArrayMappedTrie&lt;T, T&gt; that = addAll(tree, elements);</span>
+<span class="fc bfc" id="L450" title="All 2 branches covered.">        if (that.size() == tree.size()) {</span>
+<span class="fc" id="L451">            return this;</span>
+        } else {
+<span class="fc" id="L453">            return new HashSet&lt;&gt;(that);</span>
+        }
+    }
+
+    @Override
+    public HashSet&lt;T&gt; clear() {
+<span class="fc" id="L459">        return empty();</span>
+    }
+
+    @Override
+    public boolean contains(T element) {
+<span class="fc" id="L464">        return tree.get(element).isDefined();</span>
+    }
+
+    @Override
+    public HashSet&lt;T&gt; diff(Set&lt;? extends T&gt; elements) {
+<span class="fc" id="L469">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="pc bpc" id="L470" title="1 of 4 branches missed.">        if (isEmpty() || elements.isEmpty()) {</span>
+<span class="fc" id="L471">            return this;</span>
+        } else {
+<span class="fc" id="L473">            return removeAll(elements);</span>
+        }
+    }
+
+    @Override
+    public HashSet&lt;T&gt; distinct() {
+<span class="fc" id="L479">        return this;</span>
+    }
+
+    @Override
+    public HashSet&lt;T&gt; distinctBy(Comparator&lt;? super T&gt; comparator) {
+<span class="fc" id="L484">        Objects.requireNonNull(comparator, &quot;comparator is null&quot;);</span>
+<span class="fc" id="L485">        return HashSet.ofAll(iterator().distinctBy(comparator));</span>
+    }
+
+    @Override
+    public &lt;U&gt; HashSet&lt;T&gt; distinctBy(Function&lt;? super T, ? extends U&gt; keyExtractor) {
+<span class="fc" id="L490">        Objects.requireNonNull(keyExtractor, &quot;keyExtractor is null&quot;);</span>
+<span class="fc" id="L491">        return HashSet.ofAll(iterator().distinctBy(keyExtractor));</span>
+    }
+
+    @Override
+    public HashSet&lt;T&gt; drop(int n) {
+<span class="fc bfc" id="L496" title="All 2 branches covered.">        if (n &lt;= 0) {</span>
+<span class="fc" id="L497">            return this;</span>
+        } else {
+<span class="fc" id="L499">            return HashSet.ofAll(iterator().drop(n));</span>
+        }
+    }
+
+    @Override
+    public HashSet&lt;T&gt; dropRight(int n) {
+<span class="fc" id="L505">        return drop(n);</span>
+    }
+
+    @Override
+    public HashSet&lt;T&gt; dropUntil(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L510">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L511">        return dropWhile(predicate.negate());</span>
+    }
+
+    @Override
+    public HashSet&lt;T&gt; dropWhile(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L516">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L517">        final HashSet&lt;T&gt; dropped = HashSet.ofAll(iterator().dropWhile(predicate));</span>
+<span class="fc bfc" id="L518" title="All 2 branches covered.">        return dropped.length() == length() ? this : dropped;</span>
+    }
+
+    @Override
+    public HashSet&lt;T&gt; filter(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L523">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L524">        final HashSet&lt;T&gt; filtered = HashSet.ofAll(iterator().filter(predicate));</span>
+<span class="fc bfc" id="L525" title="All 2 branches covered.">        return filtered.length() == length() ? this : filtered;</span>
+    }
+
+    @Override
+    public HashSet&lt;T&gt; filterNot(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L530">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L531">        return filter(predicate.negate());</span>
+    }
+
+    @Override
+    public &lt;U&gt; HashSet&lt;U&gt; flatMap(Function&lt;? super T, ? extends Iterable&lt;? extends U&gt;&gt; mapper) {
+<span class="nc" id="L536">        Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+<span class="nc bnc" id="L537" title="All 2 branches missed.">        if (isEmpty()) {</span>
+<span class="nc" id="L538">            return empty();</span>
+        } else {
+<span class="nc" id="L540">            final HashArrayMappedTrie&lt;U, U&gt; that = foldLeft(HashArrayMappedTrie.empty(),</span>
+<span class="nc" id="L541">                    (tree, t) -&gt; addAll(tree, mapper.apply(t)));</span>
+<span class="nc" id="L542">            return new HashSet&lt;&gt;(that);</span>
+        }
+    }
+
+    @Override
+    public &lt;U&gt; U foldRight(U zero, BiFunction&lt;? super T, ? super U, ? extends U&gt; f) {
+<span class="fc" id="L548">        return foldLeft(zero, (u, t) -&gt; f.apply(t, u));</span>
+    }
+
+    @Override
+    public &lt;C&gt; Map&lt;C, HashSet&lt;T&gt;&gt; groupBy(Function&lt;? super T, ? extends C&gt; classifier) {
+<span class="fc" id="L553">        return foldLeft(HashMap.empty(), (map, t) -&gt; {</span>
+<span class="fc" id="L554">            final C key = classifier.apply(t);</span>
+<span class="fc" id="L555">            final HashSet&lt;T&gt; values = map.get(key).map(ts -&gt; ts.add(t)).orElse(HashSet.of(t));</span>
+<span class="fc" id="L556">            return map.put(key, values);</span>
+        });
+    }
+
+    @Override
+    public Iterator&lt;HashSet&lt;T&gt;&gt; grouped(int size) {
+<span class="fc" id="L562">        return sliding(size, size);</span>
+    }
+
+    @Override
+    public boolean hasDefiniteSize() {
+<span class="fc" id="L567">        return true;</span>
+    }
+
+    @Override
+    public T head() {
+<span class="fc bfc" id="L572" title="All 2 branches covered.">        if (tree.isEmpty()) {</span>
+<span class="fc" id="L573">            throw new NoSuchElementException(&quot;head of empty set&quot;);</span>
+        }
+<span class="fc" id="L575">        return iterator().next();</span>
+    }
+
+    @Override
+    public Option&lt;T&gt; headOption() {
+<span class="fc" id="L580">        return iterator().headOption();</span>
+    }
+
+    @Override
+    public HashSet&lt;T&gt; init() {
+<span class="fc" id="L585">        return tail();</span>
+    }
+
+    @Override
+    public Option&lt;HashSet&lt;T&gt;&gt; initOption() {
+<span class="fc" id="L590">        return tailOption();</span>
+    }
+
+    @Override
+    public HashSet&lt;T&gt; intersect(Set&lt;? extends T&gt; elements) {
+<span class="fc" id="L595">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="pc bpc" id="L596" title="1 of 4 branches missed.">        if (isEmpty() || elements.isEmpty()) {</span>
+<span class="fc" id="L597">            return empty();</span>
+        } else {
+<span class="fc" id="L599">            return retainAll(elements);</span>
+        }
+    }
+
+    @Override
+    public boolean isEmpty() {
+<span class="fc" id="L605">        return tree.isEmpty();</span>
+    }
+
+    @Override
+    public boolean isTraversableAgain() {
+<span class="fc" id="L610">        return true;</span>
+    }
+
+    @Override
+    public Iterator&lt;T&gt; iterator() {
+<span class="fc" id="L615">        return tree.iterator().map(t -&gt; t._1);</span>
+    }
+
+    @Override
+    public int length() {
+<span class="fc" id="L620">        return tree.size();</span>
+    }
+
+    @Override
+    public &lt;U&gt; HashSet&lt;U&gt; map(Function&lt;? super T, ? extends U&gt; mapper) {
+<span class="fc" id="L625">        Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+<span class="pc bpc" id="L626" title="1 of 2 branches missed.">        if (isEmpty()) {</span>
+<span class="nc" id="L627">            return empty();</span>
+        } else {
+<span class="fc" id="L629">            final HashArrayMappedTrie&lt;U, U&gt; that = foldLeft(HashArrayMappedTrie.empty(), (tree, t) -&gt; {</span>
+<span class="fc" id="L630">                final U u = mapper.apply(t);</span>
+<span class="fc" id="L631">                return tree.put(u, u);</span>
+            });
+<span class="fc" id="L633">            return new HashSet&lt;&gt;(that);</span>
+        }
+    }
+
+    @Override
+    public Match.MatchMonad.Of&lt;HashSet&lt;T&gt;&gt; match() {
+<span class="fc" id="L639">        return Match.of(this);</span>
+    }
+
+    @Override
+    public String mkString(CharSequence prefix, CharSequence delimiter, CharSequence suffix) {
+<span class="fc" id="L644">        return iterator().mkString(prefix, delimiter, suffix);</span>
+    }
+
+    @Override
+    public Tuple2&lt;HashSet&lt;T&gt;, HashSet&lt;T&gt;&gt; partition(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L649">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L650">        final Tuple2&lt;Iterator&lt;T&gt;, Iterator&lt;T&gt;&gt; p = iterator().partition(predicate);</span>
+<span class="fc" id="L651">        return Tuple.of(HashSet.ofAll(p._1), HashSet.ofAll(p._2));</span>
+    }
+
+    @Override
+    public HashSet&lt;T&gt; peek(Consumer&lt;? super T&gt; action) {
+<span class="fc" id="L656">        Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="fc bfc" id="L657" title="All 2 branches covered.">        if (!isEmpty()) {</span>
+<span class="fc" id="L658">            action.accept(iterator().head());</span>
+        }
+<span class="fc" id="L660">        return this;</span>
+    }
+
+    @Override
+    public HashSet&lt;T&gt; remove(T element) {
+<span class="fc" id="L665">        final HashArrayMappedTrie&lt;T, T&gt; newTree = tree.remove(element);</span>
+<span class="fc bfc" id="L666" title="All 2 branches covered.">        return (newTree == tree) ? this : new HashSet&lt;&gt;(newTree);</span>
+    }
+
+    @Override
+    public HashSet&lt;T&gt; removeAll(Iterable&lt;? extends T&gt; elements) {
+<span class="fc" id="L671">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc" id="L672">        HashArrayMappedTrie&lt;T, T&gt; trie = tree;</span>
+<span class="fc bfc" id="L673" title="All 2 branches covered.">        for (T element : elements) {</span>
+<span class="fc" id="L674">            trie = trie.remove(element);</span>
+<span class="fc" id="L675">        }</span>
+<span class="fc bfc" id="L676" title="All 2 branches covered.">        return (trie == tree) ? this : new HashSet&lt;&gt;(trie);</span>
+    }
+
+    @Override
+    public HashSet&lt;T&gt; replace(T currentElement, T newElement) {
+<span class="fc bfc" id="L681" title="All 2 branches covered.">        if (tree.containsKey(currentElement)) {</span>
+<span class="fc" id="L682">            return remove(currentElement).add(newElement);</span>
+        } else {
+<span class="fc" id="L684">            return this;</span>
+        }
+    }
+
+    @Override
+    public HashSet&lt;T&gt; replaceAll(T currentElement, T newElement) {
+<span class="fc" id="L690">        return replace(currentElement, newElement);</span>
+    }
+
+    @Override
+    public HashSet&lt;T&gt; retainAll(Iterable&lt;? extends T&gt; elements) {
+<span class="fc" id="L695">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc" id="L696">        final HashArrayMappedTrie&lt;T, T&gt; kept = addAll(HashArrayMappedTrie.empty(), elements);</span>
+<span class="fc" id="L697">        HashArrayMappedTrie&lt;T, T&gt; that = HashArrayMappedTrie.empty();</span>
+<span class="fc bfc" id="L698" title="All 2 branches covered.">        for (T element : this) {</span>
+<span class="fc bfc" id="L699" title="All 2 branches covered.">            if (kept.containsKey(element)) {</span>
+<span class="fc" id="L700">                that = that.put(element, element);</span>
+            }
+<span class="fc" id="L702">        }</span>
+<span class="fc bfc" id="L703" title="All 4 branches covered.">        return that.isEmpty() ? empty() : that.size() == size() ? this : new HashSet&lt;&gt;(that);</span>
+    }
+
+    @Override
+    public HashSet&lt;T&gt; scan(T zero, BiFunction&lt;? super T, ? super T, ? extends T&gt; operation) {
+<span class="fc" id="L708">        return scanLeft(zero, operation);</span>
+    }
+
+    @Override
+    public &lt;U&gt; HashSet&lt;U&gt; scanLeft(U zero, BiFunction&lt;? super U, ? super T, ? extends U&gt; operation) {
+<span class="fc" id="L713">        Objects.requireNonNull(operation, &quot;operation is null&quot;);</span>
+<span class="fc" id="L714">        return Collections.scanLeft(this, zero, operation, new java.util.ArrayList&lt;&gt;(), (c, u) -&gt; {</span>
+<span class="fc" id="L715">            c.add(u);</span>
+<span class="fc" id="L716">            return c;</span>
+        }, HashSet::ofAll);
+    }
+
+    @Override
+    public &lt;U&gt; HashSet&lt;U&gt; scanRight(U zero, BiFunction&lt;? super T, ? super U, ? extends U&gt; operation) {
+<span class="fc" id="L722">        Objects.requireNonNull(operation, &quot;operation is null&quot;);</span>
+<span class="fc" id="L723">        return Collections.scanRight(this, zero, operation, HashSet.empty(), HashSet::add, Function.identity());</span>
+    }
+
+    @Override
+    public Iterator&lt;HashSet&lt;T&gt;&gt; sliding(int size) {
+<span class="fc" id="L728">        return sliding(size, 1);</span>
+    }
+
+    @Override
+    public Iterator&lt;HashSet&lt;T&gt;&gt; sliding(int size, int step) {
+<span class="fc" id="L733">        return iterator().sliding(size, step).map(HashSet::ofAll);</span>
+    }
+
+    @Override
+    public Tuple2&lt;HashSet&lt;T&gt;, HashSet&lt;T&gt;&gt; span(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L738">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L739">        final Tuple2&lt;Iterator&lt;T&gt;, Iterator&lt;T&gt;&gt; t = iterator().span(predicate);</span>
+<span class="fc" id="L740">        return Tuple.of(HashSet.ofAll(t._1), HashSet.ofAll(t._2));</span>
+    }
+
+    @Override
+    public HashSet&lt;T&gt; tail() {
+<span class="fc bfc" id="L745" title="All 2 branches covered.">        if (tree.isEmpty()) {</span>
+<span class="fc" id="L746">            throw new UnsupportedOperationException(&quot;tail of empty set&quot;);</span>
+        }
+<span class="fc" id="L748">        return remove(head());</span>
+    }
+
+    @Override
+    public Option&lt;HashSet&lt;T&gt;&gt; tailOption() {
+<span class="fc bfc" id="L753" title="All 2 branches covered.">        if (tree.isEmpty()) {</span>
+<span class="fc" id="L754">            return Option.none();</span>
+        } else {
+<span class="fc" id="L756">            return Option.some(tail());</span>
+        }
+    }
+
+    @Override
+    public HashSet&lt;T&gt; take(int n) {
+<span class="fc bfc" id="L762" title="All 2 branches covered.">        if (tree.size() &lt;= n) {</span>
+<span class="fc" id="L763">            return this;</span>
+        }
+<span class="fc" id="L765">        return HashSet.ofAll(() -&gt; iterator().take(n));</span>
+    }
+
+    @Override
+    public HashSet&lt;T&gt; takeRight(int n) {
+<span class="fc" id="L770">        return take(n);</span>
+    }
+
+    @Override
+    public HashSet&lt;T&gt; takeUntil(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L775">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L776">        return takeWhile(predicate.negate());</span>
+    }
+
+    @Override
+    public HashSet&lt;T&gt; takeWhile(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L781">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L782">        HashSet&lt;T&gt; taken = HashSet.ofAll(iterator().takeWhile(predicate));</span>
+<span class="fc bfc" id="L783" title="All 2 branches covered.">        return taken.length() == length() ? this : taken;</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override
+    public HashSet&lt;T&gt; union(Set&lt;? extends T&gt; elements) {
+<span class="fc" id="L789">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc bfc" id="L790" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="pc bpc" id="L791" title="1 of 2 branches missed.">            if (elements instanceof HashSet) {</span>
+<span class="fc" id="L792">                return (HashSet&lt;T&gt;) elements;</span>
+            } else {
+<span class="nc" id="L794">                return HashSet.ofAll(elements);</span>
+            }
+<span class="pc bpc" id="L796" title="1 of 2 branches missed.">        } else if (elements.isEmpty()) {</span>
+<span class="nc" id="L797">            return this;</span>
+        } else {
+<span class="fc" id="L799">            final HashArrayMappedTrie&lt;T, T&gt; that = addAll(tree, elements);</span>
+<span class="fc bfc" id="L800" title="All 2 branches covered.">            if (that.size() == tree.size()) {</span>
+<span class="fc" id="L801">                return this;</span>
+            } else {
+<span class="fc" id="L803">                return new HashSet&lt;&gt;(that);</span>
+            }
+        }
+    }
+    
+    @Override
+    public &lt;U&gt; HashSet&lt;U&gt; unit(Iterable&lt;? extends U&gt; iterable) {
+<span class="nc" id="L810">    	return HashSet.ofAll(iterable);</span>
+    }
+
+    @Override
+    public &lt;T1, T2&gt; Tuple2&lt;HashSet&lt;T1&gt;, HashSet&lt;T2&gt;&gt; unzip(
+            Function&lt;? super T, Tuple2&lt;? extends T1, ? extends T2&gt;&gt; unzipper) {
+<span class="fc" id="L816">        Objects.requireNonNull(unzipper, &quot;unzipper is null&quot;);</span>
+<span class="fc" id="L817">        Tuple2&lt;Iterator&lt;T1&gt;, Iterator&lt;T2&gt;&gt; t = iterator().unzip(unzipper);</span>
+<span class="fc" id="L818">        return Tuple.of(HashSet.ofAll(t._1), HashSet.ofAll(t._2));</span>
+    }
+
+    @Override
+    public &lt;T1, T2, T3&gt; Tuple3&lt;HashSet&lt;T1&gt;, HashSet&lt;T2&gt;, HashSet&lt;T3&gt;&gt; unzip3(
+            Function&lt;? super T, Tuple3&lt;? extends T1, ? extends T2, ? extends T3&gt;&gt; unzipper) {
+<span class="fc" id="L824">        Objects.requireNonNull(unzipper, &quot;unzipper is null&quot;);</span>
+<span class="fc" id="L825">        Tuple3&lt;Iterator&lt;T1&gt;, Iterator&lt;T2&gt;, Iterator&lt;T3&gt;&gt; t = iterator().unzip3(unzipper);</span>
+<span class="fc" id="L826">        return Tuple.of(HashSet.ofAll(t._1), HashSet.ofAll(t._2), HashSet.ofAll(t._3));</span>
+    }
+
+    @Override
+    public &lt;U&gt; HashSet&lt;Tuple2&lt;T, U&gt;&gt; zip(Iterable&lt;U&gt; that) {
+<span class="fc" id="L831">        Objects.requireNonNull(that, &quot;that is null&quot;);</span>
+<span class="fc" id="L832">        return HashSet.ofAll(iterator().zip(that));</span>
+    }
+
+    @Override
+    public &lt;U&gt; HashSet&lt;Tuple2&lt;T, U&gt;&gt; zipAll(Iterable&lt;U&gt; that, T thisElem, U thatElem) {
+<span class="fc" id="L837">        Objects.requireNonNull(that, &quot;that is null&quot;);</span>
+<span class="fc" id="L838">        return HashSet.ofAll(iterator().zipAll(that, thisElem, thatElem));</span>
+    }
+
+    @Override
+    public HashSet&lt;Tuple2&lt;T, Integer&gt;&gt; zipWithIndex() {
+<span class="fc" id="L843">        return HashSet.ofAll(iterator().zipWithIndex());</span>
+    }
+
+    // -- Object
+
+    @Override
+    public int hashCode() {
+<span class="fc" id="L850">        return hash.get();</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override
+    public boolean equals(Object o) {
+<span class="fc bfc" id="L856" title="All 2 branches covered.">        if (o == this) {</span>
+<span class="fc" id="L857">            return true;</span>
+<span class="fc bfc" id="L858" title="All 2 branches covered.">        } else if (o instanceof HashSet) {</span>
+<span class="fc" id="L859">            final HashSet&lt;?&gt; that = (HashSet&lt;?&gt;) o;</span>
+<span class="fc bfc" id="L860" title="All 4 branches covered.">            return this.length() == that.length() &amp;&amp; ((HashSet&lt;Object&gt;) this).containsAll(that);</span>
+        } else {
+<span class="fc" id="L862">            return false;</span>
+        }
+    }
+
+    @Override
+    public String stringPrefix() {
+<span class="fc" id="L868">        return &quot;HashSet&quot;;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L873">        return mkString(stringPrefix() + &quot;(&quot;, &quot;, &quot;, &quot;)&quot;);</span>
+    }
+
+    private static &lt;T&gt; HashArrayMappedTrie&lt;T, T&gt; addAll(HashArrayMappedTrie&lt;T, T&gt; initial,
+                                                        Iterable&lt;? extends T&gt; additional) {
+<span class="fc" id="L878">        HashArrayMappedTrie&lt;T, T&gt; that = initial;</span>
+<span class="fc bfc" id="L879" title="All 2 branches covered.">        for (T t : additional) {</span>
+<span class="fc" id="L880">            that = that.put(t, t);</span>
+<span class="fc" id="L881">        }</span>
+<span class="fc" id="L882">        return that;</span>
+    }
+
+    // -- Serialization
+
+    /**
+     * {@code writeReplace} method for the serialization proxy pattern.
+     * &lt;p&gt;
+     * The presence of this method causes the serialization system to emit a SerializationProxy instance instead of
+     * an instance of the enclosing class.
+     *
+     * @return A SerialiationProxy for this enclosing class.
+     */
+    private Object writeReplace() {
+<span class="fc" id="L896">        return new SerializationProxy&lt;&gt;(this.tree);</span>
+    }
+
+    /**
+     * {@code readObject} method for the serialization proxy pattern.
+     * &lt;p&gt;
+     * Guarantees that the serialization system will never generate a serialized instance of the enclosing class.
+     *
+     * @param stream An object serialization stream.
+     * @throws java.io.InvalidObjectException This method will throw with the message &quot;Proxy required&quot;.
+     */
+    private void readObject(ObjectInputStream stream) throws InvalidObjectException {
+<span class="nc" id="L908">        throw new InvalidObjectException(&quot;Proxy required&quot;);</span>
+    }
+
+    /**
+     * A serialization proxy which, in this context, is used to deserialize immutable, linked Lists with final
+     * instance fields.
+     *
+     * @param &lt;T&gt; The component type of the underlying list.
+     */
+    // DEV NOTE: The serialization proxy pattern is not compatible with non-final, i.e. extendable,
+    // classes. Also, it may not be compatible with circular object graphs.
+    private static final class SerializationProxy&lt;T&gt; implements Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        // the instance to be serialized/deserialized
+        private transient HashArrayMappedTrie&lt;T, T&gt; tree;
+
+        /**
+         * Constructor for the case of serialization, called by {@link HashSet#writeReplace()}.
+         * &lt;p/&gt;
+         * The constructor of a SerializationProxy takes an argument that concisely represents the logical state of
+         * an instance of the enclosing class.
+         *
+         * @param tree a Cons
+         */
+<span class="fc" id="L934">        SerializationProxy(HashArrayMappedTrie&lt;T, T&gt; tree) {</span>
+<span class="fc" id="L935">            this.tree = tree;</span>
+<span class="fc" id="L936">        }</span>
+
+        /**
+         * Write an object to a serialization stream.
+         *
+         * @param s An object serialization stream.
+         * @throws java.io.IOException If an error occurs writing to the stream.
+         */
+        private void writeObject(ObjectOutputStream s) throws IOException {
+<span class="fc" id="L945">            s.defaultWriteObject();</span>
+<span class="fc" id="L946">            s.writeInt(tree.size());</span>
+<span class="fc bfc" id="L947" title="All 2 branches covered.">            for (Tuple2&lt;T, T&gt; e : tree) {</span>
+<span class="fc" id="L948">                s.writeObject(e._1);</span>
+<span class="fc" id="L949">            }</span>
+<span class="fc" id="L950">        }</span>
+
+        /**
+         * Read an object from a deserialization stream.
+         *
+         * @param s An object deserialization stream.
+         * @throws ClassNotFoundException If the object's class read from the stream cannot be found.
+         * @throws InvalidObjectException If the stream contains no list elements.
+         * @throws IOException            If an error occurs reading from the stream.
+         */
+        private void readObject(ObjectInputStream s) throws ClassNotFoundException, IOException {
+<span class="fc" id="L961">            s.defaultReadObject();</span>
+<span class="fc" id="L962">            final int size = s.readInt();</span>
+<span class="pc bpc" id="L963" title="1 of 2 branches missed.">            if (size &lt; 0) {</span>
+<span class="nc" id="L964">                throw new InvalidObjectException(&quot;No elements&quot;);</span>
+            }
+<span class="fc" id="L966">            HashArrayMappedTrie&lt;T, T&gt; temp = HashArrayMappedTrie.empty();</span>
+<span class="fc bfc" id="L967" title="All 2 branches covered.">            for (int i = 0; i &lt; size; i++) {</span>
+                @SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L969">                final T element = (T) s.readObject();</span>
+<span class="fc" id="L970">                temp = temp.put(element, element);</span>
+            }
+<span class="fc" id="L972">            tree = temp;</span>
+<span class="fc" id="L973">        }</span>
+
+        /**
+         * {@code readResolve} method for the serialization proxy pattern.
+         * &lt;p&gt;
+         * Returns a logically equivalent instance of the enclosing class. The presence of this method causes the
+         * serialization system to translate the serialization proxy back into an instance of the enclosing class
+         * upon deserialization.
+         *
+         * @return A deserialized instance of the enclosing class.
+         */
+        private Object readResolve() {
+<span class="fc bfc" id="L985" title="All 2 branches covered.">            return tree.isEmpty() ? HashSet.empty() : new HashSet&lt;&gt;(tree);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

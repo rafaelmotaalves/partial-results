@@ -1,0 +1,649 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>HashArrayMappedTrie.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang.collection</a> &gt; <span class="el_source">HashArrayMappedTrie.java</span></div><h1>HashArrayMappedTrie.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang.collection;
+
+import javaslang.Lazy;
+import javaslang.Tuple;
+import javaslang.Tuple2;
+import javaslang.collection.HashArrayMappedTrieModule.EmptyNode;
+import javaslang.control.Option;
+
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Objects;
+
+import static javaslang.collection.HashArrayMappedTrieModule.Action.PUT;
+import static javaslang.collection.HashArrayMappedTrieModule.Action.REMOVE;
+
+/**
+ * An immutable &lt;a href=&quot;https://en.wikipedia.org/wiki/Hash_array_mapped_trie&quot;&gt;Hash array mapped trie (HAMT)&lt;/a&gt;.
+ *
+ * @author Ruslan Sennov
+ * @since 2.0.0
+ */
+interface HashArrayMappedTrie&lt;K, V&gt; extends Iterable&lt;Tuple2&lt;K, V&gt;&gt; {
+
+    static &lt;K, V&gt; HashArrayMappedTrie&lt;K, V&gt; empty() {
+<span class="fc" id="L30">        return EmptyNode.instance();</span>
+    }
+
+    boolean isEmpty();
+
+    int size();
+
+    Option&lt;V&gt; get(K key);
+
+    boolean containsKey(K key);
+
+    HashArrayMappedTrie&lt;K, V&gt; put(K key, V value);
+
+    HashArrayMappedTrie&lt;K, V&gt; remove(K key);
+
+    // this is a javaslang.collection.Iterator!
+    @Override
+    Iterator&lt;Tuple2&lt;K, V&gt;&gt; iterator();
+
+}
+
+interface HashArrayMappedTrieModule {
+
+<span class="pc" id="L53">    enum Action {</span>
+<span class="fc" id="L54">        PUT, REMOVE</span>
+    }
+
+    /**
+     * An abstract base class for nodes of a HAMT.
+     *
+     * @param &lt;K&gt; Key type
+     * @param &lt;V&gt; Value type
+     */
+<span class="fc" id="L63">    abstract class AbstractNode&lt;K, V&gt; implements HashArrayMappedTrie&lt;K, V&gt; {</span>
+
+        static final int SIZE = 5;
+        static final int BUCKET_SIZE = 1 &lt;&lt; SIZE;
+        static final int MAX_INDEX_NODE = BUCKET_SIZE / 2;
+        static final int MIN_ARRAY_NODE = BUCKET_SIZE / 4;
+
+        private static final int M1 = 0x55555555;
+        private static final int M2 = 0x33333333;
+        private static final int M4 = 0x0f0f0f0f;
+
+        static int bitCount(int x) {
+<span class="fc" id="L75">            x = x - ((x &gt;&gt; 1) &amp; M1);</span>
+<span class="fc" id="L76">            x = (x &amp; M2) + ((x &gt;&gt; 2) &amp; M2);</span>
+<span class="fc" id="L77">            x = (x + (x &gt;&gt; 4)) &amp; M4;</span>
+<span class="fc" id="L78">            x = x + (x &gt;&gt; 8);</span>
+<span class="fc" id="L79">            x = x + (x &gt;&gt; 16);</span>
+<span class="fc" id="L80">            return x &amp; 0x7f;</span>
+        }
+
+        static int hashFragment(int shift, int hash) {
+<span class="fc" id="L84">            return (hash &gt;&gt;&gt; shift) &amp; (BUCKET_SIZE - 1);</span>
+        }
+
+        static int toBitmap(int hash) {
+<span class="fc" id="L88">            return 1 &lt;&lt; hash;</span>
+        }
+
+        static int fromBitmap(int bitmap, int bit) {
+<span class="fc" id="L92">            return bitCount(bitmap &amp; (bit - 1));</span>
+        }
+
+        abstract Option&lt;V&gt; lookup(int shift, K key);
+
+        abstract AbstractNode&lt;K, V&gt; modify(int shift, K key, V value, Action action);
+
+        @Override
+        public Option&lt;V&gt; get(K key) {
+<span class="fc" id="L101">            return lookup(0, key);</span>
+        }
+
+        @Override
+        public boolean containsKey(K key) {
+<span class="fc" id="L106">            return get(key).isDefined();</span>
+        }
+
+        @Override
+        public HashArrayMappedTrie&lt;K, V&gt; put(K key, V value) {
+<span class="fc" id="L111">            return modify(0, key, value, PUT);</span>
+        }
+
+        @Override
+        public HashArrayMappedTrie&lt;K, V&gt; remove(K key) {
+<span class="fc" id="L116">            return modify(0, key, null, REMOVE);</span>
+        }
+
+        @Override
+        public boolean equals(Object o) {
+<span class="fc bfc" id="L121" title="All 2 branches covered.">            if (o == this) {</span>
+<span class="fc" id="L122">                return true;</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">            } else if (o instanceof HashArrayMappedTrie) {</span>
+<span class="fc" id="L124">                final Iterator&lt;?&gt; iter1 = this.iterator();</span>
+<span class="fc" id="L125">                final Iterator&lt;?&gt; iter2 = ((HashArrayMappedTrie&lt;?, ?&gt;) o).iterator();</span>
+<span class="fc bfc" id="L126" title="All 4 branches covered.">                while (iter1.hasNext() &amp;&amp; iter2.hasNext()) {</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">                    if (!Objects.equals(iter1.next(), iter2.next())) {</span>
+<span class="fc" id="L128">                        return false;</span>
+                    }
+                }
+<span class="fc bfc" id="L131" title="All 4 branches covered.">                return !iter1.hasNext() &amp;&amp; !iter2.hasNext();</span>
+            } else {
+<span class="fc" id="L133">                return false;</span>
+            }
+        }
+
+        @Override
+        public abstract int hashCode();
+
+        @Override
+        public String toString() {
+<span class="fc" id="L142">            return iterator().map(t -&gt; t._1 + &quot; -&gt; &quot; + t._2).mkString(&quot;HashArrayMappedTrie(&quot;, &quot;, &quot;, &quot;)&quot;);</span>
+        }
+    }
+
+    /**
+     * The empty node.
+     *
+     * @param &lt;K&gt; Key type
+     * @param &lt;V&gt; Value type
+     */
+    final class EmptyNode&lt;K, V&gt; extends AbstractNode&lt;K, V&gt; implements Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+<span class="fc" id="L156">        private static final EmptyNode&lt;?, ?&gt; INSTANCE = new EmptyNode&lt;&gt;();</span>
+
+<span class="fc" id="L158">        private EmptyNode() {</span>
+<span class="fc" id="L159">        }</span>
+
+        @SuppressWarnings(&quot;unchecked&quot;)
+        static &lt;K, V&gt; EmptyNode&lt;K, V&gt; instance() {
+<span class="fc" id="L163">            return (EmptyNode&lt;K, V&gt;) INSTANCE;</span>
+        }
+
+        @Override
+        Option&lt;V&gt; lookup(int shift, K key) {
+<span class="fc" id="L168">            return Option.none();</span>
+        }
+
+        @Override
+        AbstractNode&lt;K, V&gt; modify(int shift, K key, V value, Action action) {
+<span class="fc bfc" id="L173" title="All 2 branches covered.">            return (action == REMOVE) ? this : new LeafSingleton&lt;&gt;(Objects.hashCode(key), key, value);</span>
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L178">            return 0;</span>
+        }
+
+        @Override
+        public boolean isEmpty() {
+<span class="fc" id="L183">            return true;</span>
+        }
+
+        @Override
+        public int size() {
+<span class="fc" id="L188">            return 0;</span>
+        }
+
+        @Override
+        public Iterator&lt;Tuple2&lt;K, V&gt;&gt; iterator() {
+<span class="fc" id="L193">            return Iterator.empty();</span>
+        }
+
+        /**
+         * Instance control for object serialization.
+         *
+         * @return The singleton instance of EmptyNode.
+         * @see java.io.Serializable
+         */
+        private Object readResolve() {
+<span class="fc" id="L203">            return INSTANCE;</span>
+        }
+    }
+
+    /**
+     * Representation of a HAMT leaf.
+     *
+     * @param &lt;K&gt; Key type
+     * @param &lt;V&gt; Value type
+     */
+<span class="fc" id="L213">    abstract class LeafNode&lt;K, V&gt; extends AbstractNode&lt;K, V&gt; {</span>
+
+        abstract K key();
+
+        abstract V value();
+
+        abstract int hash();
+
+        static &lt;K, V&gt; AbstractNode&lt;K, V&gt; mergeLeaves(int shift, LeafNode&lt;K, V&gt; leaf1, LeafSingleton&lt;K, V&gt; leaf2) {
+<span class="fc" id="L222">            final int h1 = leaf1.hash();</span>
+<span class="fc" id="L223">            final int h2 = leaf2.hash();</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">            if (h1 == h2) {</span>
+<span class="fc" id="L225">                return new LeafList&lt;&gt;(h1, leaf2.key(), leaf2.value(), leaf1);</span>
+            }
+<span class="fc" id="L227">            final int subH1 = hashFragment(shift, h1);</span>
+<span class="fc" id="L228">            final int subH2 = hashFragment(shift, h2);</span>
+<span class="fc" id="L229">            final int newBitmap = toBitmap(subH1) | toBitmap(subH2);</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">            if (subH1 == subH2) {</span>
+<span class="fc" id="L231">                AbstractNode&lt;K, V&gt; newLeaves = mergeLeaves(shift + SIZE, leaf1, leaf2);</span>
+<span class="fc" id="L232">                return new IndexedNode&lt;&gt;(newBitmap, newLeaves.size(), List.of(newLeaves));</span>
+            } else {
+<span class="fc bfc" id="L234" title="All 2 branches covered.">                return new IndexedNode&lt;&gt;(newBitmap, leaf1.size() + leaf2.size(),</span>
+<span class="fc" id="L235">                        subH1 &lt; subH2 ? List.of(leaf1, leaf2) : List.of(leaf2, leaf1));</span>
+            }
+        }
+
+        @Override
+        public boolean isEmpty() {
+<span class="fc" id="L241">            return false;</span>
+        }
+    }
+
+    /**
+     * Representation of a HAMT leaf node with single element.
+     *
+     * @param &lt;K&gt; Key type
+     * @param &lt;V&gt; Value type
+     */
+    final class LeafSingleton&lt;K, V&gt; extends LeafNode&lt;K, V&gt; implements Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        private final int hash;
+        private final K key;
+        private final V value;
+        private final int hashCode;
+
+<span class="fc" id="L260">        LeafSingleton(int hash, K key, V value) {</span>
+<span class="fc" id="L261">            this.hash = hash;</span>
+<span class="fc" id="L262">            this.key = key;</span>
+<span class="fc" id="L263">            this.value = value;</span>
+<span class="fc" id="L264">            this.hashCode = Objects.hash(key, value);</span>
+<span class="fc" id="L265">        }</span>
+
+        @Override
+        Option&lt;V&gt; lookup(int shift, K key) {
+<span class="fc bfc" id="L269" title="All 2 branches covered.">            if (Objects.equals(key, this.key)) {</span>
+<span class="fc" id="L270">                return Option.some(value);</span>
+            } else {
+<span class="fc" id="L272">                return Option.none();</span>
+            }
+        }
+
+        @Override
+        AbstractNode&lt;K, V&gt; modify(int shift, K key, V value, Action action) {
+<span class="fc bfc" id="L278" title="All 2 branches covered.">            if (Objects.equals(key, this.key)) {</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">                return (action == REMOVE) ? EmptyNode.instance() : new LeafSingleton&lt;&gt;(hash, key, value);</span>
+            } else {
+<span class="fc bfc" id="L281" title="All 2 branches covered.">                return (action == REMOVE) ? this : mergeLeaves(shift, this, new LeafSingleton&lt;&gt;(Objects.hashCode(key), key, value));</span>
+            }
+        }
+
+        @Override
+        public int size() {
+<span class="fc" id="L287">            return 1;</span>
+        }
+
+        @Override
+        public Iterator&lt;Tuple2&lt;K, V&gt;&gt; iterator() {
+<span class="fc" id="L292">            Tuple2&lt;K, V&gt; tuple = Tuple.of(key, value);</span>
+<span class="fc" id="L293">            return Iterator.of(tuple);</span>
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L298">            return hashCode;</span>
+        }
+
+        @Override
+        int hash() {
+<span class="fc" id="L303">            return hash;</span>
+        }
+
+        @Override
+        K key() {
+<span class="fc" id="L308">            return key;</span>
+        }
+
+        @Override
+        V value() {
+<span class="fc" id="L313">            return value;</span>
+        }
+    }
+
+    /**
+     * Representation of a HAMT leaf node with more than one element.
+     *
+     * @param &lt;K&gt; Key type
+     * @param &lt;V&gt; Value type
+     */
+    final class LeafList&lt;K, V&gt; extends LeafNode&lt;K, V&gt; implements Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        private final int hash;
+        private final K key;
+        private final V value;
+        private final int size;
+        private final LeafNode&lt;K, V&gt; tail;
+        private final int hashCode;
+
+<span class="fc" id="L334">        LeafList(int hash, K key, V value, LeafNode&lt;K, V&gt; tail) {</span>
+<span class="fc" id="L335">            this.hash = hash;</span>
+<span class="fc" id="L336">            this.key = key;</span>
+<span class="fc" id="L337">            this.value = value;</span>
+<span class="fc" id="L338">            this.size = 1 + tail.size();</span>
+<span class="fc" id="L339">            this.tail = tail;</span>
+<span class="fc" id="L340">            this.hashCode = Objects.hash(key, value, tail);</span>
+<span class="fc" id="L341">        }</span>
+
+        @Override
+        Option&lt;V&gt; lookup(int shift, K key) {
+<span class="fc bfc" id="L345" title="All 2 branches covered.">            if (hash != Objects.hashCode(key)) {</span>
+<span class="fc" id="L346">                return Option.none();</span>
+            }
+<span class="fc" id="L348">            return iterator().findFirst(t -&gt; Objects.equals(t._1, key)).map(t -&gt; t._2);</span>
+        }
+
+        @Override
+        AbstractNode&lt;K, V&gt; modify(int shift, K key, V value, Action action) {
+<span class="fc bfc" id="L353" title="All 2 branches covered.">            if (Objects.hashCode(key) == hash) {</span>
+<span class="fc" id="L354">                AbstractNode&lt;K, V&gt; filtered = removeElement(key);</span>
+<span class="fc bfc" id="L355" title="All 2 branches covered.">                if (action == REMOVE) {</span>
+<span class="fc" id="L356">                    return filtered;</span>
+                } else {
+<span class="fc" id="L358">                    return new LeafList&lt;&gt;(hash, key, value, (LeafNode&lt;K, V&gt;) filtered);</span>
+                }
+            } else {
+<span class="pc bpc" id="L361" title="1 of 2 branches missed.">                return (action == REMOVE) ? this : mergeLeaves(shift, this, new LeafSingleton&lt;&gt;(Objects.hashCode(key), key, value));</span>
+            }
+        }
+
+        private static &lt;K, V&gt; AbstractNode&lt;K, V&gt; mergeNodes(LeafNode&lt;K, V&gt; leaf1, LeafNode&lt;K, V&gt; leaf2) {
+<span class="fc bfc" id="L366" title="All 2 branches covered.">            if(leaf2 == null) {</span>
+<span class="fc" id="L367">                return leaf1;</span>
+            }
+<span class="fc bfc" id="L369" title="All 2 branches covered.">            if(leaf1 instanceof LeafSingleton) {</span>
+<span class="fc" id="L370">                return new LeafList&lt;&gt;(leaf1.hash(), leaf1.key(), leaf1.value(), leaf2);</span>
+            }
+<span class="fc bfc" id="L372" title="All 2 branches covered.">            if(leaf2 instanceof LeafSingleton) {</span>
+<span class="fc" id="L373">                return new LeafList&lt;&gt;(leaf2.hash(), leaf2.key(), leaf2.value(), leaf1);</span>
+            }
+<span class="fc" id="L375">            LeafNode&lt;K, V&gt; result = leaf1;</span>
+<span class="fc" id="L376">            LeafNode&lt;K, V&gt; tail = leaf2;</span>
+<span class="fc bfc" id="L377" title="All 2 branches covered.">            while (tail instanceof LeafList) {</span>
+<span class="fc" id="L378">                final LeafList&lt;K, V&gt; list = (LeafList&lt;K, V&gt;) tail;</span>
+<span class="fc" id="L379">                result = new LeafList&lt;&gt;(list.hash, list.key, list.value, result);</span>
+<span class="fc" id="L380">                tail = list.tail;</span>
+<span class="fc" id="L381">            }</span>
+<span class="fc" id="L382">            return new LeafList&lt;&gt;(tail.hash(), tail.key(), tail.value(), result);</span>
+        }
+
+        private AbstractNode&lt;K, V&gt; removeElement(K k) {
+<span class="fc bfc" id="L386" title="All 2 branches covered.">            if (Objects.equals(k, this.key)) {</span>
+<span class="fc" id="L387">                return tail;</span>
+            }
+<span class="fc" id="L389">            LeafNode&lt;K, V&gt; leaf1 = new LeafSingleton&lt;&gt;(hash, key, value);</span>
+<span class="fc" id="L390">            LeafNode&lt;K, V&gt; leaf2 = tail;</span>
+<span class="fc" id="L391">            boolean found = false;</span>
+<span class="fc bfc" id="L392" title="All 4 branches covered.">            while (!found &amp;&amp; leaf2 != null) {</span>
+<span class="fc bfc" id="L393" title="All 2 branches covered.">                if (Objects.equals(k, leaf2.key())) {</span>
+<span class="fc" id="L394">                    found = true;</span>
+                } else {
+<span class="fc" id="L396">                    leaf1 = new LeafList&lt;&gt;(leaf2.hash(), leaf2.key(), leaf2.value(), leaf1);</span>
+                }
+<span class="fc bfc" id="L398" title="All 2 branches covered.">                leaf2 = leaf2 instanceof LeafList ? ((LeafList&lt;K, V&gt;) leaf2).tail : null;</span>
+            }
+<span class="fc" id="L400">            return mergeNodes(leaf1, leaf2);</span>
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L405">            return hashCode;</span>
+        }
+
+        @Override
+        public int size() {
+<span class="fc" id="L410">            return size;</span>
+        }
+
+        @Override
+        public Iterator&lt;Tuple2&lt;K, V&gt;&gt; iterator() {
+<span class="fc" id="L415">            return new AbstractIterator&lt;Tuple2&lt;K, V&gt;&gt;() {</span>
+<span class="fc" id="L416">                LeafNode&lt;K, V&gt; node = LeafList.this;</span>
+
+                @Override
+                public boolean hasNext() {
+<span class="fc bfc" id="L420" title="All 2 branches covered.">                    return node != null;</span>
+                }
+
+                @Override
+                public Tuple2&lt;K, V&gt; getNext() {
+<span class="fc" id="L425">                    Tuple2&lt;K, V&gt; tuple = Tuple.of(node.key(), node.value());</span>
+<span class="fc bfc" id="L426" title="All 2 branches covered.">                    if (node instanceof LeafSingleton) {</span>
+<span class="fc" id="L427">                        node = null;</span>
+                    } else {
+<span class="fc" id="L429">                        node = ((LeafList&lt;K, V&gt;) node).tail;</span>
+                    }
+<span class="fc" id="L431">                    return tuple;</span>
+                }
+            };
+        }
+
+        @Override
+        int hash() {
+<span class="fc" id="L438">            return hash;</span>
+        }
+
+        @Override
+        K key() {
+<span class="fc" id="L443">            return key;</span>
+        }
+
+        @Override
+        V value() {
+<span class="fc" id="L448">            return value;</span>
+        }
+    }
+
+    /**
+     * Representation of a HAMT indexed node.
+     *
+     * @param &lt;K&gt; Key type
+     * @param &lt;V&gt; Value type
+     */
+    final class IndexedNode&lt;K, V&gt; extends AbstractNode&lt;K, V&gt; implements Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        private final int bitmap;
+        private final int size;
+        private final List&lt;AbstractNode&lt;K, V&gt;&gt; subNodes;
+
+<span class="fc" id="L466">        IndexedNode(int bitmap, int size, List&lt;AbstractNode&lt;K, V&gt;&gt; subNodes) {</span>
+<span class="fc" id="L467">            this.bitmap = bitmap;</span>
+<span class="fc" id="L468">            this.size = size;</span>
+<span class="fc" id="L469">            this.subNodes = subNodes;</span>
+<span class="fc" id="L470">        }</span>
+
+        @Override
+        Option&lt;V&gt; lookup(int shift, K key) {
+<span class="fc" id="L474">            int h = Objects.hashCode(key);</span>
+<span class="fc" id="L475">            int frag = hashFragment(shift, h);</span>
+<span class="fc" id="L476">            int bit = toBitmap(frag);</span>
+<span class="fc bfc" id="L477" title="All 2 branches covered.">            return ((bitmap &amp; bit) != 0) ? subNodes.get(fromBitmap(bitmap, bit)).lookup(shift + SIZE, key) : Option.none();</span>
+        }
+
+        @Override
+        AbstractNode&lt;K, V&gt; modify(int shift, K key, V value, Action action) {
+<span class="fc" id="L482">            final int frag = hashFragment(shift, Objects.hashCode(key));</span>
+<span class="fc" id="L483">            final int bit = toBitmap(frag);</span>
+<span class="fc" id="L484">            final int index = fromBitmap(bitmap, bit);</span>
+<span class="fc" id="L485">            final int mask = bitmap;</span>
+<span class="fc bfc" id="L486" title="All 2 branches covered.">            final boolean exists = (mask &amp; bit) != 0;</span>
+<span class="fc bfc" id="L487" title="All 2 branches covered.">            final AbstractNode&lt;K, V&gt; atIndx = exists ? subNodes.get(index) : null;</span>
+<span class="fc bfc" id="L488" title="All 2 branches covered.">            AbstractNode&lt;K, V&gt; child = exists ? atIndx.modify(shift + SIZE, key, value, action)</span>
+<span class="fc" id="L489">                    : EmptyNode.&lt;K, V&gt; instance().modify(shift + SIZE, key, value, action);</span>
+<span class="fc bfc" id="L490" title="All 4 branches covered.">            boolean removed = exists &amp;&amp; child.isEmpty();</span>
+<span class="fc bfc" id="L491" title="All 4 branches covered.">            boolean added = !exists &amp;&amp; !child.isEmpty();</span>
+<span class="fc bfc" id="L492" title="All 4 branches covered.">            int newBitmap = removed ? mask &amp; ~bit : added ? mask | bit : mask;</span>
+<span class="fc bfc" id="L493" title="All 2 branches covered.">            if (newBitmap == 0) {</span>
+<span class="fc" id="L494">                return EmptyNode.instance();</span>
+<span class="fc bfc" id="L495" title="All 2 branches covered.">            } else if (removed) {</span>
+<span class="fc bfc" id="L496" title="All 4 branches covered.">                if (subNodes.length() &lt;= 2 &amp;&amp; subNodes.get(index ^ 1) instanceof LeafNode) {</span>
+<span class="fc" id="L497">                    return subNodes.get(index ^ 1); // collapse</span>
+                } else {
+<span class="fc" id="L499">                    return new IndexedNode&lt;&gt;(newBitmap, size - atIndx.size(), subNodes.removeAt(index));</span>
+                }
+<span class="fc bfc" id="L501" title="All 2 branches covered.">            } else if (added) {</span>
+<span class="fc bfc" id="L502" title="All 2 branches covered.">                if (subNodes.length() &gt;= MAX_INDEX_NODE) {</span>
+<span class="fc" id="L503">                    return expand(frag, child, mask, subNodes);</span>
+                } else {
+<span class="fc" id="L505">                    return new IndexedNode&lt;&gt;(newBitmap, size + child.size(), subNodes.insert(index, child));</span>
+                }
+            } else {
+<span class="fc bfc" id="L508" title="All 2 branches covered.">                if (!exists) {</span>
+<span class="fc" id="L509">                    return this;</span>
+                } else {
+<span class="fc" id="L511">                    return new IndexedNode&lt;&gt;(newBitmap, size - atIndx.size() + child.size(), subNodes.update(index, child));</span>
+                }
+            }
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L518">            return subNodes.hashCode();</span>
+        }
+
+        private ArrayNode&lt;K, V&gt; expand(int frag, AbstractNode&lt;K, V&gt; child, int mask, List&lt;AbstractNode&lt;K, V&gt;&gt; subNodes) {
+<span class="fc" id="L522">            int bit = mask;</span>
+<span class="fc" id="L523">            int count = 0;</span>
+<span class="fc" id="L524">            List&lt;AbstractNode&lt;K, V&gt;&gt; sub = subNodes;</span>
+<span class="fc" id="L525">            final Object[] arr = new Object[BUCKET_SIZE];</span>
+<span class="fc bfc" id="L526" title="All 2 branches covered.">            for (int i = 0; i &lt; BUCKET_SIZE; i++) {</span>
+<span class="fc bfc" id="L527" title="All 2 branches covered.">                if ((bit &amp; 1) != 0) {</span>
+<span class="fc" id="L528">                    arr[i] = sub.head();</span>
+<span class="fc" id="L529">                    sub = sub.tail();</span>
+<span class="fc" id="L530">                    count++;</span>
+<span class="fc bfc" id="L531" title="All 2 branches covered.">                } else if (i == frag) {</span>
+<span class="fc" id="L532">                    arr[i] = child;</span>
+<span class="fc" id="L533">                    count++;</span>
+                } else {
+<span class="fc" id="L535">                    arr[i] = EmptyNode.instance();</span>
+                }
+<span class="fc" id="L537">                bit = bit &gt;&gt;&gt; 1;</span>
+            }
+<span class="fc" id="L539">            return new ArrayNode&lt;&gt;(count, size + child.size(), arr);</span>
+        }
+
+        @Override
+        public boolean isEmpty() {
+<span class="fc" id="L544">            return false;</span>
+        }
+
+        @Override
+        public int size() {
+<span class="fc" id="L549">            return size;</span>
+        }
+
+        @Override
+        public Iterator&lt;Tuple2&lt;K, V&gt;&gt; iterator() {
+<span class="fc" id="L554">            return Iterator.concat(subNodes);</span>
+        }
+    }
+
+    /**
+     * Representation of a HAMT array node.
+     *
+     * @param &lt;K&gt; Key type
+     * @param &lt;V&gt; Value type
+     */
+    final class ArrayNode&lt;K, V&gt; extends AbstractNode&lt;K, V&gt; implements Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+<span class="fc" id="L568">        private final transient Lazy&lt;Integer&gt; hashCode = Lazy.of(() -&gt; Traversable.hash(this));</span>
+        private final Object[] subNodes;
+        private final int count;
+        private final int size;
+
+<span class="fc" id="L573">        ArrayNode(int count, int size, Object[] subNodes) {</span>
+<span class="fc" id="L574">            this.subNodes = subNodes;</span>
+<span class="fc" id="L575">            this.count = count;</span>
+<span class="fc" id="L576">            this.size = size;</span>
+<span class="fc" id="L577">        }</span>
+
+        @SuppressWarnings(&quot;unchecked&quot;)
+        @Override
+        Option&lt;V&gt; lookup(int shift, K key) {
+<span class="fc" id="L582">            int frag = hashFragment(shift, Objects.hashCode(key));</span>
+<span class="fc" id="L583">            AbstractNode&lt;K, V&gt; child = (AbstractNode&lt;K, V&gt;) subNodes[frag];</span>
+<span class="fc" id="L584">            return child.lookup(shift + SIZE, key);</span>
+        }
+
+        @SuppressWarnings(&quot;unchecked&quot;)
+        @Override
+        AbstractNode&lt;K, V&gt; modify(int shift, K key, V value, Action action) {
+<span class="fc" id="L590">            int frag = hashFragment(shift, Objects.hashCode(key));</span>
+<span class="fc" id="L591">            AbstractNode&lt;K, V&gt; child = (AbstractNode&lt;K, V&gt;) subNodes[frag];</span>
+<span class="fc" id="L592">            AbstractNode&lt;K, V&gt; newChild = child.modify(shift + SIZE, key, value, action);</span>
+<span class="pc bpc" id="L593" title="1 of 4 branches missed.">            if (child.isEmpty() &amp;&amp; !newChild.isEmpty()) {</span>
+<span class="fc" id="L594">                return new ArrayNode&lt;&gt;(count + 1, size + newChild.size(), update(subNodes, frag, newChild));</span>
+<span class="pc bpc" id="L595" title="1 of 4 branches missed.">            } else if (!child.isEmpty() &amp;&amp; newChild.isEmpty()) {</span>
+<span class="fc bfc" id="L596" title="All 2 branches covered.">                if (count - 1 &lt;= MIN_ARRAY_NODE) {</span>
+<span class="fc" id="L597">                    return pack(frag, subNodes);</span>
+                } else {
+<span class="fc" id="L599">                    return new ArrayNode&lt;&gt;(count - 1, size - child.size(), update(subNodes, frag, EmptyNode.instance()));</span>
+                }
+            } else {
+<span class="fc" id="L602">                return new ArrayNode&lt;&gt;(count, size - child.size() + newChild.size(), update(subNodes, frag, newChild));</span>
+            }
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L608">            return hashCode.get();</span>
+        }
+
+        private static Object[] update(Object[] arr, int index, Object newElement) {
+<span class="fc" id="L612">            Object[] newArr = Arrays.copyOf(arr, arr.length);</span>
+<span class="fc" id="L613">            newArr[index] = newElement;</span>
+<span class="fc" id="L614">            return newArr;</span>
+        }
+
+        @SuppressWarnings(&quot;unchecked&quot;)
+        private IndexedNode&lt;K, V&gt; pack(int idx, Object[] elements) {
+<span class="fc" id="L619">            List&lt;AbstractNode&lt;K, V&gt;&gt; arr = List.empty();</span>
+<span class="fc" id="L620">            int bitmap = 0;</span>
+<span class="fc" id="L621">            int size = 0;</span>
+<span class="fc bfc" id="L622" title="All 2 branches covered.">            for (int i = BUCKET_SIZE - 1; i &gt;= 0; i--) {</span>
+<span class="fc" id="L623">                AbstractNode&lt;K, V&gt; elem = (AbstractNode&lt;K, V&gt;) elements[i];</span>
+<span class="fc bfc" id="L624" title="All 4 branches covered.">                if (i != idx &amp;&amp; !elem.isEmpty()) {</span>
+<span class="fc" id="L625">                    size += elem.size();</span>
+<span class="fc" id="L626">                    arr = arr.prepend(elem);</span>
+<span class="fc" id="L627">                    bitmap = bitmap | (1 &lt;&lt; i);</span>
+                }
+            }
+<span class="fc" id="L630">            return new IndexedNode&lt;&gt;(bitmap, size, arr);</span>
+        }
+
+        @Override
+        public boolean isEmpty() {
+<span class="fc" id="L635">            return false;</span>
+        }
+
+        @Override
+        public int size() {
+<span class="fc" id="L640">            return size;</span>
+        }
+
+        @Override
+        public Iterator&lt;Tuple2&lt;K, V&gt;&gt; iterator() {
+<span class="fc" id="L645">            return Iterator.concat(Array.wrap(subNodes));</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

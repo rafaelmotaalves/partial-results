@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CheckedFunction0.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang</a> &gt; <span class="el_source">CheckedFunction0.java</span></div><h1>CheckedFunction0.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang;
+
+/*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*\
+   G E N E R A T O R   C R A F T E D
+\*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*/
+
+import java.util.Objects;
+import javaslang.control.Option;
+import javaslang.control.Try;
+
+/**
+ * Represents a function with no arguments.
+ *
+ * @param &lt;R&gt; return type of the function
+ * @author Daniel Dietrich
+ * @since 1.1.0
+ */
+@FunctionalInterface
+public interface CheckedFunction0&lt;R&gt; extends λ&lt;R&gt; {
+
+    /**
+     * The &lt;a href=&quot;https://docs.oracle.com/javase/8/docs/api/index.html&quot;&gt;serial version uid&lt;/a&gt;.
+     */
+    long serialVersionUID = 1L;
+
+    /**
+     * Creates a {@code CheckedFunction0} based on
+     * &lt;ul&gt;
+     * &lt;li&gt;&lt;a href=&quot;https://docs.oracle.com/javase/tutorial/java/javaOO/methodreferences.html&quot;&gt;method reference&lt;/a&gt;&lt;/li&gt;
+     * &lt;li&gt;&lt;a href=&quot;https://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html#syntax&quot;&gt;lambda expression&lt;/a&gt;&lt;/li&gt;
+     * &lt;/ul&gt;
+     *
+     * Examples (w.l.o.g. referring to Function1):
+     * &lt;pre&gt;&lt;code&gt;// using a lambda expression
+     * Function1&amp;lt;Integer, Integer&amp;gt; add1 = Function1.of(i -&amp;gt; i + 1);
+     *
+     * // using a method reference (, e.g. Integer method(Integer i) { return i + 1; })
+     * Function1&amp;lt;Integer, Integer&amp;gt; add2 = Function1.of(this::method);
+     *
+     * // using a lambda reference
+     * Function1&amp;lt;Integer, Integer&amp;gt; add3 = Function1.of(add1::apply);
+     * &lt;/code&gt;&lt;/pre&gt;
+     * &lt;p&gt;
+     * &lt;strong&gt;Caution:&lt;/strong&gt; Reflection loses type information of lambda references.
+     * &lt;pre&gt;&lt;code&gt;// type of a lambda expression
+     * Type&amp;lt;?, ?&amp;gt; type1 = add1.getType(); // (Integer) -&amp;gt; Integer
+     *
+     * // type of a method reference
+     * Type&amp;lt;?, ?&amp;gt; type2 = add2.getType(); // (Integer) -&amp;gt; Integer
+     *
+     * // type of a lambda reference
+     * Type&amp;lt;?, ?&amp;gt; type3 = add3.getType(); // (Object) -&amp;gt; Object
+     * &lt;/code&gt;&lt;/pre&gt;
+     *
+     * @param methodReference (typically) a method reference, e.g. {@code Type::method}
+     * @param &lt;R&gt; return type
+     * @return a {@code CheckedFunction0}
+     */
+    static &lt;R&gt; CheckedFunction0&lt;R&gt; of(CheckedFunction0&lt;R&gt; methodReference) {
+<span class="fc" id="L65">        return methodReference;</span>
+    }
+
+    /**
+     * Lifts the given {@code partialFunction} into a total function that returns an {@code Option} result.
+     *
+     * @param partialFunction a function that is not defined for all values of the domain (e.g. by throwing)
+     * @param &lt;R&gt; return type
+     * @return a function that applies arguments to the given {@code partialFunction} and returns {@code Some(result)}
+     *         if the function is defined for the given arguments, and {@code None} otherwise.
+     */
+    static &lt;R&gt; Function0&lt;Option&lt;R&gt;&gt; lift(CheckedFunction0&lt;R&gt; partialFunction) {
+<span class="pc" id="L77">        return () -&gt; Try.of(() -&gt; partialFunction.apply()).getOption();</span>
+    }
+
+    /**
+     * Applies this function to no arguments and returns the result.
+     *
+     * @return the result of function application
+     * @throws Throwable if something goes wrong applying this function to the given arguments
+     */
+    R apply() throws Throwable;
+
+    @Override
+    default int arity() {
+<span class="fc" id="L90">        return 0;</span>
+    }
+
+    @Override
+    default CheckedFunction0&lt;R&gt; curried() {
+<span class="fc" id="L95">        return this;</span>
+    }
+
+    @Override
+    default CheckedFunction1&lt;Tuple0, R&gt; tupled() {
+<span class="pc" id="L100">        return t -&gt; apply();</span>
+    }
+
+    @Override
+    default CheckedFunction0&lt;R&gt; reversed() {
+<span class="fc" id="L105">        return this;</span>
+    }
+
+    @Override
+    default CheckedFunction0&lt;R&gt; memoized() {
+<span class="fc bfc" id="L110" title="All 2 branches covered.">        if (isMemoized()) {</span>
+<span class="fc" id="L111">            return this;</span>
+        } else {
+<span class="fc" id="L113">            return (CheckedFunction0&lt;R&gt; &amp; Memoized) Lazy.of(() -&gt; Try.of(this::apply).get())::get;</span>
+        }
+    }
+
+    /**
+     * Returns a composed function that first applies this CheckedFunction0 to the given argument and then applies
+     * {@linkplain CheckedFunction1} {@code after} to the result.
+     *
+     * @param &lt;V&gt; return type of after
+     * @param after the function applied after this
+     * @return a function composed of this and after
+     * @throws NullPointerException if after is null
+     */
+    default &lt;V&gt; CheckedFunction0&lt;V&gt; andThen(CheckedFunction1&lt;? super R, ? extends V&gt; after) {
+<span class="fc" id="L127">        Objects.requireNonNull(after, &quot;after is null&quot;);</span>
+<span class="pc" id="L128">        return () -&gt; after.apply(apply());</span>
+    }
+
+    @Override
+    default Type&lt;R&gt; getType() {
+<span class="fc" id="L133">        return new Type&lt;&gt;(this);</span>
+    }
+
+    /**
+     * Represents the type of a {@code CheckedFunction0} which consists of no parameter types
+     * and a return type.
+     *
+     *
+     * @param &lt;R&gt; the return type of the function
+     * @author Daniel Dietrich
+     * @since 2.0.0
+     */
+    final class Type&lt;R&gt; extends λ.Type&lt;R&gt; {
+
+        private static final long serialVersionUID = 1L;
+
+        private Type(CheckedFunction0&lt;R&gt; λ) {
+<span class="fc" id="L150">            super(λ);</span>
+<span class="fc" id="L151">        }</span>
+
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

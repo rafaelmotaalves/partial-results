@@ -1,0 +1,1206 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Queue.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang.collection</a> &gt; <span class="el_source">Queue.java</span></div><h1>Queue.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang.collection;
+
+import javaslang.*;
+import javaslang.control.Match;
+import javaslang.control.Option;
+
+import java.io.Serializable;
+import java.util.*;
+import java.util.function.*;
+import java.util.stream.Collector;
+
+/**
+ * An immutable {@code Queue} stores elements allowing a first-in-first-out (FIFO) retrieval.
+ * &lt;p&gt;
+ * Queue API:
+ *
+ * &lt;ul&gt;
+ * &lt;li&gt;{@link #dequeue()}&lt;/li&gt;
+ * &lt;li&gt;{@link #dequeueOption()}&lt;/li&gt;
+ * &lt;li&gt;{@link #enqueue(Object)}&lt;/li&gt;
+ * &lt;li&gt;{@link #enqueue(Object[])}&lt;/li&gt;
+ * &lt;li&gt;{@link #enqueueAll(Iterable)}&lt;/li&gt;
+ * &lt;li&gt;{@link #peek()}&lt;/li&gt;
+ * &lt;li&gt;{@link #peekOption()}&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * A Queue internally consists of a front List containing the front elements of the Queue in the correct order and a
+ * rear List containing the rear elements of the Queue in reverse order.
+ * &lt;p&gt;
+ * When the front list is empty, front and rear are swapped and rear is reversed. This implies the following queue
+ * invariant: {@code front.isEmpty() =&gt; rear.isEmpty()}.
+ * &lt;p&gt;
+ * See Okasaki, Chris: &lt;em&gt;Purely Functional Data Structures&lt;/em&gt; (p. 42 ff.). Cambridge, 2003.
+ *
+ * @param &lt;T&gt; Component type of the Queue
+ * @author Daniel Dietrich
+ * @since 2.0.0
+ */
+public class Queue&lt;T&gt; implements LinearSeq&lt;T&gt;, Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+<span class="fc" id="L48">    private static final Queue&lt;?&gt; EMPTY = new Queue&lt;&gt;(List.empty(), List.empty());</span>
+
+    private final List&lt;T&gt; front;
+    private final List&lt;T&gt; rear;
+
+<span class="fc" id="L53">    private final Lazy&lt;Integer&gt; hashCode = Lazy.of(() -&gt; Traversable.hash(this));</span>
+
+    /**
+     * Creates a Queue consisting of a front List and a rear List.
+     * &lt;p&gt;
+     * For a {@code Queue(front, rear)} the following invariant holds: {@code Queue is empty &lt;=&gt; front is empty}.
+     * In other words: If the Queue is not empty, the front List contains at least one element.
+     *
+     * @param front A List of front elements, in correct order.
+     * @param rear  A List of rear elements, in reverse order.
+     */
+<span class="fc" id="L64">    private Queue(List&lt;T&gt; front, List&lt;T&gt; rear) {</span>
+<span class="fc" id="L65">        final boolean frontIsEmpty = front.isEmpty();</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        this.front = frontIsEmpty ? rear.reverse() : front;</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        this.rear = frontIsEmpty ? front : rear;</span>
+<span class="fc" id="L68">    }</span>
+
+    /**
+     * Returns a {@link java.util.stream.Collector} which may be used in conjunction with
+     * {@link java.util.stream.Stream#collect(java.util.stream.Collector)} to obtain a {@link javaslang.collection.Queue}
+     * .
+     *
+     * @param &lt;T&gt; Component type of the Queue.
+     * @return A javaslang.collection.Queue Collector.
+     */
+    public static &lt;T&gt; Collector&lt;T, ArrayList&lt;T&gt;, Queue&lt;T&gt;&gt; collector() {
+<span class="fc" id="L79">        final Supplier&lt;ArrayList&lt;T&gt;&gt; supplier = ArrayList::new;</span>
+<span class="fc" id="L80">        final BiConsumer&lt;ArrayList&lt;T&gt;, T&gt; accumulator = ArrayList::add;</span>
+<span class="fc" id="L81">        final BinaryOperator&lt;ArrayList&lt;T&gt;&gt; combiner = (left, right) -&gt; {</span>
+<span class="fc" id="L82">            left.addAll(right);</span>
+<span class="fc" id="L83">            return left;</span>
+        };
+<span class="fc" id="L85">        final Function&lt;ArrayList&lt;T&gt;, Queue&lt;T&gt;&gt; finisher = Queue::ofAll;</span>
+<span class="fc" id="L86">        return Collector.of(supplier, accumulator, combiner, finisher);</span>
+    }
+
+    /**
+     * Returns the empty Queue.
+     *
+     * @param &lt;T&gt; Component type
+     * @return The empty Queue.
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    public static &lt;T&gt; Queue&lt;T&gt; empty() {
+<span class="fc" id="L97">        return (Queue&lt;T&gt;) EMPTY;</span>
+    }
+
+    /**
+     * Returns a singleton {@code Queue}, i.e. a {@code Queue} of one element.
+     *
+     * @param element An element.
+     * @param &lt;T&gt;     The component type
+     * @return A new Queue instance containing the given element
+     */
+    public static &lt;T&gt; Queue&lt;T&gt; of(T element) {
+<span class="fc" id="L108">        return Queue.ofAll(List.of(element));</span>
+    }
+
+    /**
+     * Creates a Queue of the given elements.
+     *
+     * @param &lt;T&gt;      Component type of the Queue.
+     * @param elements Zero or more elements.
+     * @return A queue containing the given elements in the same order.
+     * @throws NullPointerException if {@code elements} is null
+     */
+    @SuppressWarnings(&quot;varargs&quot;)
+    @SafeVarargs
+    public static &lt;T&gt; Queue&lt;T&gt; of(T... elements) {
+<span class="fc" id="L122">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc" id="L123">        return Queue.ofAll(List.of(elements));</span>
+    }
+
+    /**
+     * Creates a Queue of the given elements.
+     *
+     * @param &lt;T&gt;      Component type of the Queue.
+     * @param elements An Iterable of elements.
+     * @return A queue containing the given elements in the same order.
+     * @throws NullPointerException if {@code elements} is null
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    public static &lt;T&gt; Queue&lt;T&gt; ofAll(Iterable&lt;? extends T&gt; elements) {
+<span class="fc" id="L136">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        if (elements instanceof Queue) {</span>
+<span class="fc" id="L138">            return (Queue&lt;T&gt;) elements;</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        } else if (!elements.iterator().hasNext()) {</span>
+<span class="fc" id="L140">            return empty();</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">        } else if (elements instanceof List) {</span>
+<span class="fc" id="L142">            return new Queue&lt;&gt;((List&lt;T&gt;) elements, List.empty());</span>
+        } else {
+<span class="fc" id="L144">            return new Queue&lt;&gt;(List.ofAll(elements), List.empty());</span>
+        }
+    }
+
+    /**
+     * Creates a Seq based on the elements of a boolean array.
+     *
+     * @param array a boolean array
+     * @return A new Seq of Boolean values
+     * @throws NullPointerException if array is null
+     */
+    public static Queue&lt;Boolean&gt; ofAll(boolean[] array) {
+<span class="fc" id="L156">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L157">        return Queue.ofAll(List.ofAll(array));</span>
+    }
+
+    /**
+     * Creates a Queue based on the elements of a byte array.
+     *
+     * @param array a byte array
+     * @return A new Queue of Byte values
+     * @throws NullPointerException if array is null
+     */
+    public static Queue&lt;Byte&gt; ofAll(byte[] array) {
+<span class="fc" id="L168">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L169">        return Queue.ofAll(List.ofAll(array));</span>
+    }
+
+    /**
+     * Creates a Queue based on the elements of a char array.
+     *
+     * @param array a char array
+     * @return A new Queue of Character values
+     * @throws NullPointerException if array is null
+     */
+    public static Queue&lt;Character&gt; ofAll(char[] array) {
+<span class="fc" id="L180">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L181">        return Queue.ofAll(List.ofAll(array));</span>
+    }
+
+    /**
+     * Creates a Queue based on the elements of a double array.
+     *
+     * @param array a double array
+     * @return A new Queue of Double values
+     * @throws NullPointerException if array is null
+     */
+    public static Queue&lt;Double&gt; ofAll(double[] array) {
+<span class="fc" id="L192">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L193">        return Queue.ofAll(List.ofAll(array));</span>
+    }
+
+    /**
+     * Creates a Queue based on the elements of a float array.
+     *
+     * @param array a float array
+     * @return A new Queue of Float values
+     * @throws NullPointerException if array is null
+     */
+    public static Queue&lt;Float&gt; ofAll(float[] array) {
+<span class="fc" id="L204">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L205">        return Queue.ofAll(List.ofAll(array));</span>
+    }
+
+    /**
+     * Creates a Queue based on the elements of an int array.
+     *
+     * @param array an int array
+     * @return A new Queue of Integer values
+     * @throws NullPointerException if array is null
+     */
+    public static Queue&lt;Integer&gt; ofAll(int[] array) {
+<span class="fc" id="L216">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L217">        return Queue.ofAll(List.ofAll(array));</span>
+    }
+
+    /**
+     * Creates a Queue based on the elements of a long array.
+     *
+     * @param array a long array
+     * @return A new Queue of Long values
+     * @throws NullPointerException if array is null
+     */
+    public static Queue&lt;Long&gt; ofAll(long[] array) {
+<span class="fc" id="L228">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L229">        return Queue.ofAll(List.ofAll(array));</span>
+    }
+
+    /**
+     * Creates a Queue based on the elements of a short array.
+     *
+     * @param array a short array
+     * @return A new Queue of Short values
+     * @throws NullPointerException if array is null
+     */
+    public static Queue&lt;Short&gt; ofAll(short[] array) {
+<span class="fc" id="L240">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L241">        return Queue.ofAll(List.ofAll(array));</span>
+    }
+
+    /**
+     * Returns a Queue containing {@code n} values of a given Function {@code f}
+     * over a range of integer values from 0 to {@code n - 1}.
+     *
+     * @param &lt;T&gt; Component type of the Queue
+     * @param n The number of elements in the Queue
+     * @param f The Function computing element values
+     * @return A Queue consisting of elements {@code f(0),f(1), ..., f(n - 1)}
+     * @throws NullPointerException if {@code f} is null
+     */
+    public static &lt;T&gt; Queue&lt;T&gt; tabulate(int n, Function&lt;? super Integer, ? extends T&gt; f) {
+<span class="fc" id="L255">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="fc" id="L256">        return Collections.tabulate(n, f, Queue.empty(), Queue::of);</span>
+    }
+
+    /**
+     * Returns a Queue containing {@code n} values supplied by a given Supplier {@code s}.
+     *
+     * @param &lt;T&gt; Component type of the Queue
+     * @param n The number of elements in the Queue
+     * @param s The Supplier computing element values
+     * @return An Queue of size {@code n}, where each element contains the result supplied by {@code s}.
+     * @throws NullPointerException if {@code s} is null
+     */
+    public static &lt;T&gt; Queue&lt;T&gt; fill(int n, Supplier&lt;? extends T&gt; s) {
+<span class="fc" id="L269">        Objects.requireNonNull(s, &quot;s is null&quot;);</span>
+<span class="fc" id="L270">        return Collections.fill(n, s, Queue.empty(), Queue::of);</span>
+    }
+
+    public static Queue&lt;Character&gt; range(char from, char toExclusive) {
+<span class="fc" id="L274">        return Queue.ofAll(Iterator.range(from, toExclusive));</span>
+    }
+
+    public static Queue&lt;Character&gt; rangeBy(char from, char toExclusive, int step) {
+<span class="fc" id="L278">        return Queue.ofAll(Iterator.rangeBy(from, toExclusive, step));</span>
+    }
+
+    public static Queue&lt;Double&gt; rangeBy(double from, double toExclusive, double step) {
+<span class="fc" id="L282">        return Queue.ofAll(Iterator.rangeBy(from, toExclusive, step));</span>
+    }
+
+    /**
+     * Creates a Queue of int numbers starting from {@code from}, extending to {@code toExclusive - 1}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * Queue.range(0, 0)  // = Queue()
+     * Queue.range(2, 0)  // = Queue()
+     * Queue.range(-2, 2) // = Queue(-2, -1, 0, 1)
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toExclusive the last number + 1
+     * @return a range of int values as specified or {@code Nil} if {@code from &gt;= toExclusive}
+     */
+    public static Queue&lt;Integer&gt; range(int from, int toExclusive) {
+<span class="fc" id="L302">        return Queue.ofAll(Iterator.range(from, toExclusive));</span>
+    }
+
+    /**
+     * Creates a Queue of int numbers starting from {@code from}, extending to {@code toExclusive - 1},
+     * with {@code step}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * Queue.rangeBy(1, 3, 1)  // = Queue(1, 2)
+     * Queue.rangeBy(1, 4, 2)  // = Queue(1, 3)
+     * Queue.rangeBy(4, 1, -2) // = Queue(4, 2)
+     * Queue.rangeBy(4, 1, 2)  // = Queue()
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toExclusive the last number + 1
+     * @param step        the step
+     * @return a range of long values as specified or {@code Nil} if&lt;br&gt;
+     * {@code from &gt;= toInclusive} and {@code step &gt; 0} or&lt;br&gt;
+     * {@code from &lt;= toInclusive} and {@code step &lt; 0}
+     * @throws IllegalArgumentException if {@code step} is zero
+     */
+    public static Queue&lt;Integer&gt; rangeBy(int from, int toExclusive, int step) {
+<span class="fc" id="L328">        return Queue.ofAll(Iterator.rangeBy(from, toExclusive, step));</span>
+    }
+
+    /**
+     * Creates a Queue of long numbers starting from {@code from}, extending to {@code toExclusive - 1}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * Queue.range(0L, 0L)  // = Queue()
+     * Queue.range(2L, 0L)  // = Queue()
+     * Queue.range(-2L, 2L) // = Queue(-2L, -1L, 0L, 1L)
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toExclusive the last number + 1
+     * @return a range of long values as specified or {@code Nil} if {@code from &gt;= toExclusive}
+     */
+    public static Queue&lt;Long&gt; range(long from, long toExclusive) {
+<span class="fc" id="L348">        return Queue.ofAll(Iterator.range(from, toExclusive));</span>
+    }
+
+    /**
+     * Creates a Queue of long numbers starting from {@code from}, extending to {@code toExclusive - 1},
+     * with {@code step}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * Queue.rangeBy(1L, 3L, 1L)  // = Queue(1L, 2L)
+     * Queue.rangeBy(1L, 4L, 2L)  // = Queue(1L, 3L)
+     * Queue.rangeBy(4L, 1L, -2L) // = Queue(4L, 2L)
+     * Queue.rangeBy(4L, 1L, 2L)  // = Queue()
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toExclusive the last number + 1
+     * @param step        the step
+     * @return a range of long values as specified or {@code Nil} if&lt;br&gt;
+     * {@code from &gt;= toInclusive} and {@code step &gt; 0} or&lt;br&gt;
+     * {@code from &lt;= toInclusive} and {@code step &lt; 0}
+     * @throws IllegalArgumentException if {@code step} is zero
+     */
+    public static Queue&lt;Long&gt; rangeBy(long from, long toExclusive, long step) {
+<span class="fc" id="L374">        return Queue.ofAll(Iterator.rangeBy(from, toExclusive, step));</span>
+    }
+
+    public static Queue&lt;Character&gt; rangeClosed(char from, char toInclusive) {
+<span class="fc" id="L378">        return Queue.ofAll(Iterator.rangeClosed(from, toInclusive));</span>
+    }
+
+    public static Queue&lt;Character&gt; rangeClosedBy(char from, char toInclusive, int step) {
+<span class="fc" id="L382">        return Queue.ofAll(Iterator.rangeClosedBy(from, toInclusive, step));</span>
+    }
+
+    public static Queue&lt;Double&gt; rangeClosedBy(double from, double toInclusive, double step) {
+<span class="fc" id="L386">        return Queue.ofAll(Iterator.rangeClosedBy(from, toInclusive, step));</span>
+    }
+
+    /**
+     * Creates a Queue of int numbers starting from {@code from}, extending to {@code toInclusive}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * Queue.rangeClosed(0, 0)  // = Queue(0)
+     * Queue.rangeClosed(2, 0)  // = Queue()
+     * Queue.rangeClosed(-2, 2) // = Queue(-2, -1, 0, 1, 2)
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toInclusive the last number
+     * @return a range of int values as specified or {@code Nil} if {@code from &gt; toInclusive}
+     */
+    public static Queue&lt;Integer&gt; rangeClosed(int from, int toInclusive) {
+<span class="fc" id="L406">        return Queue.ofAll(Iterator.rangeClosed(from, toInclusive));</span>
+    }
+
+    /**
+     * Creates a Queue of int numbers starting from {@code from}, extending to {@code toInclusive},
+     * with {@code step}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * Queue.rangeClosedBy(1, 3, 1)  // = Queue(1, 2, 3)
+     * Queue.rangeClosedBy(1, 4, 2)  // = Queue(1, 3)
+     * Queue.rangeClosedBy(4, 1, -2) // = Queue(4, 2)
+     * Queue.rangeClosedBy(4, 1, 2)  // = Queue()
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toInclusive the last number
+     * @param step        the step
+     * @return a range of int values as specified or {@code Nil} if&lt;br&gt;
+     * {@code from &gt; toInclusive} and {@code step &gt; 0} or&lt;br&gt;
+     * {@code from &lt; toInclusive} and {@code step &lt; 0}
+     * @throws IllegalArgumentException if {@code step} is zero
+     */
+    public static Queue&lt;Integer&gt; rangeClosedBy(int from, int toInclusive, int step) {
+<span class="fc" id="L432">        return Queue.ofAll(Iterator.rangeClosedBy(from, toInclusive, step));</span>
+    }
+
+    /**
+     * Creates a Queue of long numbers starting from {@code from}, extending to {@code toInclusive}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * Queue.rangeClosed(0L, 0L)  // = Queue(0L)
+     * Queue.rangeClosed(2L, 0L)  // = Queue()
+     * Queue.rangeClosed(-2L, 2L) // = Queue(-2L, -1L, 0L, 1L, 2L)
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toInclusive the last number
+     * @return a range of long values as specified or {@code Nil} if {@code from &gt; toInclusive}
+     */
+    public static Queue&lt;Long&gt; rangeClosed(long from, long toInclusive) {
+<span class="fc" id="L452">        return Queue.ofAll(Iterator.rangeClosed(from, toInclusive));</span>
+    }
+
+    /**
+     * Creates a Queue of long numbers starting from {@code from}, extending to {@code toInclusive},
+     * with {@code step}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * Queue.rangeClosedBy(1L, 3L, 1L)  // = Queue(1L, 2L, 3L)
+     * Queue.rangeClosedBy(1L, 4L, 2L)  // = Queue(1L, 3L)
+     * Queue.rangeClosedBy(4L, 1L, -2L) // = Queue(4L, 2L)
+     * Queue.rangeClosedBy(4L, 1L, 2L)  // = Queue()
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toInclusive the last number
+     * @param step        the step
+     * @return a range of int values as specified or {@code Nil} if&lt;br&gt;
+     * {@code from &gt; toInclusive} and {@code step &gt; 0} or&lt;br&gt;
+     * {@code from &lt; toInclusive} and {@code step &lt; 0}
+     * @throws IllegalArgumentException if {@code step} is zero
+     */
+    public static Queue&lt;Long&gt; rangeClosedBy(long from, long toInclusive, long step) {
+<span class="fc" id="L478">        return Queue.ofAll(Iterator.rangeClosedBy(from, toInclusive, step));</span>
+    }
+
+    /**
+     * Removes an element from this Queue.
+     *
+     * @return a tuple containing the first element and the remaining elements of this Queue
+     * @throws java.util.NoSuchElementException if this Queue is empty
+     */
+    public Tuple2&lt;T, Queue&lt;T&gt;&gt; dequeue() {
+<span class="fc bfc" id="L488" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L489">            throw new NoSuchElementException(&quot;dequeue of empty Queue&quot;);</span>
+        } else {
+<span class="fc" id="L491">            return Tuple.of(head(), tail());</span>
+        }
+    }
+
+    /**
+     * Removes an element from this Queue.
+     *
+     * @return {@code None} if this Queue is empty, otherwise {@code Some} {@code Tuple} containing the first element and the remaining elements of this Queue
+     */
+    public Option&lt;Tuple2&lt;T, Queue&lt;T&gt;&gt;&gt; dequeueOption() {
+<span class="fc bfc" id="L501" title="All 2 branches covered.">        return isEmpty() ? Option.none() : Option.some(dequeue());</span>
+    }
+
+    /**
+     * Enqueues a new element.
+     *
+     * @param element The new element
+     * @return a new {@code Queue} instance, containing the new element
+     */
+    public Queue&lt;T&gt; enqueue(T element) {
+<span class="fc" id="L511">        return new Queue&lt;&gt;(front, rear.prepend(element));</span>
+    }
+
+    /**
+     * Enqueues the given elements. A queue has FIFO order, i.e. the first of the given elements is
+     * the first which will be retrieved.
+     *
+     * @param elements Elements, may be empty
+     * @return a new {@code Queue} instance, containing the new elements
+     * @throws NullPointerException if elements is null
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    public Queue&lt;T&gt; enqueue(T... elements) {
+<span class="fc" id="L524">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc" id="L525">        List&lt;T&gt; temp = rear;</span>
+<span class="fc bfc" id="L526" title="All 2 branches covered.">        for (T element : elements) {</span>
+<span class="fc" id="L527">            temp = temp.prepend(element);</span>
+        }
+<span class="fc" id="L529">        return new Queue&lt;&gt;(front, temp);</span>
+    }
+
+    /**
+     * Enqueues the given elements. A queue has FIFO order, i.e. the first of the given elements is
+     * the first which will be retrieved.
+     *
+     * @param elements An Iterable of elements, may be empty
+     * @return a new {@code Queue} instance, containing the new elements
+     * @throws NullPointerException if elements is null
+     */
+    public Queue&lt;T&gt; enqueueAll(Iterable&lt;? extends T&gt; elements) {
+<span class="fc" id="L541">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc" id="L542">        List&lt;T&gt; temp = rear;</span>
+<span class="fc bfc" id="L543" title="All 2 branches covered.">        for (T element : elements) {</span>
+<span class="fc" id="L544">            temp = temp.prepend(element);</span>
+<span class="fc" id="L545">        }</span>
+<span class="fc" id="L546">        return new Queue&lt;&gt;(front, temp);</span>
+    }
+
+    /**
+     * Returns the first element without modifying the Queue.
+     *
+     * @return the first element
+     * @throws java.util.NoSuchElementException if this Queue is empty
+     */
+    public T peek() {
+<span class="fc bfc" id="L556" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L557">            throw new NoSuchElementException(&quot;peek of empty Queue&quot;);</span>
+        } else {
+<span class="fc" id="L559">            return front.head();</span>
+        }
+    }
+
+    /**
+     * Returns the first element without modifying the Queue.
+     *
+     * @return {@code None} if this Queue is empty, otherwise a {@code Some} containing the first element
+     */
+    public Option&lt;T&gt; peekOption() {
+<span class="fc bfc" id="L569" title="All 2 branches covered.">        return isEmpty() ? Option.none() : Option.some(front.head());</span>
+    }
+
+    // -- Adjusted return types of Seq methods
+
+    @Override
+    public Queue&lt;T&gt; append(T element) {
+<span class="fc" id="L576">        return enqueue(element);</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; appendAll(Iterable&lt;? extends T&gt; elements) {
+<span class="fc" id="L581">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc" id="L582">        return enqueueAll(elements);</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; clear() {
+<span class="fc" id="L587">        return Queue.empty();</span>
+    }
+
+    @Override
+    public Queue&lt;Queue&lt;T&gt;&gt; combinations() {
+<span class="fc" id="L592">        return toList().combinations().map(Queue::ofAll).toQueue();</span>
+    }
+
+    @Override
+    public Queue&lt;Queue&lt;T&gt;&gt; combinations(int k) {
+<span class="fc" id="L597">        return toList().combinations(k).map(Queue::ofAll).toQueue();</span>
+    }
+
+    @Override
+    public Queue&lt;Tuple2&lt;T, T&gt;&gt; crossProduct() {
+<span class="fc" id="L602">        return crossProduct(this);</span>
+    }
+
+    @Override
+    public Queue&lt;Queue&lt;T&gt;&gt; crossProduct(int power) {
+<span class="fc" id="L607">        return Collections.crossProduct(this, power).map(Queue::ofAll).toQueue();</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override
+    public &lt;U&gt; Queue&lt;Tuple2&lt;T, U&gt;&gt; crossProduct(Iterable&lt;? extends U&gt; that) {
+<span class="fc" id="L613">        return toList().crossProduct((Iterable&lt;U&gt;) that).toQueue();</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; distinct() {
+<span class="fc" id="L618">        return toList().distinct().toQueue();</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; distinctBy(Comparator&lt;? super T&gt; comparator) {
+<span class="fc" id="L623">        Objects.requireNonNull(comparator, &quot;comparator is null&quot;);</span>
+<span class="fc" id="L624">        return toList().distinctBy(comparator).toQueue();</span>
+    }
+
+    @Override
+    public &lt;U&gt; Queue&lt;T&gt; distinctBy(Function&lt;? super T, ? extends U&gt; keyExtractor) {
+<span class="fc" id="L629">        Objects.requireNonNull(keyExtractor, &quot;keyExtractor is null&quot;);</span>
+<span class="fc" id="L630">        return toList().distinctBy(keyExtractor).toQueue();</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; drop(int n) {
+<span class="fc bfc" id="L635" title="All 2 branches covered.">        if (n &lt;= 0) {</span>
+<span class="fc" id="L636">            return this;</span>
+        }
+<span class="fc bfc" id="L638" title="All 2 branches covered.">        if (n &gt;= length()) {</span>
+<span class="fc" id="L639">            return empty();</span>
+        }
+<span class="fc" id="L641">        return new Queue&lt;&gt;(front.drop(n), rear.dropRight(n - front.length()));</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; dropRight(int n) {
+<span class="fc bfc" id="L646" title="All 2 branches covered.">        if (n &lt;= 0) {</span>
+<span class="fc" id="L647">            return this;</span>
+        }
+<span class="fc bfc" id="L649" title="All 2 branches covered.">        if (n &gt;= length()) {</span>
+<span class="fc" id="L650">            return empty();</span>
+        }
+<span class="fc" id="L652">        return new Queue&lt;&gt;(front.dropRight(n - rear.length()), rear.drop(n));</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; dropUntil(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L657">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L658">        return dropWhile(predicate.negate());</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; dropWhile(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L663">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L664">        final List&lt;T&gt; dropped = toList().dropWhile(predicate);</span>
+<span class="fc bfc" id="L665" title="All 2 branches covered.">        return dropped.length() == length() ? this : dropped.toQueue();</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; filter(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L670">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L671">        final List&lt;T&gt; filtered = toList().filter(predicate);</span>
+<span class="fc bfc" id="L672" title="All 2 branches covered.">        return filtered.length() == length() ? this : filtered.toQueue();</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; filterNot(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L677">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L678">        return filter(predicate.negate());</span>
+    }
+
+    @Override
+    public &lt;U&gt; Queue&lt;U&gt; flatMap(Function&lt;? super T, ? extends Iterable&lt;? extends U&gt;&gt; mapper) {
+<span class="nc" id="L683">        Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+<span class="nc" id="L684">        return new Queue&lt;&gt;(front.flatMap(mapper), rear.flatMap(mapper));</span>
+    }
+
+    @Override
+    public T get(int index) {
+<span class="fc bfc" id="L689" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L690">            throw new IndexOutOfBoundsException(&quot;get(&quot; + index + &quot;) on empty Queue&quot;);</span>
+        }
+<span class="fc bfc" id="L692" title="All 2 branches covered.">        if (index &lt; 0) {</span>
+<span class="fc" id="L693">            throw new IndexOutOfBoundsException(&quot;get(&quot; + index + &quot;)&quot;);</span>
+        }
+<span class="fc" id="L695">        final int length = front.length();</span>
+<span class="fc bfc" id="L696" title="All 2 branches covered.">        if (index &lt; length) {</span>
+<span class="fc" id="L697">            return front.get(index);</span>
+        } else {
+<span class="fc" id="L699">            final int rearIndex = index - length;</span>
+<span class="fc" id="L700">            final int rearLength = rear.length();</span>
+<span class="fc bfc" id="L701" title="All 2 branches covered.">            if (rearIndex &lt; rearLength) {</span>
+<span class="fc" id="L702">                final int reverseRearIndex = rearLength - rearIndex - 1;</span>
+<span class="fc" id="L703">                return rear.get(reverseRearIndex);</span>
+            } else {
+<span class="fc" id="L705">                throw new IndexOutOfBoundsException(String.format(&quot;get(%s) on Queue of length %s&quot;, index, length()));</span>
+            }
+        }
+    }
+
+    @Override
+    public &lt;C&gt; Map&lt;C, Queue&lt;T&gt;&gt; groupBy(Function&lt;? super T, ? extends C&gt; classifier) {
+<span class="fc" id="L712">        Objects.requireNonNull(classifier, &quot;classifier is null&quot;);</span>
+<span class="fc" id="L713">        return iterator().groupBy(classifier).map((c, it) -&gt; Tuple.of(c, Queue.ofAll(it)));</span>
+    }
+
+    @Override
+    public Iterator&lt;Queue&lt;T&gt;&gt; grouped(int size) {
+<span class="fc" id="L718">        return sliding(size, size);</span>
+    }
+
+    @Override
+    public boolean hasDefiniteSize() {
+<span class="fc" id="L723">        return true;</span>
+    }
+
+    @Override
+    public T head() {
+<span class="fc bfc" id="L728" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L729">            throw new NoSuchElementException(&quot;head of empty queue&quot;);</span>
+        } else {
+<span class="fc" id="L731">            return front.head();</span>
+        }
+    }
+
+    @Override
+    public Option&lt;T&gt; headOption() {
+<span class="fc bfc" id="L737" title="All 2 branches covered.">        return isEmpty() ? Option.none() : Option.some(front.head());</span>
+    }
+
+    @Override
+    public int indexOf(T element, int from) {
+<span class="fc" id="L742">        final int frontIndex = front.indexOf(element, from);</span>
+<span class="fc bfc" id="L743" title="All 2 branches covered.">        if (frontIndex != -1) {</span>
+<span class="fc" id="L744">            return frontIndex;</span>
+        } else {
+            // we need to reverse because we search the first occurrence
+<span class="fc" id="L747">            final int rearIndex = rear.reverse().indexOf(element, from - front.length());</span>
+<span class="fc bfc" id="L748" title="All 2 branches covered.">            return (rearIndex == -1) ? -1 : rearIndex + front.length();</span>
+        }
+    }
+
+    @Override
+    public Queue&lt;T&gt; init() {
+<span class="fc bfc" id="L754" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L755">            throw new UnsupportedOperationException(&quot;init of empty Queue&quot;);</span>
+<span class="fc bfc" id="L756" title="All 2 branches covered.">        } else if (rear.isEmpty()) {</span>
+<span class="fc" id="L757">            return new Queue&lt;&gt;(front.init(), rear);</span>
+        } else {
+<span class="fc" id="L759">            return new Queue&lt;&gt;(front, rear.tail());</span>
+        }
+    }
+
+    @Override
+    public Option&lt;Queue&lt;T&gt;&gt; initOption() {
+<span class="fc bfc" id="L765" title="All 2 branches covered.">        return isEmpty() ? Option.none() : Option.some(init());</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; insert(int index, T element) {
+<span class="fc bfc" id="L770" title="All 2 branches covered.">        if (index &lt; 0) {</span>
+<span class="fc" id="L771">            throw new IndexOutOfBoundsException(&quot;insert(&quot; + index + &quot;, e)&quot;);</span>
+        }
+<span class="fc" id="L773">        final int length = front.length();</span>
+<span class="fc bfc" id="L774" title="All 2 branches covered.">        if (index &lt;= length) {</span>
+<span class="fc" id="L775">            return new Queue&lt;&gt;(front.insert(index, element), rear);</span>
+        } else {
+<span class="fc" id="L777">            final int rearIndex = index - length;</span>
+<span class="fc" id="L778">            final int rearLength = rear.length();</span>
+<span class="fc bfc" id="L779" title="All 2 branches covered.">            if (rearIndex &lt;= rearLength) {</span>
+<span class="fc" id="L780">                final int reverseRearIndex = rearLength - rearIndex;</span>
+<span class="fc" id="L781">                return new Queue&lt;&gt;(front, rear.insert(reverseRearIndex, element));</span>
+            } else {
+<span class="fc" id="L783">                throw new IndexOutOfBoundsException(</span>
+<span class="fc" id="L784">                        String.format(&quot;insert(%s, e) on Queue of length %s&quot;, index, length()));</span>
+            }
+        }
+    }
+
+    @Override
+    public Queue&lt;T&gt; insertAll(int index, Iterable&lt;? extends T&gt; elements) {
+<span class="fc" id="L791">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc bfc" id="L792" title="All 2 branches covered.">        if (index &lt; 0) {</span>
+<span class="fc" id="L793">            throw new IndexOutOfBoundsException(&quot;insertAll(&quot; + index + &quot;, e)&quot;);</span>
+        }
+<span class="fc" id="L795">        final int length = front.length();</span>
+<span class="fc bfc" id="L796" title="All 2 branches covered.">        if (index &lt;= length) {</span>
+<span class="fc" id="L797">            return new Queue&lt;&gt;(front.insertAll(index, elements), rear);</span>
+        } else {
+<span class="fc" id="L799">            final int rearIndex = index - length;</span>
+<span class="fc" id="L800">            final int rearLength = rear.length();</span>
+<span class="fc bfc" id="L801" title="All 2 branches covered.">            if (rearIndex &lt;= rearLength) {</span>
+<span class="fc" id="L802">                final int reverseRearIndex = rearLength - rearIndex;</span>
+<span class="fc" id="L803">                return new Queue&lt;&gt;(front, rear.insertAll(reverseRearIndex, List.ofAll(elements).reverse()));</span>
+            } else {
+<span class="fc" id="L805">                throw new IndexOutOfBoundsException(</span>
+<span class="fc" id="L806">                        String.format(&quot;insertAll(%s, e) on Queue of length %s&quot;, index, length()));</span>
+            }
+        }
+    }
+
+    @Override
+    public Queue&lt;T&gt; intersperse(T element) {
+<span class="fc bfc" id="L813" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L814">            return this;</span>
+<span class="fc bfc" id="L815" title="All 2 branches covered.">        } else if (rear.isEmpty()) {</span>
+<span class="fc" id="L816">            return new Queue&lt;&gt;(front.intersperse(element), rear);</span>
+        } else {
+<span class="fc" id="L818">            return new Queue&lt;&gt;(front.intersperse(element), rear.intersperse(element).append(element));</span>
+        }
+    }
+
+    @Override
+    public boolean isEmpty() {
+<span class="fc" id="L824">        return front.isEmpty();</span>
+    }
+
+    @Override
+    public boolean isTraversableAgain() {
+<span class="fc" id="L829">        return true;</span>
+    }
+
+    @Override
+    public int lastIndexOf(T element, int end) {
+<span class="fc" id="L834">        return toList().lastIndexOf(element, end);</span>
+    }
+
+    @Override
+    public int length() {
+<span class="fc" id="L839">        return front.length() + rear.length();</span>
+    }
+
+    @Override
+    public &lt;U&gt; Queue&lt;U&gt; map(Function&lt;? super T, ? extends U&gt; mapper) {
+<span class="fc" id="L844">        Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+<span class="fc" id="L845">        return new Queue&lt;&gt;(front.map(mapper), rear.map(mapper));</span>
+    }
+
+    @Override
+    public Match.MatchMonad.Of&lt;Queue&lt;T&gt;&gt; match() {
+<span class="fc" id="L850">        return Match.of(this);</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; padTo(int length, T element) {
+<span class="fc bfc" id="L855" title="All 2 branches covered.">        if (length &lt;= length()) {</span>
+<span class="fc" id="L856">            return this;</span>
+        }
+<span class="fc" id="L858">        return toList().padTo(length, element).toQueue();</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; patch(int from, Iterable&lt;? extends T&gt; that, int replaced) {
+<span class="fc bfc" id="L863" title="All 2 branches covered.">        from = from &lt; 0 ? 0 : from;</span>
+<span class="fc bfc" id="L864" title="All 2 branches covered.">        replaced = replaced &lt; 0 ? 0 : replaced;</span>
+<span class="fc" id="L865">        Queue&lt;T&gt; result = take(from).appendAll(that);</span>
+<span class="fc" id="L866">        from += replaced;</span>
+<span class="fc" id="L867">        result = result.appendAll(drop(from));</span>
+<span class="fc" id="L868">        return result;</span>
+    }
+
+    @Override
+    public Tuple2&lt;Queue&lt;T&gt;, Queue&lt;T&gt;&gt; partition(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L873">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L874">        return toList().partition(predicate).map(List::toQueue, List::toQueue);</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; peek(Consumer&lt;? super T&gt; action) {
+<span class="fc" id="L879">        Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="fc bfc" id="L880" title="All 2 branches covered.">        if (!isEmpty()) {</span>
+<span class="fc" id="L881">            action.accept(head());</span>
+        }
+<span class="fc" id="L883">        return this;</span>
+    }
+
+    @Override
+    public Queue&lt;Queue&lt;T&gt;&gt; permutations() {
+<span class="fc" id="L888">        return toList().permutations().map(List::toQueue).toQueue();</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; prepend(T element) {
+<span class="fc" id="L893">        return new Queue&lt;&gt;(front.prepend(element), rear);</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; prependAll(Iterable&lt;? extends T&gt; elements) {
+<span class="fc" id="L898">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc" id="L899">        return new Queue&lt;&gt;(front.prependAll(elements), rear);</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; remove(T element) {
+<span class="fc" id="L904">        final List&lt;T&gt; removed = toList().remove(element);</span>
+<span class="fc bfc" id="L905" title="All 2 branches covered.">        return removed.length() == length() ? this : removed.toQueue();</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; removeFirst(Predicate&lt;T&gt; predicate) {
+<span class="fc" id="L910">        final List&lt;T&gt; removed = toList().removeFirst(predicate);</span>
+<span class="fc bfc" id="L911" title="All 2 branches covered.">        return removed.length() == length() ? this : removed.toQueue();</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; removeLast(Predicate&lt;T&gt; predicate) {
+<span class="fc" id="L916">        final List&lt;T&gt; removed = toList().removeLast(predicate);</span>
+<span class="fc bfc" id="L917" title="All 2 branches covered.">        return removed.length() == length() ? this : removed.toQueue();</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; removeAt(int index) {
+<span class="fc" id="L922">        return toList().removeAt(index).toQueue();</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; removeAll(T element) {
+<span class="fc" id="L927">        final List&lt;T&gt; newFront = front.removeAll(element);</span>
+<span class="fc" id="L928">        final List&lt;T&gt; newRear = rear.removeAll(element);</span>
+<span class="fc bfc" id="L929" title="All 2 branches covered.">        return newFront.length() + newRear.length() == length() ? this : new Queue&lt;&gt;(newFront, newRear);</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; removeAll(Iterable&lt;? extends T&gt; elements) {
+<span class="fc" id="L934">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc" id="L935">        final List&lt;T&gt; newFront = front.removeAll(elements);</span>
+<span class="fc" id="L936">        final List&lt;T&gt; newRear = rear.removeAll(elements);</span>
+<span class="fc bfc" id="L937" title="All 2 branches covered.">        return newFront.length() + newRear.length() == length() ? this : new Queue&lt;&gt;(newFront, newRear);</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; replace(T currentElement, T newElement) {
+<span class="fc" id="L942">        final List&lt;T&gt; newFront = front.replace(currentElement, newElement);</span>
+<span class="fc" id="L943">        final List&lt;T&gt; newRear = rear.replace(currentElement, newElement);</span>
+<span class="pc bpc" id="L944" title="1 of 6 branches missed.">        return newFront.size() + newRear.size() == 0 ? empty()</span>
+                : newFront == front &amp;&amp; newRear == rear ? this
+                : new Queue&lt;&gt;(newFront, newRear);
+    }
+
+    @Override
+    public Queue&lt;T&gt; replaceAll(T currentElement, T newElement) {
+<span class="fc" id="L951">        final List&lt;T&gt; newFront = front.replaceAll(currentElement, newElement);</span>
+<span class="fc" id="L952">        final List&lt;T&gt; newRear = rear.replaceAll(currentElement, newElement);</span>
+<span class="pc bpc" id="L953" title="1 of 6 branches missed.">        return newFront.size() + newRear.size() == 0 ? empty()</span>
+                : newFront == front &amp;&amp; newRear == rear ? this
+                : new Queue&lt;&gt;(newFront, newRear);
+    }
+
+    @Override
+    public Queue&lt;T&gt; retainAll(Iterable&lt;? extends T&gt; elements) {
+<span class="fc" id="L960">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc" id="L961">        final List&lt;T&gt; newFront = front.retainAll(elements);</span>
+<span class="fc" id="L962">        final List&lt;T&gt; newRear = rear.retainAll(elements);</span>
+<span class="fc bfc" id="L963" title="All 2 branches covered.">        return newFront.size() + newRear.size() == 0 ? empty()</span>
+<span class="fc bfc" id="L964" title="All 2 branches covered.">                : newFront.size() + newRear.size() == size() ? this</span>
+                : new Queue&lt;&gt;(newFront, newRear);
+    }
+
+    @Override
+    public Queue&lt;T&gt; reverse() {
+<span class="fc bfc" id="L970" title="All 2 branches covered.">        return isEmpty() ? this : toList().reverse().toQueue();</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; scan(T zero, BiFunction&lt;? super T, ? super T, ? extends T&gt; operation) {
+<span class="fc" id="L975">        return scanLeft(zero, operation);</span>
+    }
+
+    @Override
+    public &lt;U&gt; Queue&lt;U&gt; scanLeft(U zero, BiFunction&lt;? super U, ? super T, ? extends U&gt; operation) {
+<span class="fc" id="L980">        Objects.requireNonNull(operation, &quot;operation is null&quot;);</span>
+        // prepends to the rear-list in O(1)
+<span class="fc" id="L982">        return Collections.scanLeft(this, zero, operation, Queue.empty(), Queue::append, Function.identity());</span>
+    }
+
+    @Override
+    public &lt;U&gt; Queue&lt;U&gt; scanRight(U zero, BiFunction&lt;? super T, ? super U, ? extends U&gt; operation) {
+        // add elements in reverse order in O(1) and creates a Queue instance in O(1)
+<span class="fc" id="L988">        final List&lt;U&gt; list = Collections.scanRight(this, zero, operation, List.empty(), List::prepend, Function.identity());</span>
+<span class="fc" id="L989">        return Queue.ofAll(list);</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; slice(int beginIndex, int endIndex) {
+<span class="fc" id="L994">        return toList().slice(beginIndex, endIndex).toQueue();</span>
+    }
+
+    @Override
+    public Iterator&lt;Queue&lt;T&gt;&gt; sliding(int size) {
+<span class="fc" id="L999">        return sliding(size, 1);</span>
+    }
+
+    @Override
+    public Iterator&lt;Queue&lt;T&gt;&gt; sliding(int size, int step) {
+<span class="fc" id="L1004">        return iterator().sliding(size, step).map(Queue::ofAll);</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; sort() {
+<span class="fc" id="L1009">        return toList().sort().toQueue();</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; sort(Comparator&lt;? super T&gt; comparator) {
+<span class="fc" id="L1014">        Objects.requireNonNull(comparator, &quot;comparator is null&quot;);</span>
+<span class="fc" id="L1015">        return toList().sort(comparator).toQueue();</span>
+    }
+
+    @Override
+    public &lt;U extends Comparable&lt;? super U&gt;&gt; Queue&lt;T&gt; sortBy(Function&lt;? super T, ? extends U&gt; mapper) {
+<span class="fc" id="L1020">        return sortBy(U::compareTo, mapper);</span>
+    }
+
+    @Override
+    public &lt;U&gt; Queue&lt;T&gt; sortBy(Comparator&lt;? super U&gt; comparator, Function&lt;? super T, ? extends U&gt; mapper) {
+<span class="fc" id="L1025">        final Function&lt;? super T, ? extends U&gt; domain = Function1.of(mapper::apply).memoized();</span>
+<span class="fc" id="L1026">        return toJavaStream()</span>
+<span class="fc" id="L1027">                .sorted((e1, e2) -&gt; comparator.compare(domain.apply(e1), domain.apply(e2)))</span>
+<span class="fc" id="L1028">                .collect(collector());</span>
+    }
+
+    @Override
+    public Tuple2&lt;Queue&lt;T&gt;, Queue&lt;T&gt;&gt; span(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L1033">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L1034">        return toList().span(predicate).map(List::toQueue, List::toQueue);</span>
+    }
+
+    @Override
+    public Tuple2&lt;Queue&lt;T&gt;, Queue&lt;T&gt;&gt; splitAt(int n) {
+<span class="fc" id="L1039">        return toList().splitAt(n).map(List::toQueue, List::toQueue);</span>
+    }
+
+    @Override
+    public Tuple2&lt;Queue&lt;T&gt;, Queue&lt;T&gt;&gt; splitAt(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L1044">        return toList().splitAt(predicate).map(List::toQueue, List::toQueue);</span>
+    }
+
+    @Override
+    public Tuple2&lt;Queue&lt;T&gt;, Queue&lt;T&gt;&gt; splitAtInclusive(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L1049">        return toList().splitAtInclusive(predicate).map(List::toQueue, List::toQueue);</span>
+    }
+
+    @Override
+    public boolean startsWith(Iterable&lt;? extends T&gt; that, int offset) {
+<span class="fc" id="L1054">        return toList().startsWith(that, offset);</span>
+    }
+
+    @Override
+    public Spliterator&lt;T&gt; spliterator() {
+<span class="fc" id="L1059">        return Spliterators.spliterator(iterator(), length(), Spliterator.ORDERED | Spliterator.IMMUTABLE);</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; subSequence(int beginIndex) {
+<span class="fc" id="L1064">        return toList().subSequence(beginIndex).toQueue();</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; subSequence(int beginIndex, int endIndex) {
+<span class="fc" id="L1069">        return toList().subSequence(beginIndex, endIndex).toQueue();</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; tail() {
+<span class="fc bfc" id="L1074" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L1075">            throw new UnsupportedOperationException(&quot;tail of empty Queue&quot;);</span>
+        } else {
+<span class="fc" id="L1077">            return new Queue&lt;&gt;(front.tail(), rear);</span>
+        }
+    }
+
+    @Override
+    public Option&lt;Queue&lt;T&gt;&gt; tailOption() {
+<span class="fc bfc" id="L1083" title="All 2 branches covered.">        return isEmpty() ? Option.none() : Option.some(tail());</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; take(int n) {
+<span class="fc bfc" id="L1088" title="All 2 branches covered.">        if (n &lt;= 0) {</span>
+<span class="fc" id="L1089">            return empty();</span>
+        }
+<span class="fc bfc" id="L1091" title="All 2 branches covered.">        if (n &gt;= length()) {</span>
+<span class="fc" id="L1092">            return this;</span>
+        }
+<span class="fc" id="L1094">        final int frontLength = front.length();</span>
+<span class="fc bfc" id="L1095" title="All 2 branches covered.">        if (n &lt; frontLength) {</span>
+<span class="fc" id="L1096">            return new Queue&lt;&gt;(front.take(n), List.empty());</span>
+<span class="fc bfc" id="L1097" title="All 2 branches covered.">        } else if (n == frontLength) {</span>
+<span class="fc" id="L1098">            return new Queue&lt;&gt;(front, List.empty());</span>
+        } else {
+<span class="fc" id="L1100">            return new Queue&lt;&gt;(front, rear.takeRight(n - frontLength));</span>
+        }
+    }
+
+    @Override
+    public Queue&lt;T&gt; takeRight(int n) {
+<span class="fc bfc" id="L1106" title="All 2 branches covered.">        if (n &lt;= 0) {</span>
+<span class="fc" id="L1107">            return empty();</span>
+        }
+<span class="fc bfc" id="L1109" title="All 2 branches covered.">        if (n &gt;= length()) {</span>
+<span class="fc" id="L1110">            return this;</span>
+        }
+<span class="fc" id="L1112">        final int rearLength = rear.length();</span>
+<span class="pc bpc" id="L1113" title="1 of 2 branches missed.">        if (n &lt; rearLength) {</span>
+<span class="nc" id="L1114">            return new Queue&lt;&gt;(rear.take(n).reverse(), List.empty());</span>
+<span class="fc bfc" id="L1115" title="All 2 branches covered.">        } else if (n == rearLength) {</span>
+<span class="fc" id="L1116">            return new Queue&lt;&gt;(rear.reverse(), List.empty());</span>
+        } else {
+<span class="fc" id="L1118">            return new Queue&lt;&gt;(front.takeRight(n - rearLength), rear);</span>
+        }
+    }
+
+    @Override
+    public Queue&lt;T&gt; takeUntil(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L1124">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L1125">        return takeWhile(predicate.negate());</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; takeWhile(Predicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L1130">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L1131">        final List&lt;T&gt; taken = toList().takeWhile(predicate);</span>
+<span class="fc bfc" id="L1132" title="All 2 branches covered.">        return taken.length() == length() ? this : taken.toQueue();</span>
+    }
+
+    @Override
+    public &lt;U&gt; Queue&lt;U&gt; unit(Iterable&lt;? extends U&gt; iterable) {
+<span class="fc" id="L1137">        return Queue.ofAll(iterable);</span>
+    }
+
+    @Override
+    public &lt;T1, T2&gt; Tuple2&lt;Queue&lt;T1&gt;, Queue&lt;T2&gt;&gt; unzip(
+            Function&lt;? super T, Tuple2&lt;? extends T1, ? extends T2&gt;&gt; unzipper) {
+<span class="fc" id="L1143">        Objects.requireNonNull(unzipper, &quot;unzipper is null&quot;);</span>
+<span class="fc" id="L1144">        return toList().unzip(unzipper).map(List::toQueue, List::toQueue);</span>
+    }
+
+    @Override
+    public &lt;T1, T2, T3&gt; Tuple3&lt;Queue&lt;T1&gt;, Queue&lt;T2&gt;, Queue&lt;T3&gt;&gt; unzip3(Function&lt;? super T, Tuple3&lt;? extends T1, ? extends T2, ? extends T3&gt;&gt; unzipper) {
+<span class="fc" id="L1149">        Objects.requireNonNull(unzipper, &quot;unzipper is null&quot;);</span>
+<span class="fc" id="L1150">        return toList().unzip3(unzipper).map(List::toQueue, List::toQueue, List::toQueue);</span>
+    }
+
+    @Override
+    public Queue&lt;T&gt; update(int index, T element) {
+<span class="fc" id="L1155">        return toList().update(index, element).toQueue();</span>
+    }
+
+    @Override
+    public &lt;U&gt; Queue&lt;Tuple2&lt;T, U&gt;&gt; zip(Iterable&lt;U&gt; that) {
+<span class="fc" id="L1160">        Objects.requireNonNull(that, &quot;that is null&quot;);</span>
+<span class="fc" id="L1161">        return toList().zip(that).toQueue();</span>
+    }
+
+    @Override
+    public &lt;U&gt; Queue&lt;Tuple2&lt;T, U&gt;&gt; zipAll(Iterable&lt;U&gt; that, T thisElem, U thatElem) {
+<span class="fc" id="L1166">        Objects.requireNonNull(that, &quot;that is null&quot;);</span>
+<span class="fc" id="L1167">        return toList().zipAll(that, thisElem, thatElem).toQueue();</span>
+    }
+
+    @Override
+    public Queue&lt;Tuple2&lt;T, Integer&gt;&gt; zipWithIndex() {
+<span class="fc" id="L1172">        return toList().zipWithIndex().toQueue();</span>
+    }
+
+    private Object readResolve() {
+<span class="fc bfc" id="L1176" title="All 2 branches covered.">        return isEmpty() ? EMPTY : this;</span>
+    }
+
+    @Override
+    public boolean equals(Object o) {
+<span class="fc bfc" id="L1181" title="All 2 branches covered.">        if (o == this) {</span>
+<span class="fc" id="L1182">            return true;</span>
+<span class="fc bfc" id="L1183" title="All 2 branches covered.">        } else if (o instanceof Queue) {</span>
+<span class="fc" id="L1184">            final Queue&lt;?&gt; that = (Queue&lt;?&gt;) o;</span>
+<span class="fc bfc" id="L1185" title="All 4 branches covered.">            return this.hashCode() == that.hashCode() &amp;&amp; this.toList().equals(that.toList());</span>
+        } else {
+<span class="fc" id="L1187">            return false;</span>
+        }
+    }
+
+    @Override
+    public int hashCode() {
+<span class="fc" id="L1193">        return hashCode.get();</span>
+    }
+
+    @Override
+    public String stringPrefix() {
+<span class="fc" id="L1198">        return &quot;Queue&quot;;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L1203">        return mkString(stringPrefix() + &quot;(&quot;, &quot;, &quot;, &quot;)&quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

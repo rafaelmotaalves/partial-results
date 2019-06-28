@@ -1,0 +1,736 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Stack.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang.collection</a> &gt; <span class="el_source">Stack.java</span></div><h1>Stack.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang.collection;
+
+import javaslang.Tuple2;
+import javaslang.control.Match;
+import javaslang.control.Option;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Objects;
+import java.util.function.*;
+import java.util.stream.Collector;
+
+/**
+ * An immutable {@code Stack} stores elements allowing a last-in-first-out (LIFO) retrieval.
+ * &lt;p&gt;
+ * Stack API:
+ *
+ * &lt;ul&gt;
+ * &lt;li&gt;{@link #peek()}&lt;/li&gt;
+ * &lt;li&gt;{@link #peekOption()}&lt;/li&gt;
+ * &lt;li&gt;{@link #pop()}&lt;/li&gt;
+ * &lt;li&gt;{@link #popOption()}&lt;/li&gt;
+ * &lt;li&gt;{@link #pop2()}&lt;/li&gt;
+ * &lt;li&gt;{@link #pop2Option()}&lt;/li&gt;
+ * &lt;li&gt;{@link #push(Object)}&lt;/li&gt;
+ * &lt;li&gt;{@link #push(Object[])}&lt;/li&gt;
+ * &lt;li&gt;{@link #pushAll(Iterable)}&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * See Okasaki, Chris: &lt;em&gt;Purely Functional Data Structures&lt;/em&gt; (p. 7 ff.). Cambridge, 2003.
+ *
+ * @param &lt;T&gt; component type
+ * @author Daniel Dietrich
+ * @since 2.0.0
+ */
+public interface Stack&lt;T&gt; extends LinearSeq&lt;T&gt; {
+
+    long serialVersionUID = 1L;
+
+    /**
+     * Returns a {@link java.util.stream.Collector} which may be used in conjunction with
+     * {@link java.util.stream.Stream#collect(java.util.stream.Collector)} to obtain a {@link javaslang.collection.Stack}
+     * .
+     *
+     * @param &lt;T&gt; Component type of the Stack.
+     * @return A javaslang.collection.Stack Collector.
+     */
+    static &lt;T&gt; Collector&lt;T, ArrayList&lt;T&gt;, Stack&lt;T&gt;&gt; collector() {
+<span class="fc" id="L54">        final Supplier&lt;ArrayList&lt;T&gt;&gt; supplier = ArrayList::new;</span>
+<span class="fc" id="L55">        final BiConsumer&lt;ArrayList&lt;T&gt;, T&gt; accumulator = ArrayList::add;</span>
+<span class="fc" id="L56">        final BinaryOperator&lt;ArrayList&lt;T&gt;&gt; combiner = (left, right) -&gt; {</span>
+<span class="fc" id="L57">            left.addAll(right);</span>
+<span class="fc" id="L58">            return left;</span>
+        };
+<span class="fc" id="L60">        final Function&lt;ArrayList&lt;T&gt;, Stack&lt;T&gt;&gt; finisher = Stack::ofAll;</span>
+<span class="fc" id="L61">        return Collector.of(supplier, accumulator, combiner, finisher);</span>
+    }
+
+    /**
+     * Returns the empty Stack.
+     *
+     * @param &lt;T&gt; Component type
+     * @return The empty Stack.
+     */
+    static &lt;T&gt; Stack&lt;T&gt; empty() {
+<span class="fc" id="L71">        return List.empty();</span>
+    }
+
+    /**
+     * Returns a singleton {@code Stack}, i.e. a {@code Stack} of one element.
+     *
+     * @param element An element.
+     * @param &lt;T&gt;     The component type
+     * @return A new Stack instance containing the given element
+     */
+    static &lt;T&gt; Stack&lt;T&gt; of(T element) {
+<span class="fc" id="L82">        return List.of(element);</span>
+    }
+
+    /**
+     * Creates a Stack of the given elements.
+     *
+     * @param &lt;T&gt;      Component type of the Stack.
+     * @param elements Zero or more elements.
+     * @return A stack containing the given elements in the same order.
+     * @throws NullPointerException if {@code elements} is null
+     */
+    @SuppressWarnings(&quot;varargs&quot;)
+    @SafeVarargs
+    static &lt;T&gt; Stack&lt;T&gt; of(T... elements) {
+<span class="fc" id="L96">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc" id="L97">        return List.of(elements);</span>
+    }
+
+    /**
+     * Creates a Stack of the given elements.
+     *
+     * @param &lt;T&gt;      Component type of the Stack.
+     * @param elements An Iterable of elements.
+     * @return A stack containing the given elements in the same order.
+     * @throws NullPointerException if {@code elements} is null
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    static &lt;T&gt; Stack&lt;T&gt; ofAll(Iterable&lt;? extends T&gt; elements) {
+<span class="fc" id="L110">        Objects.requireNonNull(elements, &quot;elements is null&quot;);</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        if (elements instanceof Stack) {</span>
+<span class="fc" id="L112">            return (Stack&lt;T&gt;) elements;</span>
+        } else {
+<span class="fc" id="L114">            return List.ofAll(elements);</span>
+        }
+    }
+
+    /**
+     * Creates a Stack based on the elements of a boolean array.
+     *
+     * @param array a boolean array
+     * @return A new Stack of Boolean values
+     */
+    static Stack&lt;Boolean&gt; ofAll(boolean[] array) {
+<span class="fc" id="L125">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L126">        return List.ofAll(array);</span>
+    }
+
+    /**
+     * Creates a Stack based on the elements of a byte array.
+     *
+     * @param array a byte array
+     * @return A new Stack of Byte values
+     */
+    static Stack&lt;Byte&gt; ofAll(byte[] array) {
+<span class="fc" id="L136">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L137">        return List.ofAll(array);</span>
+    }
+
+    /**
+     * Creates a Stack based on the elements of a char array.
+     *
+     * @param array a char array
+     * @return A new Stack of Character values
+     */
+    static Stack&lt;Character&gt; ofAll(char[] array) {
+<span class="fc" id="L147">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L148">        return List.ofAll(array);</span>
+    }
+
+    /**
+     * Creates a Stack based on the elements of a double array.
+     *
+     * @param array a double array
+     * @return A new Stack of Double values
+     */
+    static Stack&lt;Double&gt; ofAll(double[] array) {
+<span class="fc" id="L158">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L159">        return List.ofAll(array);</span>
+    }
+
+    /**
+     * Creates a Stack based on the elements of a float array.
+     *
+     * @param array a float array
+     * @return A new Stack of Float values
+     */
+    static Stack&lt;Float&gt; ofAll(float[] array) {
+<span class="fc" id="L169">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L170">        return List.ofAll(array);</span>
+    }
+
+    /**
+     * Creates a Stack based on the elements of an int array.
+     *
+     * @param array an int array
+     * @return A new Stack of Integer values
+     */
+    static Stack&lt;Integer&gt; ofAll(int[] array) {
+<span class="fc" id="L180">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L181">        return List.ofAll(array);</span>
+    }
+
+    /**
+     * Creates a Stack based on the elements of a long array.
+     *
+     * @param array a long array
+     * @return A new Stack of Long values
+     */
+    static Stack&lt;Long&gt; ofAll(long[] array) {
+<span class="fc" id="L191">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L192">        return List.ofAll(array);</span>
+    }
+
+    /**
+     * Creates a Stack based on the elements of a short array.
+     *
+     * @param array a short array
+     * @return A new Stack of Short values
+     */
+    static Stack&lt;Short&gt; ofAll(short[] array) {
+<span class="fc" id="L202">        Objects.requireNonNull(array, &quot;array is null&quot;);</span>
+<span class="fc" id="L203">        return List.ofAll(array);</span>
+    }
+
+    /**
+     * Returns a Stack containing {@code n} values of a given Function {@code f}
+     * over a range of integer values from 0 to {@code n - 1}.
+     *
+     * @param &lt;T&gt; Component type of the Stack
+     * @param n The number of elements in the Stack
+     * @param f The Function computing element values
+     * @return A Stack consisting of elements {@code f(0),f(1), ..., f(n - 1)}
+     * @throws NullPointerException if {@code f} is null
+     */
+    static &lt;T&gt; Stack&lt;T&gt; tabulate(int n, Function&lt;? super Integer, ? extends T&gt; f) {
+<span class="fc" id="L217">        Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="fc" id="L218">        return Collections.tabulate(n, f, Stack.empty(), Stack::of);</span>
+    }
+
+    /**
+     * Returns a Stack containing {@code n} values supplied by a given Supplier {@code s}.
+     *
+     * @param &lt;T&gt; Component type of the Stack
+     * @param n The number of elements in the Stack
+     * @param s The Supplier computing element values
+     * @return A Stack of size {@code n}, where each element contains the result supplied by {@code s}.
+     * @throws NullPointerException if {@code s} is null
+     */
+    static &lt;T&gt; Stack&lt;T&gt; fill(int n, Supplier&lt;? extends T&gt; s) {
+<span class="fc" id="L231">        Objects.requireNonNull(s, &quot;s is null&quot;);</span>
+<span class="fc" id="L232">        return Collections.fill(n, s, Stack.empty(), Stack::of);</span>
+    }
+
+    static Stack&lt;Character&gt; range(char from, char toExclusive) {
+<span class="fc" id="L236">        return List.range(from, toExclusive);</span>
+    }
+
+    static Stack&lt;Character&gt; rangeBy(char from, char toExclusive, int step) {
+<span class="fc" id="L240">        return List.rangeBy(from, toExclusive, step);</span>
+    }
+
+    static Stack&lt;Double&gt; rangeBy(double from, double toExclusive, double step) {
+<span class="fc" id="L244">        return List.rangeBy(from, toExclusive, step);</span>
+    }
+
+    /**
+     * Creates a Stack of int numbers starting from {@code from}, extending to {@code toExclusive - 1}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * Stack.range(0, 0)  // = Stack()
+     * Stack.range(2, 0)  // = Stack()
+     * Stack.range(-2, 2) // = Stack(-2, -1, 0, 1)
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toExclusive the last number + 1
+     * @return a range of int values as specified or the empty range if {@code from &gt;= toExclusive}
+     */
+    static Stack&lt;Integer&gt; range(int from, int toExclusive) {
+<span class="fc" id="L264">        return List.range(from, toExclusive);</span>
+    }
+
+    /**
+     * Creates a Stack of int numbers starting from {@code from}, extending to {@code toExclusive - 1},
+     * with {@code step}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * Stack.rangeBy(1, 3, 1)  // = Stack(1, 2)
+     * Stack.rangeBy(1, 4, 2)  // = Stack(1, 3)
+     * Stack.rangeBy(4, 1, -2) // = Stack(4, 2)
+     * Stack.rangeBy(4, 1, 2)  // = Stack()
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toExclusive the last number + 1
+     * @param step        the step
+     * @return a range of long values as specified or the empty range if&lt;br&gt;
+     * {@code from &gt;= toInclusive} and {@code step &gt; 0} or&lt;br&gt;
+     * {@code from &lt;= toInclusive} and {@code step &lt; 0}
+     * @throws IllegalArgumentException if {@code step} is zero
+     */
+    static Stack&lt;Integer&gt; rangeBy(int from, int toExclusive, int step) {
+<span class="fc" id="L290">        return List.rangeBy(from, toExclusive, step);</span>
+    }
+
+    /**
+     * Creates a Stack of long numbers starting from {@code from}, extending to {@code toExclusive - 1}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * Stack.range(0L, 0L)  // = Stack()
+     * Stack.range(2L, 0L)  // = Stack()
+     * Stack.range(-2L, 2L) // = Stack(-2L, -1L, 0L, 1L)
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toExclusive the last number + 1
+     * @return a range of long values as specified or the empty range if {@code from &gt;= toExclusive}
+     */
+    static Stack&lt;Long&gt; range(long from, long toExclusive) {
+<span class="fc" id="L310">        return List.range(from, toExclusive);</span>
+    }
+
+    /**
+     * Creates a Stack of long numbers starting from {@code from}, extending to {@code toExclusive - 1},
+     * with {@code step}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * Stack.rangeBy(1L, 3L, 1L)  // = Stack(1L, 2L)
+     * Stack.rangeBy(1L, 4L, 2L)  // = Stack(1L, 3L)
+     * Stack.rangeBy(4L, 1L, -2L) // = Stack(4L, 2L)
+     * Stack.rangeBy(4L, 1L, 2L)  // = Stack()
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toExclusive the last number + 1
+     * @param step        the step
+     * @return a range of long values as specified or the empty range if&lt;br&gt;
+     * {@code from &gt;= toInclusive} and {@code step &gt; 0} or&lt;br&gt;
+     * {@code from &lt;= toInclusive} and {@code step &lt; 0}
+     * @throws IllegalArgumentException if {@code step} is zero
+     */
+    static Stack&lt;Long&gt; rangeBy(long from, long toExclusive, long step) {
+<span class="fc" id="L336">        return List.rangeBy(from, toExclusive, step);</span>
+    }
+
+    static Stack&lt;Character&gt; rangeClosed(char from, char toInclusive) {
+<span class="fc" id="L340">        return List.rangeClosed(from, toInclusive);</span>
+    }
+
+    static Stack&lt;Character&gt; rangeClosedBy(char from, char toInclusive, int step) {
+<span class="fc" id="L344">        return List.rangeClosedBy(from, toInclusive, step);</span>
+    }
+
+    static Stack&lt;Double&gt; rangeClosedBy(double from, double toInclusive, double step) {
+<span class="fc" id="L348">        return List.rangeClosedBy(from, toInclusive, step);</span>
+    }
+
+    /**
+     * Creates a Stack of int numbers starting from {@code from}, extending to {@code toInclusive}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * Stack.rangeClosed(0, 0)  // = Stack(0)
+     * Stack.rangeClosed(2, 0)  // = Stack()
+     * Stack.rangeClosed(-2, 2) // = Stack(-2, -1, 0, 1, 2)
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toInclusive the last number
+     * @return a range of int values as specified or the empty range if {@code from &gt; toInclusive}
+     */
+    static Stack&lt;Integer&gt; rangeClosed(int from, int toInclusive) {
+<span class="fc" id="L368">        return List.rangeClosed(from, toInclusive);</span>
+    }
+
+    /**
+     * Creates a Stack of int numbers starting from {@code from}, extending to {@code toInclusive},
+     * with {@code step}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * Stack.rangeClosedBy(1, 3, 1)  // = Stack(1, 2, 3)
+     * Stack.rangeClosedBy(1, 4, 2)  // = Stack(1, 3)
+     * Stack.rangeClosedBy(4, 1, -2) // = Stack(4, 2)
+     * Stack.rangeClosedBy(4, 1, 2)  // = Stack()
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toInclusive the last number
+     * @param step        the step
+     * @return a range of int values as specified or the empty range if&lt;br&gt;
+     * {@code from &gt; toInclusive} and {@code step &gt; 0} or&lt;br&gt;
+     * {@code from &lt; toInclusive} and {@code step &lt; 0}
+     * @throws IllegalArgumentException if {@code step} is zero
+     */
+    static Stack&lt;Integer&gt; rangeClosedBy(int from, int toInclusive, int step) {
+<span class="fc" id="L394">        return List.rangeClosedBy(from, toInclusive, step);</span>
+    }
+
+    /**
+     * Creates a Stack of long numbers starting from {@code from}, extending to {@code toInclusive}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * Stack.rangeClosed(0L, 0L)  // = Stack(0L)
+     * Stack.rangeClosed(2L, 0L)  // = Stack()
+     * Stack.rangeClosed(-2L, 2L) // = Stack(-2L, -1L, 0L, 1L, 2L)
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toInclusive the last number
+     * @return a range of long values as specified or the empty range if {@code from &gt; toInclusive}
+     */
+    static Stack&lt;Long&gt; rangeClosed(long from, long toInclusive) {
+<span class="fc" id="L414">        return List.rangeClosed(from, toInclusive);</span>
+    }
+
+    /**
+     * Creates a Stack of long numbers starting from {@code from}, extending to {@code toInclusive},
+     * with {@code step}.
+     * &lt;p&gt;
+     * Examples:
+     * &lt;pre&gt;
+     * &lt;code&gt;
+     * Stack.rangeClosedBy(1L, 3L, 1L)  // = Stack(1L, 2L, 3L)
+     * Stack.rangeClosedBy(1L, 4L, 2L)  // = Stack(1L, 3L)
+     * Stack.rangeClosedBy(4L, 1L, -2L) // = Stack(4L, 2L)
+     * Stack.rangeClosedBy(4L, 1L, 2L)  // = Stack()
+     * &lt;/code&gt;
+     * &lt;/pre&gt;
+     *
+     * @param from        the first number
+     * @param toInclusive the last number
+     * @param step        the step
+     * @return a range of int values as specified or the empty range if&lt;br&gt;
+     * {@code from &gt; toInclusive} and {@code step &gt; 0} or&lt;br&gt;
+     * {@code from &lt; toInclusive} and {@code step &lt; 0}
+     * @throws IllegalArgumentException if {@code step} is zero
+     */
+    static Stack&lt;Long&gt; rangeClosedBy(long from, long toInclusive, long step) {
+<span class="fc" id="L440">        return List.rangeClosedBy(from, toInclusive, step);</span>
+    }
+
+    /**
+     * Returns the head element without modifying the Stack.
+     *
+     * @return the first element
+     * @throws java.util.NoSuchElementException if this Stack is empty
+     */
+    T peek();
+
+    /**
+     * Returns the head element without modifying the Stack.
+     *
+     * @return {@code None} if this Stack is empty, otherwise a {@code Some} containing the head element
+     */
+    Option&lt;T&gt; peekOption();
+
+    /**
+     * Removes the head element from this Stack.
+     *
+     * @return the elements of this Stack without the head element
+     * @throws java.util.NoSuchElementException if this Stack is empty
+     */
+    Stack&lt;T&gt; pop();
+
+    /**
+     * Removes the head element from this Stack.
+     *
+     * @return {@code None} if this Stack is empty, otherwise a {@code Some} containing the elements of this Stack without the head element
+     */
+    Option&lt;? extends Stack&lt;T&gt;&gt; popOption();
+
+    /**
+     * Removes the head element from this Stack.
+     *
+     * @return a tuple containing the head element and the remaining elements of this Stack
+     * @throws java.util.NoSuchElementException if this Stack is empty
+     */
+    Tuple2&lt;T, ? extends Stack&lt;T&gt;&gt; pop2();
+
+    /**
+     * Removes the head element from this Stack.
+     *
+     * @return {@code None} if this Stack is empty, otherwise {@code Some} {@code Tuple} containing the head element and the remaining elements of this Stack
+     */
+    Option&lt;? extends Tuple2&lt;T, ? extends Stack&lt;T&gt;&gt;&gt; pop2Option();
+
+    /**
+     * Pushes a new element on top of this Stack.
+     *
+     * @param element The new element
+     * @return a new {@code Stack} instance, containing the new element on top of this Stack
+     */
+    Stack&lt;T&gt; push(T element);
+
+    /**
+     * Pushes the given elements on top of this Stack. A Stack has LIFO order, i.e. the last of the given elements is
+     * the first which will be retrieved.
+     *
+     * @param elements Elements, may be empty
+     * @return a new {@code Stack} instance, containing the new elements on top of this Stack
+     * @throws NullPointerException if elements is null
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    Stack&lt;T&gt; push(T... elements);
+
+    /**
+     * Pushes the given elements on top of this Stack. A Stack has LIFO order, i.e. the last of the given elements is
+     * the first which will be retrieved.
+     *
+     * @param elements An Iterable of elements, may be empty
+     * @return a new {@code Stack} instance, containing the new elements on top of this Stack
+     * @throws NullPointerException if elements is null
+     */
+    Stack&lt;T&gt; pushAll(Iterable&lt;T&gt; elements);
+
+    // -- Adjusted return types of Seq methods
+
+    @Override
+    Stack&lt;T&gt; append(T element);
+
+    @Override
+    Stack&lt;T&gt; appendAll(Iterable&lt;? extends T&gt; elements);
+
+    @Override
+    Stack&lt;T&gt; clear();
+
+    @Override
+    Stack&lt;? extends Stack&lt;T&gt;&gt; combinations();
+
+    @Override
+    Stack&lt;? extends Stack&lt;T&gt;&gt; combinations(int k);
+
+    @Override
+    Stack&lt;Tuple2&lt;T, T&gt;&gt; crossProduct();
+
+    @Override
+    Stack&lt;? extends Stack&lt;T&gt;&gt; crossProduct(int power);
+
+    @Override
+    &lt;U&gt; Stack&lt;Tuple2&lt;T, U&gt;&gt; crossProduct(Iterable&lt;? extends U&gt; that);
+
+    @Override
+    Stack&lt;T&gt; distinct();
+
+    @Override
+    Stack&lt;T&gt; distinctBy(Comparator&lt;? super T&gt; comparator);
+
+    @Override
+    &lt;U&gt; Stack&lt;T&gt; distinctBy(Function&lt;? super T, ? extends U&gt; keyExtractor);
+
+    @Override
+    Stack&lt;T&gt; drop(int n);
+
+    @Override
+    Stack&lt;T&gt; dropRight(int n);
+
+    @Override
+    Stack&lt;T&gt; dropUntil(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    Stack&lt;T&gt; dropWhile(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    Stack&lt;T&gt; filter(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    Stack&lt;T&gt; filterNot(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    &lt;U&gt; Stack&lt;U&gt; flatMap(Function&lt;? super T, ? extends Iterable&lt;? extends U&gt;&gt; mapper);
+
+    @Override
+    &lt;C&gt; Map&lt;C, ? extends Stack&lt;T&gt;&gt; groupBy(Function&lt;? super T, ? extends C&gt; classifier);
+
+    @Override
+    Iterator&lt;? extends Stack&lt;T&gt;&gt; grouped(int size);
+
+    @Override
+    Stack&lt;T&gt; init();
+
+    @Override
+    Option&lt;? extends Stack&lt;T&gt;&gt; initOption();
+
+    @Override
+    Stack&lt;T&gt; insert(int index, T element);
+
+    @Override
+    Stack&lt;T&gt; insertAll(int index, Iterable&lt;? extends T&gt; elements);
+
+    @Override
+    Stack&lt;T&gt; intersperse(T element);
+
+    @Override
+    &lt;U&gt; Stack&lt;U&gt; map(Function&lt;? super T, ? extends U&gt; mapper);
+
+    @Override
+    Match.MatchMonad.Of&lt;? extends Stack&lt;T&gt;&gt; match();
+
+    @Override
+    Stack&lt;T&gt; padTo(int length, T element);
+
+    @Override
+    Stack&lt;T&gt; patch(int from, Iterable&lt;? extends T&gt; that, int replaced);
+
+    @Override
+    Tuple2&lt;? extends Stack&lt;T&gt;, ? extends Stack&lt;T&gt;&gt; partition(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    Stack&lt;T&gt; peek(Consumer&lt;? super T&gt; action);
+
+    @Override
+    Stack&lt;? extends Stack&lt;T&gt;&gt; permutations();
+
+    @Override
+    Stack&lt;T&gt; prepend(T element);
+
+    @Override
+    Stack&lt;T&gt; prependAll(Iterable&lt;? extends T&gt; elements);
+
+    @Override
+    Stack&lt;T&gt; remove(T element);
+
+    @Override
+    Stack&lt;T&gt; removeFirst(Predicate&lt;T&gt; predicate);
+
+    @Override
+    Stack&lt;T&gt; removeLast(Predicate&lt;T&gt; predicate);
+
+    @Override
+    Stack&lt;T&gt; removeAt(int index);
+
+    @Override
+    Stack&lt;T&gt; removeAll(T element);
+
+    @Override
+    Stack&lt;T&gt; removeAll(Iterable&lt;? extends T&gt; elements);
+
+    @Override
+    Stack&lt;T&gt; replace(T currentElement, T newElement);
+
+    @Override
+    Stack&lt;T&gt; replaceAll(T currentElement, T newElement);
+
+    @Override
+    Stack&lt;T&gt; retainAll(Iterable&lt;? extends T&gt; elements);
+
+    @Override
+    Stack&lt;T&gt; reverse();
+
+    @Override
+    Stack&lt;T&gt; scan(T zero, BiFunction&lt;? super T, ? super T, ? extends T&gt; operation);
+
+    @Override
+    &lt;U&gt; Stack&lt;U&gt; scanLeft(U zero, BiFunction&lt;? super U, ? super T, ? extends U&gt; operation);
+
+    @Override
+    &lt;U&gt; Stack&lt;U&gt; scanRight(U zero, BiFunction&lt;? super T, ? super U, ? extends U&gt; operation);
+
+    @Override
+    Stack&lt;T&gt; slice(int beginIndex, int endIndex);
+
+    @Override
+    Iterator&lt;? extends Stack&lt;T&gt;&gt; sliding(int size);
+
+    @Override
+    Iterator&lt;? extends Stack&lt;T&gt;&gt; sliding(int size, int step);
+
+    @Override
+    Stack&lt;T&gt; sort();
+
+    @Override
+    Stack&lt;T&gt; sort(Comparator&lt;? super T&gt; comparator);
+
+    @Override
+    &lt;U extends Comparable&lt;? super U&gt;&gt; Stack&lt;T&gt; sortBy(Function&lt;? super T, ? extends U&gt; mapper);
+
+    @Override
+    &lt;U&gt; Stack&lt;T&gt; sortBy(Comparator&lt;? super U&gt; comparator, Function&lt;? super T, ? extends U&gt; mapper);
+
+    @Override
+    Tuple2&lt;? extends Stack&lt;T&gt;, ? extends Stack&lt;T&gt;&gt; span(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    Tuple2&lt;? extends Stack&lt;T&gt;, ? extends Stack&lt;T&gt;&gt; splitAt(int n);
+
+    @Override
+    Tuple2&lt;? extends Stack&lt;T&gt;, ? extends Stack&lt;T&gt;&gt; splitAt(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    Tuple2&lt;? extends Stack&lt;T&gt;, ? extends Stack&lt;T&gt;&gt; splitAtInclusive(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    Stack&lt;T&gt; subSequence(int beginIndex);
+
+    @Override
+    Stack&lt;T&gt; subSequence(int beginIndex, int endIndex);
+
+    @Override
+    Stack&lt;T&gt; tail();
+
+    @Override
+    Option&lt;? extends Stack&lt;T&gt;&gt; tailOption();
+
+    @Override
+    Stack&lt;T&gt; take(int n);
+
+    @Override
+    Stack&lt;T&gt; takeRight(int n);
+
+    @Override
+    Stack&lt;T&gt; takeUntil(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    Stack&lt;T&gt; takeWhile(Predicate&lt;? super T&gt; predicate);
+
+    @Override
+    &lt;U&gt; Stack&lt;U&gt; unit(Iterable&lt;? extends U&gt; iterable);
+
+    @Override
+    &lt;T1, T2&gt; Tuple2&lt;? extends Stack&lt;T1&gt;, ? extends Stack&lt;T2&gt;&gt; unzip(
+            Function&lt;? super T, Tuple2&lt;? extends T1, ? extends T2&gt;&gt; unzipper);
+
+    @Override
+    Stack&lt;T&gt; update(int index, T element);
+
+    @Override
+    &lt;U&gt; Stack&lt;Tuple2&lt;T, U&gt;&gt; zip(Iterable&lt;U&gt; that);
+
+    @Override
+    &lt;U&gt; Stack&lt;Tuple2&lt;T, U&gt;&gt; zipAll(Iterable&lt;U&gt; that, T thisElem, U thatElem);
+
+    @Override
+    Stack&lt;Tuple2&lt;T, Integer&gt;&gt; zipWithIndex();
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

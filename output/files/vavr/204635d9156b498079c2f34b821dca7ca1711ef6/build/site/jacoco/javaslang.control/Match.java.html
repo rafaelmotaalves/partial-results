@@ -1,0 +1,1332 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Match.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang.control</a> &gt; <span class="el_source">Match.java</span></div><h1>Match.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang.control;
+
+import javaslang.*;
+import javaslang.algebra.Monad;
+import javaslang.collection.Iterator;
+import javaslang.collection.List;
+import javaslang.control.Match.SerializablePredicate;
+
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
+import static javaslang.control.MatchModule.*;
+
+/**
+ * {@code Match} is a Java switch on steroids (without the negative 'side effects'). Some characteristics of
+ * {@code Match} are:
+ * &lt;ul&gt;
+ * &lt;li&gt;it has a fluent API&lt;/li&gt;
+ * &lt;li&gt;it can be {@code Function}&lt;/li&gt;
+ * &lt;li&gt;it can be {@code Value}&lt;/li&gt;
+ * &lt;li&gt;it is able to match &lt;em&gt;values&lt;/em&gt;, i.e. {@code when(Object)} and {@code whenIn(Object...)}&lt;/li&gt;
+ * &lt;li&gt;it is able to match &lt;em&gt;types&lt;/em&gt;, i.e. {@code whenType(Class)} and {@code whenTypeIn(Class...)}&lt;/li&gt;
+ * &lt;li&gt;it is able to match &lt;em&gt;conditions&lt;/em&gt;, i.e. {@code whenTrue(Function1)}&lt;/li&gt;
+ * &lt;li&gt;it is able to match &lt;em&gt;function applicability&lt;/em&gt;, i.e. {@code whenApplicable(Function1)}&lt;/li&gt;
+ * &lt;li&gt;results may be specified &lt;em&gt;eagerly&lt;/em&gt;, i.e. {@code then(value)}&lt;/li&gt;
+ * &lt;li&gt;results may be obtained &lt;em&gt;lazily&lt;/em&gt;, i.e. {@code then(() -&gt; value)}&lt;/li&gt;
+ * &lt;li&gt;results may be derived from the &lt;em&gt;context&lt;/em&gt;, i.e. {@code then(object -&gt; f(object)}&lt;/li&gt;
+ * &lt;/ul&gt;
+ * The Match API comes in two flavors, the {@code MatchMonad} and the {@code MatchFunction}.
+ * &lt;p&gt;
+ * {@code MatchMonad} is a {@linkplain javaslang.Value}, obtained by {@code Match.of(someValue)}. In this case a Match
+ * is terminated {@code get()}, {@code orElse()}, etc.
+ * &lt;pre&gt;&lt;code&gt;Match.of(1)
+ *      .whenType(String.class).then(s -&amp;gt; &quot;String &quot; + s)
+ *      .whenType(Number.class).then(n -&amp;gt; &quot;Number &quot; + n)
+ *      .whenType(Integer.class).then(i -&amp;gt; &quot;int &quot; + i)
+ *      .orElse(&quot;unknown&quot;);
+ * &lt;/code&gt;&lt;/pre&gt;
+ * {@code MatchFunction} is a {@linkplain java.util.function.Function}, obtained by one of {@code Match.whenXxx(...)}.
+ * In this case a Match is terminated by applying it to an object, e.g.
+ * &lt;pre&gt;&lt;code&gt;Match.when(...).then(...).otherwise(...).apply(o);&lt;/code&gt;&lt;/pre&gt;
+ * A {@code MatchFunction} is a reusable Match, i.e. it may be applied to different objects.
+ * &lt;p&gt;
+ * Example of a Match as &lt;a href=&quot;http://en.wikipedia.org/wiki/Partial_function&quot;&gt;&lt;strong&gt;partial&lt;/strong&gt; function&lt;/a&gt;:
+ * &lt;pre&gt;&lt;code&gt;final Match&amp;lt;Number&amp;gt; toNumber = Match.as(Number.class)
+ *     .whenType(Integer.class).then(i -&amp;gt; i)
+ *     .whenType(String.class).then(s -&amp;gt; new BigDecimal(s));
+ * final Number number = toNumber.apply(1.0d); // throws a MatchError
+ * &lt;/code&gt;&lt;/pre&gt;
+ * Example of a Match as &lt;a href=&quot;http://en.wikipedia.org/wiki/Function_(mathematics)&quot;&gt;&lt;strong&gt;total&lt;/strong&gt; function&lt;/a&gt;:
+ * &lt;pre&gt;&lt;code&gt;final Match&amp;lt;Number&amp;gt; toNumber = Match.as(Number.class)
+ *     .whenType(Integer.class).then(i -&amp;gt; i)
+ *     .whenType(String.class).then(s -&amp;gt; new BigDecimal(s));
+ *     .otherwise(-1)
+ *     .apply(1.0d); // result: -1
+ * &lt;/code&gt;&lt;/pre&gt;
+ *
+ * @author Daniel Dietrich
+ * @since 1.0.0
+ */
+public interface Match {
+
+    /**
+     * Creates a type-safe match by fixating the value to be matched.
+     *
+     * @param &lt;T&gt;   type of the value to be matched
+     * @param value the value to be matched
+     * @return a new type-safe match builder
+     */
+    static &lt;T&gt; MatchMonad.Of&lt;T&gt; of(T value) {
+<span class="fc" id="L79">        return new MatchMonad.Of&lt;&gt;(value);</span>
+    }
+
+    /**
+     * Specifies the type of the match expression. In many cases it is not necessary to call {@code as}.
+     *
+     * @param type the hint of type {@code R}
+     * @param &lt;R&gt;  the type of the {@code Match} expression
+     * @return a new match builder
+     */
+    static &lt;R&gt; MatchFunction.Then&lt;R&gt; as(Class&lt;R&gt; type) {
+<span class="fc" id="L90">        Objects.requireNonNull(type, &quot;type is null&quot;);</span>
+<span class="fc" id="L91">        return new MatchFunction.Then&lt;&gt;(List.empty());</span>
+    }
+
+    static &lt;T&gt; MatchFunction.WhenUntyped&lt;T&gt; when(SerializablePredicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L95">        Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L96">        return new MatchFunction.WhenUntyped&lt;&gt;(isTrue(predicate));</span>
+    }
+
+    static &lt;T&gt; MatchFunction.WhenUntyped&lt;T&gt; whenIs(T prototype) {
+<span class="fc" id="L100">        return new MatchFunction.WhenUntyped&lt;&gt;(is(prototype));</span>
+    }
+
+    @SuppressWarnings(&quot;varargs&quot;)
+    @SafeVarargs
+    static &lt;T&gt; MatchFunction.WhenUntyped&lt;T&gt; whenIsIn(T... prototypes) {
+<span class="fc" id="L106">        Objects.requireNonNull(prototypes, &quot;prototypes is null&quot;);</span>
+<span class="fc" id="L107">        return new MatchFunction.WhenUntyped&lt;&gt;(isIn(prototypes));</span>
+    }
+
+    static &lt;T&gt; MatchFunction.WhenUntyped&lt;T&gt; whenType(Class&lt;T&gt; type) {
+<span class="fc" id="L111">        Objects.requireNonNull(type, &quot;type is null&quot;);</span>
+<span class="fc" id="L112">        return new MatchFunction.WhenUntyped&lt;&gt;(isType(type));</span>
+    }
+
+    // DEV-NOTE: setting T = Object is the best we can to because intersection of class types Class&lt;? super U&gt; cannot be calculated
+    static MatchFunction.WhenUntyped&lt;Object&gt; whenTypeIn(Class&lt;?&gt;... types) {
+<span class="fc" id="L117">        Objects.requireNonNull(types, &quot;types is null&quot;);</span>
+<span class="fc" id="L118">        return new MatchFunction.WhenUntyped&lt;&gt;(isTypeIn(types));</span>
+    }
+
+    static &lt;T, R&gt; MatchFunction.WhenApplicable&lt;T, R&gt; whenApplicable(Function1&lt;? super T, ? extends R&gt; function) {
+<span class="fc" id="L122">        Objects.requireNonNull(function, &quot;function is null&quot;);</span>
+<span class="fc" id="L123">        return new MatchFunction.WhenApplicable&lt;&gt;(function, List.empty());</span>
+    }
+
+    static &lt;R&gt; MatchFunction.Otherwise&lt;R&gt; otherwise(R that) {
+<span class="fc" id="L127">        return new MatchFunction.Otherwise&lt;&gt;(ignored -&gt; that, List.empty());</span>
+    }
+
+    static &lt;R&gt; MatchFunction.Otherwise&lt;R&gt; otherwise(Function&lt;? super Object, ? extends R&gt; function) {
+<span class="fc" id="L131">        Objects.requireNonNull(function, &quot;function is null&quot;);</span>
+<span class="fc" id="L132">        return new MatchFunction.Otherwise&lt;&gt;(function, List.empty());</span>
+    }
+
+    static &lt;R&gt; MatchFunction.Otherwise&lt;R&gt; otherwise(Supplier&lt;? extends R&gt; supplier) {
+<span class="fc" id="L136">        Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="fc" id="L137">        return new MatchFunction.Otherwise&lt;&gt;(ignored -&gt; supplier.get(), List.empty());</span>
+    }
+
+    static MatchFunction.Effect.Otherwise otherwiseRun(Consumer&lt;? super Object&gt; action) {
+<span class="fc" id="L141">        Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="fc" id="L142">        return new MatchFunction.Effect.Otherwise(value -&gt; {</span>
+<span class="fc" id="L143">            action.accept(value);</span>
+<span class="fc" id="L144">            return null;</span>
+<span class="fc" id="L145">        }, List.empty());</span>
+    }
+
+    static MatchFunction.Effect.Otherwise otherwiseRun(Runnable action) {
+<span class="fc" id="L149">        Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="fc" id="L150">        return new MatchFunction.Effect.Otherwise(value -&gt; {</span>
+<span class="fc" id="L151">            action.run();</span>
+<span class="fc" id="L152">            return null;</span>
+<span class="fc" id="L153">        }, List.empty());</span>
+    }
+
+    static &lt;R&gt; MatchFunction.Otherwise&lt;R&gt; otherwiseThrow(Supplier&lt;? extends RuntimeException&gt; supplier) {
+<span class="fc" id="L157">        Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="fc" id="L158">        return new MatchFunction.Otherwise&lt;&gt;(ignored -&gt; {</span>
+<span class="fc" id="L159">            throw supplier.get();</span>
+<span class="fc" id="L160">        }, List.empty());</span>
+    }
+
+    /**
+     * Match as Function
+     */
+    interface MatchFunction&lt;R&gt; extends Function1&lt;Object, R&gt; {
+
+        long serialVersionUID = 1L;
+
+        /**
+         * Applies this {@code Match} to an {@code Object}.
+         *
+         * @param o an {@code Object}
+         * @throws MatchError if no {@code Case} matched
+         */
+        @Override
+        R apply(Object o);
+
+        /**
+         * {@code WhenUntyped} is needed, when the return type of the MatchFunction is still unknown,
+         * i.e. before the first call of {@code then()} or {@link Match#as(Class)}.
+         *
+         * @param &lt;T&gt; superset of the domain of the predicate
+         */
+        final class WhenUntyped&lt;T&gt; {
+
+            private final Predicate&lt;? super T&gt; predicate;
+
+<span class="fc" id="L189">            private WhenUntyped(Predicate&lt;? super T&gt; predicate) {</span>
+<span class="fc" id="L190">                this.predicate = predicate;</span>
+<span class="fc" id="L191">            }</span>
+
+            public &lt;R&gt; Then&lt;R&gt; then(Function&lt;? super T, ? extends R&gt; function) {
+<span class="fc" id="L194">                Objects.requireNonNull(function, &quot;function is null&quot;);</span>
+<span class="fc" id="L195">                return new Then&lt;&gt;(List.of(new Case(predicate, function)));</span>
+            }
+
+            public &lt;R&gt; Then&lt;R&gt; then(R that) {
+<span class="fc" id="L199">                return then(ignored -&gt; that);</span>
+            }
+
+            public &lt;R&gt; Then&lt;R&gt; then(Supplier&lt;? extends R&gt; supplier) {
+<span class="fc" id="L203">                Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="fc" id="L204">                return then(ignored -&gt; supplier.get());</span>
+            }
+
+            public Effect.Then thenRun(Consumer&lt;? super T&gt; action) {
+<span class="fc" id="L208">                Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="fc" id="L209">                final Function&lt;? super T, ? extends Void&gt; function = value -&gt; {</span>
+<span class="fc" id="L210">                    action.accept(value);</span>
+<span class="fc" id="L211">                    return null;</span>
+                };
+<span class="fc" id="L213">                return new Effect.Then(List.of(new Case(predicate, function)));</span>
+            }
+
+            public Effect.Then thenRun(Runnable action) {
+<span class="fc" id="L217">                Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="fc" id="L218">                return new Effect.Then(List.of(new Case(predicate, value -&gt; {</span>
+<span class="fc" id="L219">                    action.run();</span>
+<span class="fc" id="L220">                    return null;</span>
+                })));
+            }
+
+            public &lt;R&gt; Then&lt;R&gt; thenThrow(Supplier&lt;? extends RuntimeException&gt; supplier) {
+<span class="fc" id="L225">                Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="fc" id="L226">                return then(ignored -&gt; {</span>
+<span class="fc" id="L227">                    throw supplier.get();</span>
+                });
+            }
+        }
+
+        final class When&lt;T, R&gt; {
+
+            private final Predicate&lt;? super T&gt; predicate;
+            private final List&lt;Case&gt; cases;
+
+<span class="fc" id="L237">            private When(Predicate&lt;? super T&gt; predicate, List&lt;Case&gt; cases) {</span>
+<span class="fc" id="L238">                this.predicate = predicate;</span>
+<span class="fc" id="L239">                this.cases = cases;</span>
+<span class="fc" id="L240">            }</span>
+
+            public Then&lt;R&gt; then(Function&lt;? super T, ? extends R&gt; function) {
+<span class="fc" id="L243">                Objects.requireNonNull(function, &quot;function is null&quot;);</span>
+<span class="fc" id="L244">                return new Then&lt;&gt;(cases.prepend(new Case(predicate, function)));</span>
+            }
+
+            public Then&lt;R&gt; then(R that) {
+<span class="fc" id="L248">                return then(ignored -&gt; that);</span>
+            }
+
+            public Then&lt;R&gt; then(Supplier&lt;? extends R&gt; supplier) {
+<span class="fc" id="L252">                Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="fc" id="L253">                return then(ignored -&gt; supplier.get());</span>
+            }
+
+            public Then&lt;R&gt; thenThrow(Supplier&lt;? extends RuntimeException&gt; supplier) {
+<span class="fc" id="L257">                Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="fc" id="L258">                return then(ignored -&gt; {</span>
+<span class="fc" id="L259">                    throw supplier.get();</span>
+                });
+            }
+        }
+
+        final class Then&lt;R&gt; implements MatchFunction&lt;R&gt; {
+
+            private final static long serialVersionUID = 1L;
+
+            private final List&lt;Case&gt; cases;
+
+<span class="fc" id="L270">            private Then(List&lt;Case&gt; cases) {</span>
+<span class="fc" id="L271">                this.cases = cases;</span>
+<span class="fc" id="L272">            }</span>
+
+            @SuppressWarnings(&quot;unchecked&quot;)
+            @Override
+            public R apply(Object o) {
+<span class="fc" id="L277">                return (R) cases.reverse()</span>
+<span class="fc" id="L278">                        .findFirst(caze -&gt; caze.isApplicable(o))</span>
+<span class="fc" id="L279">                        .map(caze -&gt; caze.apply(o))</span>
+<span class="fc" id="L280">                        .orElseThrow(() -&gt; new MatchError(o));</span>
+            }
+
+            public &lt;T&gt; When&lt;T, R&gt; when(SerializablePredicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L284">                Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L285">                return new When&lt;&gt;(isTrue(predicate), cases);</span>
+            }
+
+            public &lt;T&gt; When&lt;T, R&gt; whenIs(T prototype) {
+<span class="fc" id="L289">                return new When&lt;&gt;(is(prototype), cases);</span>
+            }
+
+            @SuppressWarnings(&quot;unchecked&quot;)
+            public &lt;T&gt; When&lt;T, R&gt; whenIsIn(T... prototypes) {
+<span class="fc" id="L294">                Objects.requireNonNull(prototypes, &quot;prototypes is null&quot;);</span>
+<span class="fc" id="L295">                return new When&lt;&gt;(isIn(prototypes), cases);</span>
+            }
+
+            public &lt;T&gt; When&lt;T, R&gt; whenType(Class&lt;T&gt; type) {
+<span class="fc" id="L299">                Objects.requireNonNull(type, &quot;type is null&quot;);</span>
+<span class="fc" id="L300">                return new When&lt;&gt;(isType(type), cases);</span>
+            }
+
+            // DEV-NOTE: setting T = Object is the best we can to because intersection of class types Class&lt;? super U&gt; cannot be calculated
+            public When&lt;Object, R&gt; whenTypeIn(Class&lt;?&gt;... types) {
+<span class="fc" id="L305">                Objects.requireNonNull(types, &quot;types is null&quot;);</span>
+<span class="fc" id="L306">                return new When&lt;&gt;(isTypeIn(types), cases);</span>
+            }
+
+            public &lt;T&gt; WhenApplicable&lt;T, R&gt; whenApplicable(Function1&lt;? super T, ? extends R&gt; function) {
+<span class="fc" id="L310">                Objects.requireNonNull(function, &quot;function is null&quot;);</span>
+<span class="fc" id="L311">                return new WhenApplicable&lt;&gt;(function, cases);</span>
+            }
+
+            public Otherwise&lt;R&gt; otherwise(R that) {
+<span class="fc" id="L315">                return new Otherwise&lt;&gt;(ignored -&gt; that, cases);</span>
+            }
+
+            public Otherwise&lt;R&gt; otherwise(Function&lt;? super Object, ? extends R&gt; function) {
+<span class="fc" id="L319">                Objects.requireNonNull(function, &quot;function is null&quot;);</span>
+<span class="fc" id="L320">                return new Otherwise&lt;&gt;(function, cases);</span>
+            }
+
+            public Otherwise&lt;R&gt; otherwise(Supplier&lt;? extends R&gt; supplier) {
+<span class="fc" id="L324">                Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="fc" id="L325">                return new Otherwise&lt;&gt;(ignored -&gt; supplier.get(), cases);</span>
+            }
+
+            public Otherwise&lt;R&gt; otherwiseThrow(Supplier&lt;? extends RuntimeException&gt; supplier) {
+<span class="fc" id="L329">                Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="fc" id="L330">                return new Otherwise&lt;&gt;(ignored -&gt; {</span>
+<span class="fc" id="L331">                    throw supplier.get();</span>
+                }, cases);
+            }
+        }
+
+        final class WhenApplicable&lt;T, R&gt; {
+
+            private final Function1&lt;? super T, ? extends R&gt; function;
+            private final List&lt;Case&gt; cases;
+
+<span class="fc" id="L341">            private WhenApplicable(Function1&lt;? super T, ? extends R&gt; function, List&lt;Case&gt; cases) {</span>
+<span class="fc" id="L342">                this.function = function;</span>
+<span class="fc" id="L343">                this.cases = cases;</span>
+<span class="fc" id="L344">            }</span>
+
+            public Then&lt;R&gt; thenApply() {
+<span class="fc" id="L347">                return new Then&lt;&gt;(cases.prepend(new Case(function::isApplicableTo, function)));</span>
+            }
+
+            public Then&lt;R&gt; thenThrow(Supplier&lt;? extends RuntimeException&gt; supplier) {
+<span class="fc" id="L351">                Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="fc" id="L352">                return new Then&lt;&gt;(cases.prepend(new Case(function::isApplicableTo, ignored -&gt; {</span>
+<span class="fc" id="L353">                    throw supplier.get();</span>
+                })));
+            }
+        }
+
+        final class Otherwise&lt;R&gt; implements MatchFunction&lt;R&gt; {
+
+            private final static long serialVersionUID = 1L;
+
+            private final Function&lt;? super Object, ? extends R&gt; function;
+            private final List&lt;Case&gt; cases;
+
+<span class="fc" id="L365">            private Otherwise(Function&lt;? super Object, ? extends R&gt; function, List&lt;Case&gt; cases) {</span>
+<span class="fc" id="L366">                this.function = function;</span>
+<span class="fc" id="L367">                this.cases = cases;</span>
+<span class="fc" id="L368">            }</span>
+
+            @SuppressWarnings(&quot;unchecked&quot;)
+            @Override
+            public R apply(Object o) {
+<span class="fc" id="L373">                return (R) cases.reverse()</span>
+<span class="fc" id="L374">                        .findFirst(caze -&gt; caze.isApplicable(o))</span>
+<span class="fc" id="L375">                        .map(caze -&gt; caze.apply(o))</span>
+<span class="fc" id="L376">                        .orElseGet(() -&gt; function.apply(o));</span>
+            }
+        }
+
+        final class Case {
+
+            private final Predicate&lt;? super Object&gt; predicate;
+            private final Function&lt;? super Object, ? extends Object&gt; function;
+
+            @SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L386">            private &lt;T, R&gt; Case(Predicate&lt;? super T&gt; predicate, Function&lt;? super T, ? extends R&gt; function) {</span>
+<span class="fc" id="L387">                this.predicate = (Predicate&lt;? super Object&gt;) predicate;</span>
+<span class="fc" id="L388">                this.function = (Function&lt;? super Object, ? extends Object&gt;) function;</span>
+<span class="fc" id="L389">            }</span>
+
+            private boolean isApplicable(Object object) {
+<span class="fc" id="L392">                return predicate.test(object);</span>
+            }
+
+            private Object apply(Object object) {
+<span class="fc" id="L396">                return function.apply(object);</span>
+            }
+        }
+
+        interface Effect {
+
+            final class When&lt;T&gt; {
+
+                private final Predicate&lt;? super T&gt; predicate;
+                private final List&lt;Case&gt; cases;
+
+<span class="fc" id="L407">                private When(Predicate&lt;? super T&gt; predicate, List&lt;Case&gt; cases) {</span>
+<span class="fc" id="L408">                    this.predicate = predicate;</span>
+<span class="fc" id="L409">                    this.cases = cases;</span>
+<span class="fc" id="L410">                }</span>
+
+                public Then thenRun(Consumer&lt;? super T&gt; action) {
+<span class="fc" id="L413">                    Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="fc" id="L414">                    final Function&lt;? super T, ? extends Void&gt; function = value -&gt; {</span>
+<span class="fc" id="L415">                        action.accept(value);</span>
+<span class="fc" id="L416">                        return null;</span>
+                    };
+<span class="fc" id="L418">                    return new Then(cases.prepend(new Case(predicate, function)));</span>
+                }
+
+                public Then thenRun(Runnable action) {
+<span class="fc" id="L422">                    Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="fc" id="L423">                    return new Then(cases.prepend(new Case(predicate, ignored -&gt; {</span>
+<span class="nc" id="L424">                        action.run();</span>
+<span class="nc" id="L425">                        return null;</span>
+                    })));
+                }
+
+                public Then thenThrow(Supplier&lt;? extends RuntimeException&gt; supplier) {
+<span class="fc" id="L430">                    Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="fc" id="L431">                    return new Then(cases.prepend(new Case(predicate, ignored -&gt; {</span>
+<span class="fc" id="L432">                        throw supplier.get();</span>
+                    })));
+                }
+            }
+
+            final class Then implements Consumer&lt;Object&gt; {
+
+                private final List&lt;Case&gt; cases;
+
+<span class="fc" id="L441">                private Then(List&lt;Case&gt; cases) {</span>
+<span class="fc" id="L442">                    this.cases = cases;</span>
+<span class="fc" id="L443">                }</span>
+
+                @Override
+                public void accept(Object o) {
+<span class="fc" id="L447">                    cases.reverse()</span>
+<span class="fc" id="L448">                            .findFirst(caze -&gt; caze.isApplicable(o))</span>
+<span class="fc" id="L449">                            .map(caze -&gt; caze.apply(o));</span>
+<span class="fc" id="L450">                }</span>
+
+                public &lt;T&gt; When&lt;T&gt; when(SerializablePredicate&lt;? super T&gt; predicate) {
+<span class="fc" id="L453">                    Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L454">                    return new When&lt;&gt;(isTrue(predicate), cases);</span>
+                }
+
+                public &lt;T&gt; When&lt;T&gt; whenIs(T prototype) {
+<span class="fc" id="L458">                    return new When&lt;&gt;(is(prototype), cases);</span>
+                }
+
+                @SuppressWarnings(&quot;unchecked&quot;)
+                public &lt;T&gt; When&lt;T&gt; whenIsIn(T... prototypes) {
+<span class="nc" id="L463">                    Objects.requireNonNull(prototypes, &quot;prototypes is null&quot;);</span>
+<span class="nc" id="L464">                    return new When&lt;&gt;(isIn(prototypes), cases);</span>
+                }
+
+                public &lt;T&gt; When&lt;T&gt; whenType(Class&lt;T&gt; type) {
+<span class="fc" id="L468">                    Objects.requireNonNull(type, &quot;type is null&quot;);</span>
+<span class="fc" id="L469">                    return new When&lt;&gt;(isType(type), cases);</span>
+                }
+
+                // DEV-NOTE: setting T = Object is the best we can to because intersection of class types Class&lt;? super U&gt; cannot be calculated
+                public When&lt;Object&gt; whenTypeIn(Class&lt;?&gt;... types) {
+<span class="nc" id="L474">                    Objects.requireNonNull(types, &quot;types is null&quot;);</span>
+<span class="nc" id="L475">                    return new When&lt;&gt;(isTypeIn(types), cases);</span>
+                }
+
+                public &lt;T&gt; WhenApplicable&lt;T&gt; whenApplicable(SerializableConsumer&lt;? super T&gt; action) {
+<span class="nc" id="L479">                    Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="nc" id="L480">                    return new WhenApplicable&lt;&gt;(action, cases);</span>
+                }
+
+                public Otherwise otherwiseRun(Consumer&lt;? super Object&gt; action) {
+<span class="fc" id="L484">                    Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="fc" id="L485">                    return new Otherwise(value -&gt; {</span>
+<span class="fc" id="L486">                        action.accept(value);</span>
+<span class="fc" id="L487">                        return null;</span>
+                    }, cases);
+                }
+
+                public Otherwise otherwiseRun(Runnable action) {
+<span class="fc" id="L492">                    Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="fc" id="L493">                    return new Otherwise(ignored -&gt; {</span>
+<span class="fc" id="L494">                        action.run();</span>
+<span class="fc" id="L495">                        return null;</span>
+                    }, cases);
+                }
+
+                public Otherwise otherwiseThrow(Supplier&lt;? extends RuntimeException&gt; supplier) {
+<span class="nc" id="L500">                    Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="nc" id="L501">                    return new Otherwise(ignored -&gt; {</span>
+<span class="nc" id="L502">                        throw supplier.get();</span>
+                    }, cases);
+                }
+            }
+
+            final class WhenApplicable&lt;T&gt; {
+
+                private final SerializableConsumer&lt;? super T&gt; action;
+                private final List&lt;Case&gt; cases;
+
+<span class="nc" id="L512">                private WhenApplicable(SerializableConsumer&lt;? super T&gt; action, List&lt;Case&gt; cases) {</span>
+<span class="nc" id="L513">                    this.action = action;</span>
+<span class="nc" id="L514">                    this.cases = cases;</span>
+<span class="nc" id="L515">                }</span>
+
+                @SuppressWarnings(&quot;unchecked&quot;)
+                public Then thenRun() {
+<span class="nc" id="L519">                    return new Then(cases.prepend(new Case(action::isApplicableTo, o -&gt; {</span>
+<span class="nc" id="L520">                        action.accept((T) o);</span>
+<span class="nc" id="L521">                        return null;</span>
+                    })));
+                }
+
+                public Then thenThrow(Supplier&lt;? extends RuntimeException&gt; supplier) {
+<span class="nc" id="L526">                    Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="nc" id="L527">                    return new Then(cases.prepend(new Case(action::isApplicableTo, ignored -&gt; {</span>
+<span class="nc" id="L528">                        throw supplier.get();</span>
+                    })));
+                }
+            }
+
+            final class Otherwise implements Consumer&lt;Object&gt; {
+
+                private final Function&lt;? super Object, ? extends Void&gt; action;
+                private final List&lt;Case&gt; cases;
+
+<span class="fc" id="L538">                private Otherwise(Function&lt;? super Object, ? extends Void&gt; action, List&lt;Case&gt; cases) {</span>
+<span class="fc" id="L539">                    this.action = action;</span>
+<span class="fc" id="L540">                    this.cases = cases;</span>
+<span class="fc" id="L541">                }</span>
+
+                @Override
+                public void accept(Object o) {
+<span class="fc" id="L545">                    cases.reverse()</span>
+<span class="fc" id="L546">                            .findFirst(caze -&gt; caze.isApplicable(o))</span>
+<span class="fc" id="L547">                            .map(caze -&gt; caze.apply(o))</span>
+<span class="fc" id="L548">                            .orElseGet(() -&gt; action.apply(o));</span>
+<span class="fc" id="L549">                }</span>
+            }
+        }
+    }
+
+    interface MatchMonad&lt;R&gt; extends Monad&lt;R&gt;, Supplier&lt;R&gt;, Value&lt;R&gt; {
+
+        @Override
+        MatchMonad&lt;R&gt; filter(Predicate&lt;? super R&gt; predicate);
+
+        @Override
+        default MatchMonad&lt;R&gt; filterNot(Predicate&lt;? super R&gt; predicate) {
+<span class="nc" id="L561">            Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="nc" id="L562">            return filter(predicate.negate());</span>
+        }
+
+        @Override
+        &lt;U&gt; MatchMonad&lt;U&gt; flatMap(Function&lt;? super R, ? extends Iterable&lt;? extends U&gt;&gt; mapper);
+
+        /**
+         * A {@code MatchMonad} is single-valued.
+         *
+         * @return {@code true}
+         */
+        @Override
+        default boolean isSingleValued() {
+<span class="nc" id="L575">            return true;</span>
+        }
+
+        @Override
+        &lt;U&gt; MatchMonad&lt;U&gt; map(Function&lt;? super R, ? extends U&gt; mapper);
+
+        @Override
+        default MatchMonad.Of&lt;MatchMonad&lt;R&gt;&gt; match() {
+<span class="nc" id="L583">            return Match.of(this);</span>
+        }
+
+        @Override
+        MatchMonad&lt;R&gt; peek(Consumer&lt;? super R&gt; action);
+
+        @Override
+        default String stringPrefix() {
+<span class="nc" id="L591">            return &quot;Match&quot;;</span>
+        }
+
+        /**
+         * Transforms this {@code MatchMonad}.
+         *
+         * @param f   A transformation
+         * @param &lt;U&gt; Type of transformation result
+         * @return An instance of type {@code U}
+         * @throws NullPointerException if {@code f} is null
+         */
+        default &lt;U&gt; U transform(Function&lt;? super MatchMonad&lt;? super R&gt;, ? extends U&gt; f) {
+<span class="nc" id="L603">            Objects.requireNonNull(f, &quot;f is null&quot;);</span>
+<span class="nc" id="L604">            return f.apply(this);</span>
+        }
+
+        final class Of&lt;T&gt; {
+
+            private final T value;
+
+<span class="fc" id="L611">            private Of(T value) {</span>
+<span class="fc" id="L612">                this.value = value;</span>
+<span class="fc" id="L613">            }</span>
+
+            public &lt;R&gt; Then&lt;T, R&gt; as(Class&lt;R&gt; resultType) {
+<span class="fc" id="L616">                Objects.requireNonNull(resultType, &quot;resultType is null&quot;);</span>
+<span class="fc" id="L617">                return new Then&lt;&gt;(value, Option.none());</span>
+            }
+
+            public &lt;U&gt; WhenUntyped&lt;T, U&gt; when(SerializablePredicate&lt;? super U&gt; predicate) {
+<span class="fc" id="L621">                Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L622">                final boolean isMatching = isTrue(predicate).test(value);</span>
+<span class="fc" id="L623">                return new WhenUntyped&lt;&gt;(value, isMatching);</span>
+            }
+
+            public &lt;U&gt; WhenUntyped&lt;T, U&gt; whenIs(U prototype) {
+<span class="fc" id="L627">                final boolean isMatching = is(prototype).test(value);</span>
+<span class="fc" id="L628">                return new WhenUntyped&lt;&gt;(value, isMatching);</span>
+            }
+
+            @SuppressWarnings(&quot;unchecked&quot;)
+            public &lt;U&gt; WhenUntyped&lt;T, U&gt; whenIsIn(U... prototypes) {
+<span class="fc" id="L633">                Objects.requireNonNull(prototypes, &quot;prototypes is null&quot;);</span>
+<span class="fc" id="L634">                final boolean isMatching = isIn(prototypes).test(value);</span>
+<span class="fc" id="L635">                return new WhenUntyped&lt;&gt;(value, isMatching);</span>
+            }
+
+            public &lt;U&gt; WhenUntyped&lt;T, U&gt; whenType(Class&lt;U&gt; type) {
+<span class="fc" id="L639">                Objects.requireNonNull(type, &quot;type is null&quot;);</span>
+<span class="fc" id="L640">                final boolean isMatching = isType(type).test(value);</span>
+<span class="fc" id="L641">                return new WhenUntyped&lt;&gt;(value, isMatching);</span>
+            }
+
+            // DEV-NOTE: setting &lt;U = T&gt; is the best we can do because intersection of class types Class&lt;?&gt; cannot be calculated
+            public WhenUntyped&lt;T, T&gt; whenTypeIn(Class&lt;?&gt;... types) {
+<span class="fc" id="L646">                Objects.requireNonNull(types, &quot;types is null&quot;);</span>
+<span class="fc" id="L647">                final boolean isMatching = isTypeIn(types).test(value);</span>
+<span class="fc" id="L648">                return new WhenUntyped&lt;&gt;(value, isMatching);</span>
+            }
+
+            public &lt;U, R&gt; WhenApplicable&lt;T, U, R&gt; whenApplicable(Function1&lt;? super U, ? extends R&gt; function) {
+<span class="fc" id="L652">                Objects.requireNonNull(function, &quot;function is null&quot;);</span>
+<span class="fc" id="L653">                return new WhenApplicable&lt;&gt;(value, Option.none(), function);</span>
+            }
+
+            public &lt;R&gt; Otherwise&lt;R&gt; otherwise(R that) {
+<span class="nc" id="L657">                return new Otherwise&lt;&gt;(() -&gt; that);</span>
+            }
+
+            public &lt;R&gt; Otherwise&lt;R&gt; otherwise(Function&lt;? super T, ? extends R&gt; function) {
+<span class="nc" id="L661">                Objects.requireNonNull(function, &quot;function is null&quot;);</span>
+<span class="nc" id="L662">                return new Otherwise&lt;&gt;(() -&gt; function.apply(value));</span>
+            }
+
+            public &lt;R&gt; Otherwise&lt;R&gt; otherwise(Supplier&lt;? extends R&gt; supplier) {
+<span class="nc" id="L666">                Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="nc" id="L667">                return new Otherwise&lt;&gt;(supplier);</span>
+            }
+
+            public void otherwiseRun(Consumer&lt;? super T&gt; action) {
+<span class="fc" id="L671">                Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="fc" id="L672">                action.accept(value);</span>
+<span class="fc" id="L673">            }</span>
+
+            public void otherwiseRun(Runnable action) {
+<span class="fc" id="L676">                Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="fc" id="L677">                action.run();</span>
+<span class="fc" id="L678">            }</span>
+
+            public &lt;R&gt; Otherwise&lt;R&gt; otherwiseThrow(Supplier&lt;? extends RuntimeException&gt; supplier) {
+<span class="nc" id="L681">                Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="nc" id="L682">                return new Otherwise&lt;&gt;(() -&gt; {</span>
+<span class="nc" id="L683">                    throw supplier.get();</span>
+                });
+            }
+        }
+
+        final class WhenUntyped&lt;T, U&gt; {
+
+            private final T value;
+            private final boolean isMatching;
+
+<span class="fc" id="L693">            private WhenUntyped(T value, boolean isMatching) {</span>
+<span class="fc" id="L694">                this.value = value;</span>
+<span class="fc" id="L695">                this.isMatching = isMatching;</span>
+<span class="fc" id="L696">            }</span>
+
+            public &lt;R&gt; Then&lt;T, R&gt; then(Function&lt;? super U, ? extends R&gt; function) {
+<span class="fc" id="L699">                Objects.requireNonNull(function, &quot;function is null&quot;);</span>
+<span class="fc" id="L700">                final Option&lt;Supplier&lt;? extends R&gt;&gt; result = MatchModule.computeResult(value, Option.none(), isMatching, function);</span>
+<span class="fc" id="L701">                return new Then&lt;&gt;(value, result);</span>
+            }
+
+            public &lt;R&gt; Then&lt;T, R&gt; then(R that) {
+<span class="fc" id="L705">                return then(ignored -&gt; that);</span>
+            }
+
+            public &lt;R&gt; Then&lt;T, R&gt; then(Supplier&lt;? extends R&gt; supplier) {
+<span class="fc" id="L709">                Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="fc" id="L710">                return then(ignored -&gt; supplier.get());</span>
+            }
+
+            @SuppressWarnings(&quot;unchecked&quot;)
+            public Effect.Then&lt;T&gt; thenRun(Consumer&lt;? super U&gt; action) {
+<span class="fc" id="L715">                Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="fc bfc" id="L716" title="All 2 branches covered.">                if (isMatching) {</span>
+<span class="fc" id="L717">                    action.accept((U) value);</span>
+                }
+<span class="fc" id="L719">                return new Effect.Then&lt;&gt;(value, isMatching);</span>
+            }
+
+            public Effect.Then&lt;T&gt; thenRun(Runnable action) {
+<span class="fc" id="L723">                Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="fc" id="L724">                return thenRun(ignored -&gt; action.run());</span>
+            }
+
+            public &lt;R&gt; Then&lt;T, R&gt; thenThrow(Supplier&lt;? extends RuntimeException&gt; supplier) {
+<span class="fc" id="L728">                Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="fc" id="L729">                return then(ignored -&gt; {</span>
+<span class="fc" id="L730">                    throw supplier.get();</span>
+                });
+            }
+        }
+
+        final class When&lt;T, U, R&gt; {
+
+            private final T value;
+            private final Option&lt;Supplier&lt;? extends R&gt;&gt; result;
+            private final boolean isMatching;
+
+<span class="fc" id="L741">            private When(T value, Option&lt;Supplier&lt;? extends R&gt;&gt; result, boolean isMatching) {</span>
+<span class="fc" id="L742">                this.value = value;</span>
+<span class="fc" id="L743">                this.result = result;</span>
+<span class="fc" id="L744">                this.isMatching = isMatching;</span>
+<span class="fc" id="L745">            }</span>
+
+            public Then&lt;T, R&gt; then(Function&lt;? super U, ? extends R&gt; function) {
+<span class="fc" id="L748">                Objects.requireNonNull(function, &quot;function is null&quot;);</span>
+<span class="fc" id="L749">                final Option&lt;Supplier&lt;? extends R&gt;&gt; updatedResult = MatchModule.computeResult(value, result, isMatching, function);</span>
+<span class="fc" id="L750">                return new Then&lt;&gt;(value, updatedResult);</span>
+            }
+
+            public Then&lt;T, R&gt; then(R that) {
+<span class="fc" id="L754">                return then(ignored -&gt; that);</span>
+            }
+
+            public Then&lt;T, R&gt; then(Supplier&lt;? extends R&gt; supplier) {
+<span class="nc" id="L758">                Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="nc" id="L759">                return then(ignored -&gt; supplier.get());</span>
+            }
+
+            public Then&lt;T, R&gt; thenThrow(Supplier&lt;? extends RuntimeException&gt; supplier) {
+<span class="fc" id="L763">                Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="fc" id="L764">                return then(ignored -&gt; {</span>
+<span class="fc" id="L765">                    throw supplier.get();</span>
+                });
+            }
+        }
+
+        final class Then&lt;T, R&gt; implements MatchMonad&lt;R&gt; {
+
+            private final T value;
+            private final Option&lt;Supplier&lt;? extends R&gt;&gt; result;
+
+<span class="fc" id="L775">            private Then(T value, Option&lt;Supplier&lt;? extends R&gt;&gt; result) {</span>
+<span class="fc" id="L776">                this.value = value;</span>
+<span class="fc" id="L777">                this.result = result;</span>
+<span class="fc" id="L778">            }</span>
+
+            public &lt;U&gt; When&lt;T, U, R&gt; when(SerializablePredicate&lt;? super U&gt; predicate) {
+<span class="fc" id="L781">                Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L782">                final boolean isMatching = isMatching(() -&gt; isTrue(predicate));</span>
+<span class="fc" id="L783">                return new When&lt;&gt;(value, result, isMatching);</span>
+            }
+
+            public &lt;U&gt; When&lt;T, U, R&gt; whenIs(U prototype) {
+<span class="fc" id="L787">                final boolean isMatching = isMatching(() -&gt; is(prototype));</span>
+<span class="fc" id="L788">                return new When&lt;&gt;(value, result, isMatching);</span>
+            }
+
+            @SuppressWarnings(&quot;unchecked&quot;)
+            public &lt;U&gt; When&lt;T, U, R&gt; whenIsIn(U... prototypes) {
+<span class="fc" id="L793">                Objects.requireNonNull(prototypes, &quot;prototypes is null&quot;);</span>
+<span class="fc" id="L794">                final boolean isMatching = isMatching(() -&gt; isIn(prototypes));</span>
+<span class="fc" id="L795">                return new When&lt;&gt;(value, result, isMatching);</span>
+            }
+
+            public &lt;U&gt; When&lt;T, U, R&gt; whenType(Class&lt;U&gt; type) {
+<span class="fc" id="L799">                Objects.requireNonNull(type, &quot;type is null&quot;);</span>
+<span class="fc" id="L800">                final boolean isMatching = isMatching(() -&gt; isType(type));</span>
+<span class="fc" id="L801">                return new When&lt;&gt;(value, result, isMatching);</span>
+            }
+
+            // DEV-NOTE: setting &lt;U = T&gt; is the best we can do because intersection of class types Class&lt;?&gt; cannot be calculated
+            public When&lt;T, T, R&gt; whenTypeIn(Class&lt;?&gt;... types) {
+<span class="fc" id="L806">                Objects.requireNonNull(types, &quot;types is null&quot;);</span>
+<span class="fc" id="L807">                final boolean isMatching = isMatching(() -&gt; isTypeIn(types));</span>
+<span class="fc" id="L808">                return new When&lt;&gt;(value, result, isMatching);</span>
+            }
+
+            public &lt;U&gt; WhenApplicable&lt;T, U, R&gt; whenApplicable(Function1&lt;? super U, ? extends R&gt; function) {
+<span class="fc" id="L812">                Objects.requireNonNull(function, &quot;function is null&quot;);</span>
+<span class="fc" id="L813">                return new WhenApplicable&lt;&gt;(value, result, function);</span>
+            }
+
+            public Otherwise&lt;R&gt; otherwise(R that) {
+<span class="fc" id="L817">                return new Otherwise&lt;&gt;(() -&gt; result.orElse(() -&gt; that).get());</span>
+            }
+
+            public Otherwise&lt;R&gt; otherwise(Function&lt;? super T, ? extends R&gt; function) {
+<span class="fc" id="L821">                Objects.requireNonNull(function, &quot;function is null&quot;);</span>
+<span class="fc" id="L822">                return new Otherwise&lt;&gt;(() -&gt; result.orElse(() -&gt; function.apply(value)).get());</span>
+            }
+
+            public Otherwise&lt;R&gt; otherwise(Supplier&lt;? extends R&gt; supplier) {
+<span class="fc" id="L826">                Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="fc" id="L827">                return new Otherwise&lt;&gt;(() -&gt; result.orElse(supplier).get());</span>
+            }
+
+            public Otherwise&lt;R&gt; otherwiseThrow(Supplier&lt;? extends RuntimeException&gt; supplier) {
+<span class="fc" id="L831">                Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="pc" id="L832">                return new Otherwise&lt;&gt;(() -&gt; result.orElseThrow(supplier).get());</span>
+            }
+
+            @Override
+            public MatchMonad&lt;R&gt; filter(Predicate&lt;? super R&gt; predicate) {
+<span class="fc" id="L837">                Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L838">                return result.map(supplier -&gt; {</span>
+<span class="fc" id="L839">                    final R resultValue = supplier.get();</span>
+<span class="fc bfc" id="L840" title="All 2 branches covered.">                    if (predicate.test(resultValue)) {</span>
+<span class="fc" id="L841">                        return this;</span>
+                    } else {
+<span class="fc" id="L843">                        return new Then&lt;&gt;(value, Option.&lt;Supplier&lt;? extends R&gt;&gt; none());</span>
+                    }
+<span class="fc" id="L845">                }).orElse(this);</span>
+            }
+
+            @SuppressWarnings(&quot;unchecked&quot;)
+            @Override
+            public &lt;U&gt; MatchMonad&lt;U&gt; flatMap(Function&lt;? super R, ? extends Iterable&lt;? extends U&gt;&gt; mapper) {
+<span class="fc" id="L851">                Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+<span class="fc bfc" id="L852" title="All 2 branches covered.">                if (result.isEmpty()) {</span>
+<span class="fc" id="L853">                    return (MatchMonad&lt;U&gt;) this;</span>
+                } else {
+<span class="fc" id="L855">                    return unit(mapper.apply(result.get().get()));</span>
+                }
+            }
+            
+            @SuppressWarnings(&quot;unchecked&quot;)
+			@Override
+            public &lt;U&gt; MatchMonad&lt;U&gt; unit(Iterable&lt;? extends U&gt; iterable) {
+<span class="pc bpc" id="L862" title="1 of 2 branches missed.">            	if (iterable instanceof MatchMonad) {</span>
+<span class="fc" id="L863">            		return (MatchMonad&lt;U&gt;) iterable;</span>
+<span class="nc bnc" id="L864" title="All 2 branches missed.">            	} else if (iterable instanceof Value) {</span>
+<span class="nc" id="L865">            		final Value&lt;U&gt; v = ((Value&lt;U&gt;) iterable);</span>
+<span class="nc bnc" id="L866" title="All 2 branches missed.">            		final Option&lt;Supplier&lt;? extends U&gt;&gt; result = v.isEmpty() ? Option.none() : Option.some(v::get);</span>
+<span class="nc" id="L867">            		return new Then&lt;&gt;(value, result);</span>
+            	} else {
+<span class="nc" id="L869">            		final java.util.Iterator&lt;? extends U&gt; iterator = iterable.iterator();</span>
+            		final Option&lt;Supplier&lt;? extends U&gt;&gt; result;
+<span class="nc bnc" id="L871" title="All 2 branches missed.">            		if (iterator.hasNext()) {</span>
+<span class="nc" id="L872">            			final U v = iterator.next();</span>
+<span class="nc" id="L873">            			result = Option.some(() -&gt; v);</span>
+<span class="nc" id="L874">            		} else {</span>
+<span class="nc" id="L875">            			result = Option.none();</span>
+            		}
+<span class="nc" id="L877">            		return new Then&lt;&gt;(value, result);</span>
+            	}
+            }
+
+            @SuppressWarnings(&quot;unchecked&quot;)
+            @Override
+            public &lt;U&gt; MatchMonad&lt;U&gt; map(Function&lt;? super R, ? extends U&gt; mapper) {
+<span class="fc" id="L884">                Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+<span class="fc" id="L885">                return result</span>
+<span class="fc" id="L886">                        .map(supplier -&gt; new Then&lt;T, U&gt;(value, Option.some(() -&gt; mapper.apply(supplier.get()))))</span>
+<span class="fc" id="L887">                        .orElseGet(() -&gt; (Then&lt;T, U&gt;) this);</span>
+            }
+
+            @Override
+            public MatchMonad&lt;R&gt; peek(Consumer&lt;? super R&gt; action) {
+<span class="nc" id="L892">                Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="nc" id="L893">                result.peek(supplier -&gt; action.accept(supplier.get()));</span>
+<span class="nc" id="L894">                return this;</span>
+            }
+
+            @Override
+            public R get() {
+<span class="fc" id="L899">                return result.orElseThrow(() -&gt; new MatchError(value)).get();</span>
+            }
+
+            @Override
+            public boolean isEmpty() {
+<span class="fc" id="L904">                return result.isEmpty();</span>
+            }
+
+            @Override
+            public Iterator&lt;R&gt; iterator() {
+<span class="fc bfc" id="L909" title="All 2 branches covered.">                return result.isEmpty() ? Iterator.empty() : Iterator.of(get());</span>
+            }
+
+            private boolean isMatching(Supplier&lt;Predicate&lt;? super Object&gt;&gt; predicate) {
+<span class="fc bfc" id="L913" title="All 4 branches covered.">                return result.isEmpty() &amp;&amp; predicate.get().test(value);</span>
+            }
+        }
+
+        final class WhenApplicable&lt;T, U, R&gt; {
+
+            private final T value;
+            private final Option&lt;Supplier&lt;? extends R&gt;&gt; result;
+            private final boolean isMatching;
+            private final Function1&lt;? super U, ? extends R&gt; function;
+
+<span class="fc" id="L924">            private WhenApplicable(T value, Option&lt;Supplier&lt;? extends R&gt;&gt; result, Function1&lt;? super U, ? extends R&gt; function) {</span>
+<span class="fc" id="L925">                this.value = value;</span>
+<span class="fc" id="L926">                this.result = result;</span>
+<span class="fc bfc" id="L927" title="All 4 branches covered.">                this.isMatching = result.isEmpty() &amp;&amp; function.isApplicableTo(value);</span>
+<span class="fc" id="L928">                this.function = function;</span>
+<span class="fc" id="L929">            }</span>
+
+            public Then&lt;T, R&gt; thenApply() {
+<span class="fc" id="L932">                final Option&lt;Supplier&lt;? extends R&gt;&gt; updatedResult = MatchModule.computeResult(value, result, isMatching, function);</span>
+<span class="fc" id="L933">                return new Then&lt;&gt;(value, updatedResult);</span>
+            }
+
+            public Then&lt;T, R&gt; thenThrow(Supplier&lt;? extends RuntimeException&gt; supplier) {
+<span class="nc" id="L937">                Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="nc" id="L938">                final Option&lt;Supplier&lt;? extends R&gt;&gt; updatedResult = MatchModule.computeResult(value, result, isMatching, ignored -&gt; {</span>
+<span class="nc" id="L939">                    throw supplier.get();</span>
+                });
+<span class="nc" id="L941">                return new Then&lt;&gt;(value, updatedResult);</span>
+            }
+        }
+
+        final class Otherwise&lt;R&gt; implements MatchMonad&lt;R&gt; {
+
+            // we need to ensure referential transparency of Otherwise.get()
+            private final Lazy&lt;R&gt; result;
+
+<span class="fc" id="L950">            private Otherwise(Supplier&lt;? extends R&gt; supplier) {</span>
+<span class="fc" id="L951">                this.result = Lazy.of(supplier);</span>
+<span class="fc" id="L952">            }</span>
+
+            @Override
+            public MatchMonad&lt;R&gt; filter(Predicate&lt;? super R&gt; predicate) {
+<span class="fc" id="L956">                Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="fc" id="L957">                return new Otherwise&lt;&gt;(() -&gt; result.filter(predicate).get());</span>
+            }
+
+            @SuppressWarnings(&quot;unchecked&quot;)
+			@Override
+            public &lt;U&gt; MatchMonad&lt;U&gt; flatMap(Function&lt;? super R, ? extends Iterable&lt;? extends U&gt;&gt; mapper) {
+<span class="fc" id="L963">                Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+                // lazy result could be undefined
+<span class="pc bpc" id="L965" title="1 of 2 branches missed.">                if (result.isEmpty()) {</span>
+<span class="nc" id="L966">                	return (MatchMonad&lt;U&gt;) this;</span>
+                } else {
+                	// does this need to be lazy?
+<span class="fc" id="L969">                	return unit(mapper.apply(result.get()));</span>
+                }
+            }
+            
+            @SuppressWarnings(&quot;unchecked&quot;)
+			@Override
+            public &lt;U&gt; MatchMonad&lt;U&gt; unit(Iterable&lt;? extends U&gt; iterable) {
+<span class="pc bpc" id="L976" title="1 of 2 branches missed.">            	if (iterable instanceof MatchMonad) {</span>
+<span class="fc" id="L977">            		return (MatchMonad&lt;U&gt;) iterable;</span>
+<span class="nc bnc" id="L978" title="All 2 branches missed.">            	} else if (iterable instanceof Value) {</span>
+<span class="nc" id="L979">            		final Value&lt;U&gt; value = ((Value&lt;U&gt;) iterable);</span>
+<span class="nc bnc" id="L980" title="All 2 branches missed.">            		return value.isEmpty() ? new Otherwise&lt;&gt;(Lazy.undefined()) : new Otherwise&lt;&gt;(Lazy.of(value::get));</span>
+            	} else {
+<span class="nc" id="L982">            		final java.util.Iterator&lt;? extends U&gt; iterator = iterable.iterator();</span>
+<span class="nc bnc" id="L983" title="All 2 branches missed.">            		if (iterator.hasNext()) {</span>
+<span class="nc" id="L984">            			final U value = iterator.next();</span>
+<span class="nc" id="L985">            			return new Otherwise&lt;&gt;(() -&gt; value);</span>
+            		} else {
+<span class="nc" id="L987">            			return new Otherwise&lt;&gt;(Lazy.undefined());</span>
+            		}
+            	}
+            }
+
+            @SuppressWarnings(&quot;unchecked&quot;)
+			@Override
+            public &lt;U&gt; MatchMonad&lt;U&gt; map(Function&lt;? super R, ? extends U&gt; mapper) {
+<span class="fc" id="L995">                Objects.requireNonNull(mapper, &quot;mapper is null&quot;);</span>
+<span class="pc bpc" id="L996" title="1 of 2 branches missed.">                if (result.isEmpty()) {</span>
+<span class="nc" id="L997">                	return (MatchMonad&lt;U&gt;) this;</span>
+                } else {
+<span class="fc" id="L999">                	return new Otherwise&lt;&gt;(() -&gt; mapper.apply(result.get()));</span>
+                }
+            }
+
+            @Override
+            public MatchMonad&lt;R&gt; peek(Consumer&lt;? super R&gt; action) {
+<span class="nc" id="L1005">                Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="nc" id="L1006">                action.accept(result.get());</span>
+<span class="nc" id="L1007">                return this;</span>
+            }
+
+            @Override
+            public R get() {
+<span class="fc" id="L1012">                return result.get();</span>
+            }
+
+            @Override
+            public boolean isEmpty() {
+<span class="nc" id="L1017">                return false;</span>
+            }
+
+            @Override
+            public Iterator&lt;R&gt; iterator() {
+<span class="fc" id="L1022">                return Iterator.of(get());</span>
+            }
+        }
+
+        interface Effect {
+
+            final class When&lt;T, U&gt; {
+
+                private final T value;
+                private final boolean isActionPerformed;
+                private final boolean isMatching;
+
+<span class="fc" id="L1034">                private When(T value, boolean isActionPerformed, boolean isMatching) {</span>
+<span class="fc" id="L1035">                    this.value = value;</span>
+<span class="fc" id="L1036">                    this.isActionPerformed = isActionPerformed;</span>
+<span class="fc" id="L1037">                    this.isMatching = isMatching;</span>
+<span class="fc" id="L1038">                }</span>
+
+                @SuppressWarnings(&quot;unchecked&quot;)
+                public Then&lt;T&gt; thenRun(Consumer&lt;? super U&gt; action) {
+<span class="fc" id="L1042">                    Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="fc bfc" id="L1043" title="All 4 branches covered.">                    final boolean run = !isActionPerformed &amp;&amp; isMatching;</span>
+<span class="fc bfc" id="L1044" title="All 2 branches covered.">                    if (run) {</span>
+<span class="fc" id="L1045">                        action.accept((U) value);</span>
+                    }
+<span class="fc bfc" id="L1047" title="All 4 branches covered.">                    return new Then&lt;&gt;(value, isActionPerformed || run);</span>
+                }
+
+                public Then&lt;T&gt; thenRun(Runnable action) {
+<span class="fc" id="L1051">                    Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="pc" id="L1052">                    return thenRun(ignored -&gt; action.run());</span>
+                }
+            }
+
+            final class Then&lt;T&gt; {
+
+                private final T value;
+                private final boolean isActionPerformed;
+
+<span class="fc" id="L1061">                private Then(T value, boolean isActionPerformed) {</span>
+<span class="fc" id="L1062">                    this.value = value;</span>
+<span class="fc" id="L1063">                    this.isActionPerformed = isActionPerformed;</span>
+<span class="fc" id="L1064">                }</span>
+
+                public &lt;U&gt; When&lt;T, U&gt; when(SerializablePredicate&lt;? super U&gt; predicate) {
+<span class="nc" id="L1067">                    Objects.requireNonNull(predicate, &quot;predicate is null&quot;);</span>
+<span class="nc" id="L1068">                    final boolean isMatching = isMatching(() -&gt; isTrue(predicate));</span>
+<span class="nc" id="L1069">                    return new When&lt;&gt;(value, isActionPerformed, isMatching);</span>
+                }
+
+                public &lt;U&gt; When&lt;T, U&gt; whenIs(U prototype) {
+<span class="fc" id="L1073">                    final boolean isMatching = isMatching(() -&gt; is(prototype));</span>
+<span class="fc" id="L1074">                    return new When&lt;&gt;(value, isActionPerformed, isMatching);</span>
+                }
+
+                @SuppressWarnings(&quot;unchecked&quot;)
+                public &lt;U&gt; When&lt;T, U&gt; whenIsIn(U... prototypes) {
+<span class="nc" id="L1079">                    Objects.requireNonNull(prototypes, &quot;prototypes is null&quot;);</span>
+<span class="nc" id="L1080">                    final boolean isMatching = isMatching(() -&gt; isIn(prototypes));</span>
+<span class="nc" id="L1081">                    return new When&lt;&gt;(value, isActionPerformed, isMatching);</span>
+                }
+
+                public &lt;U&gt; When&lt;T, U&gt; whenType(Class&lt;U&gt; type) {
+<span class="fc" id="L1085">                    Objects.requireNonNull(type, &quot;type is null&quot;);</span>
+<span class="fc" id="L1086">                    final boolean isMatching = isMatching(() -&gt; isType(type));</span>
+<span class="fc" id="L1087">                    return new When&lt;&gt;(value, isActionPerformed, isMatching);</span>
+                }
+
+                // DEV-NOTE: setting &lt;U = T&gt; is the best we can do because intersection of class types Class&lt;?&gt; cannot be calculated
+                public When&lt;T, T&gt; whenTypeIn(Class&lt;?&gt;... types) {
+<span class="nc" id="L1092">                    Objects.requireNonNull(types, &quot;types is null&quot;);</span>
+<span class="nc" id="L1093">                    final boolean isMatching = isMatching(() -&gt; isTypeIn(types));</span>
+<span class="nc" id="L1094">                    return new When&lt;&gt;(value, isActionPerformed, isMatching);</span>
+                }
+
+                public &lt;U&gt; WhenApplicable&lt;T, U&gt; whenApplicable(SerializableConsumer&lt;U&gt; action) {
+<span class="nc" id="L1098">                    Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="nc" id="L1099">                    return new WhenApplicable&lt;&gt;(value, isActionPerformed, action);</span>
+                }
+
+                public void otherwiseRun(Consumer&lt;? super T&gt; action) {
+<span class="fc" id="L1103">                    Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="fc bfc" id="L1104" title="All 2 branches covered.">                    if (!isActionPerformed) {</span>
+<span class="fc" id="L1105">                        action.accept(value);</span>
+                    }
+<span class="fc" id="L1107">                }</span>
+
+                public void otherwiseRun(Runnable action) {
+<span class="fc" id="L1110">                    Objects.requireNonNull(action, &quot;action is null&quot;);</span>
+<span class="pc bpc" id="L1111" title="1 of 2 branches missed.">                    if (!isActionPerformed) {</span>
+<span class="nc" id="L1112">                        action.run();</span>
+                    }
+<span class="fc" id="L1114">                }</span>
+
+                public void otherwiseThrow(Supplier&lt;? extends RuntimeException&gt; supplier) {
+<span class="nc" id="L1117">                    Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="nc bnc" id="L1118" title="All 2 branches missed.">                    if (!isActionPerformed) {</span>
+<span class="nc" id="L1119">                        throw supplier.get();</span>
+                    }
+<span class="nc" id="L1121">                }</span>
+
+                private boolean isMatching(Supplier&lt;Predicate&lt;? super Object&gt;&gt; predicate) {
+<span class="fc bfc" id="L1124" title="All 4 branches covered.">                    return !isActionPerformed &amp;&amp; predicate.get().test(value);</span>
+                }
+            }
+
+            final class WhenApplicable&lt;T, U&gt; {
+
+                private final T value;
+                private final boolean isActionPerformed;
+                private final boolean isMatching;
+                private final SerializableConsumer&lt;? super U&gt; action;
+
+<span class="nc" id="L1135">                private WhenApplicable(T value, boolean isActionPerformed, SerializableConsumer&lt;? super U&gt; action) {</span>
+<span class="nc" id="L1136">                    this.value = value;</span>
+<span class="nc" id="L1137">                    this.isActionPerformed = isActionPerformed;</span>
+<span class="nc bnc" id="L1138" title="All 4 branches missed.">                    this.isMatching = !isActionPerformed &amp;&amp; action.isApplicableTo(value);</span>
+<span class="nc" id="L1139">                    this.action = action;</span>
+<span class="nc" id="L1140">                }</span>
+
+                @SuppressWarnings(&quot;unchecked&quot;)
+                public Then&lt;T&gt; thenRun() {
+<span class="nc bnc" id="L1144" title="All 2 branches missed.">                    if (isMatching) {</span>
+<span class="nc" id="L1145">                        action.accept((U) value);</span>
+                    }
+<span class="nc bnc" id="L1147" title="All 4 branches missed.">                    return new Then&lt;&gt;(value, isActionPerformed || isMatching);</span>
+                }
+
+                public Then&lt;T&gt; thenThrow(Supplier&lt;? extends RuntimeException&gt; supplier) {
+<span class="nc" id="L1151">                    Objects.requireNonNull(supplier, &quot;supplier is null&quot;);</span>
+<span class="nc bnc" id="L1152" title="All 2 branches missed.">                    if (isMatching) {</span>
+<span class="nc" id="L1153">                        throw supplier.get();</span>
+                    }
+<span class="nc" id="L1155">                    return new Then&lt;&gt;(value, isActionPerformed);</span>
+                }
+            }
+        }
+    }
+
+    @FunctionalInterface
+    interface SerializableConsumer&lt;T&gt; extends λ&lt;Void&gt; {
+
+        /**
+         * The &lt;a href=&quot;https://docs.oracle.com/javase/8/docs/api/index.html&quot;&gt;serial version uid&lt;/a&gt;.
+         */
+        long serialVersionUID = 1L;
+
+        /**
+         * Performs this action on the given argument.
+         *
+         * @param t a value of type T
+         */
+        void accept(T t);
+
+        @Override
+        default int arity() {
+<span class="nc" id="L1178">            return 1;</span>
+        }
+
+        @Override
+        default SerializableConsumer&lt;T&gt; curried() {
+<span class="nc" id="L1183">            return this;</span>
+        }
+
+        @Override
+        default SerializableConsumer&lt;Tuple1&lt;T&gt;&gt; tupled() {
+<span class="nc" id="L1188">            return t -&gt; accept(t._1);</span>
+        }
+
+        @Override
+        default SerializableConsumer&lt;T&gt; reversed() {
+<span class="nc" id="L1193">            return this;</span>
+        }
+
+        @Override
+        default SerializableConsumer&lt;T&gt; memoized() {
+<span class="nc bnc" id="L1198" title="All 2 branches missed.">            if (isMemoized()) {</span>
+<span class="nc" id="L1199">                return this;</span>
+            } else {
+<span class="nc" id="L1201">                return (SerializableConsumer&lt;T&gt; &amp; Memoized) t -&gt; Lazy.of(() -&gt; {</span>
+<span class="nc" id="L1202">                    accept(t);</span>
+<span class="nc" id="L1203">                    return null;</span>
+                });
+            }
+        }
+
+        @Override
+        default Type&lt;T&gt; getType() {
+<span class="nc" id="L1210">            return new Type&lt;&gt;(this);</span>
+        }
+
+        final class Type&lt;T&gt; extends λ.Type&lt;Void&gt; {
+
+            private static final long serialVersionUID = 1L;
+
+            private Type(SerializableConsumer&lt;T&gt; λ) {
+<span class="nc" id="L1218">                super(λ);</span>
+<span class="nc" id="L1219">            }</span>
+
+            @SuppressWarnings(&quot;unchecked&quot;)
+            public Class&lt;T&gt; parameterType1() {
+<span class="nc" id="L1223">                return (Class&lt;T&gt;) parameterTypes()[0];</span>
+            }
+        }
+    }
+
+    @FunctionalInterface
+    interface SerializablePredicate&lt;T&gt; extends λ&lt;Boolean&gt; {
+
+        /**
+         * The &lt;a href=&quot;https://docs.oracle.com/javase/8/docs/api/index.html&quot;&gt;serial version uid&lt;/a&gt;.
+         */
+        long serialVersionUID = 1L;
+
+        /**
+         * Checks if the given argument satisfies this predicate.
+         *
+         * @param t a value of type T
+         * @return {@code true} if {@code t} satisfies this predicate, otherwise {@code false}
+         */
+        boolean test(T t);
+
+        @Override
+        default int arity() {
+<span class="nc" id="L1246">            return 1;</span>
+        }
+
+        @Override
+        default SerializablePredicate&lt;T&gt; curried() {
+<span class="nc" id="L1251">            return this;</span>
+        }
+
+        @Override
+        default SerializablePredicate&lt;Tuple1&lt;T&gt;&gt; tupled() {
+<span class="nc" id="L1256">            return t -&gt; test(t._1);</span>
+        }
+
+        @Override
+        default SerializablePredicate&lt;T&gt; reversed() {
+<span class="nc" id="L1261">            return this;</span>
+        }
+
+        @Override
+        default SerializablePredicate&lt;T&gt; memoized() {
+<span class="nc bnc" id="L1266" title="All 2 branches missed.">            if (isMemoized()) {</span>
+<span class="nc" id="L1267">                return this;</span>
+            } else {
+<span class="nc" id="L1269">                return (SerializablePredicate&lt;T&gt; &amp; Memoized) t -&gt; Lazy.of(() -&gt; test(t)).get();</span>
+            }
+        }
+
+        @Override
+        default Type&lt;T&gt; getType() {
+<span class="fc" id="L1275">            return new Type&lt;&gt;(this);</span>
+        }
+
+        final class Type&lt;T&gt; extends λ.Type&lt;Boolean&gt; {
+
+            private static final long serialVersionUID = 1L;
+
+            private Type(SerializablePredicate&lt;T&gt; λ) {
+<span class="fc" id="L1283">                super(λ);</span>
+<span class="fc" id="L1284">            }</span>
+
+            @SuppressWarnings(&quot;unchecked&quot;)
+            public Class&lt;T&gt; parameterType1() {
+<span class="fc" id="L1288">                return (Class&lt;T&gt;) parameterTypes()[0];</span>
+            }
+        }
+    }
+}
+
+interface MatchModule {
+
+    static &lt;T&gt; Predicate&lt;? super Object&gt; is(T prototype) {
+<span class="fc bfc" id="L1297" title="All 6 branches covered.">        return value -&gt; value == prototype || (value != null &amp;&amp; value.equals(prototype));</span>
+    }
+
+    @SuppressWarnings(&quot;varargs&quot;)
+    @SafeVarargs
+    static &lt;T&gt; Predicate&lt;? super Object&gt; isIn(T... prototypes) {
+<span class="fc" id="L1303">        return value -&gt; Iterator.of(prototypes).findFirst(prototype -&gt; is(prototype).test(value)).isDefined();</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    static &lt;T&gt; Predicate&lt;Object&gt; isTrue(SerializablePredicate&lt;T&gt; predicate) {
+<span class="fc" id="L1308">        final Class&lt;T&gt; type = predicate.getType().parameterType1();</span>
+<span class="pc bpc" id="L1309" title="1 of 6 branches missed.">        return value -&gt; (value == null || type.isAssignableFrom(value.getClass())) &amp;&amp; ((SerializablePredicate&lt;Object&gt;) predicate).test(value);</span>
+    }
+
+    static &lt;T&gt; Predicate&lt;Object&gt; isType(Class&lt;T&gt; type) {
+<span class="pc bpc" id="L1313" title="1 of 4 branches missed.">        return value -&gt; value != null &amp;&amp; type.isAssignableFrom(value.getClass());</span>
+    }
+
+    static &lt;T&gt; Predicate&lt;Object&gt; isTypeIn(Class&lt;?&gt;... types) {
+<span class="fc" id="L1317">        return value -&gt; Iterator.of(types).findFirst(type -&gt; isType(type).test(value)).isDefined();</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    static &lt;T, R&gt; Option&lt;Supplier&lt;? extends R&gt;&gt; computeResult(Object value,
+                                                              Option&lt;Supplier&lt;? extends R&gt;&gt; result, boolean isMatching,
+                                                              Function&lt;? super T, ? extends R&gt; function) {
+<span class="fc bfc" id="L1324" title="All 4 branches covered.">        if (result.isEmpty() &amp;&amp; isMatching) {</span>
+<span class="fc" id="L1325">            final Function&lt;? super Object, ? extends R&gt; f = (Function&lt;? super Object, ? extends R&gt;) function;</span>
+<span class="fc" id="L1326">            return Option.of(() -&gt; f.apply(value));</span>
+        } else {
+<span class="fc" id="L1328">            return result;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>

@@ -1,0 +1,956 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>RedBlackTree.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Javaslang</a> &gt; <a href="index.source.html" class="el_package">javaslang.collection</a> &gt; <span class="el_source">RedBlackTree.java</span></div><h1>RedBlackTree.java</h1><pre class="source lang-java linenums">/*     / \____  _    _  ____   ______  / \ ____  __    _ _____
+ *    /  /    \/ \  / \/    \ /  /\__\/  //    \/  \  / /  _  \   Javaslang
+ *  _/  /  /\  \  \/  /  /\  \\__\\  \  //  /\  \ /\\/  \__/  /   Copyright 2014-now Daniel Dietrich
+ * /___/\_/  \_/\____/\_/  \_/\__\/__/___\_/  \_//  \__/_____/    Licensed under the Apache License, Version 2.0
+ */
+package javaslang.collection;
+
+import static javaslang.collection.RedBlackTree.Color.BLACK;
+import static javaslang.collection.RedBlackTree.Color.RED;
+
+import java.io.Serializable;
+import java.util.Comparator;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+
+import javaslang.Tuple;
+import javaslang.Tuple2;
+import javaslang.Tuple3;
+import javaslang.collection.RedBlackTreeModule.Empty;
+import javaslang.collection.RedBlackTreeModule.Node;
+import javaslang.control.Option;
+
+/**
+ * Purely functional Red/Black Tree, inspired by &lt;a href=&quot;https://github.com/kazu-yamamoto/llrbtree/blob/master/Data/Set/RBTree.hs&quot;&gt;Kazu Yamamoto's Haskell implementation&lt;/a&gt;.
+ * &lt;p&gt;
+ * Based on
+ * &lt;ul&gt;
+ * &lt;li&gt;&lt;a href=&quot;http://www.eecs.usma.edu/webs/people/okasaki/pubs.html#jfp99&quot;&gt;Chris Okasaki, &quot;Red-Black Trees in a Functional Setting&quot;, Journal of Functional Programming, 9(4), pp 471-477, July 1999&lt;/a&gt;&lt;/li&gt;
+ * &lt;li&gt;Stefan Kahrs, &quot;Red-black trees with types&quot;, Journal of functional programming, 11(04), pp 425-432, July 2001&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * @param &lt;T&gt; Component type
+ * @author Daniel Dietrich
+ * @since 2.0.0
+ */
+interface RedBlackTree&lt;T&gt; extends Iterable&lt;T&gt; {
+
+    static &lt;T extends Comparable&lt;? super T&gt;&gt; RedBlackTree&lt;T&gt; empty() {
+<span class="fc" id="L39">        return new Empty&lt;&gt;((Comparator&lt;? super T&gt; &amp; Serializable) T::compareTo);</span>
+    }
+
+    static &lt;T&gt; RedBlackTree&lt;T&gt; empty(Comparator&lt;? super T&gt; comparator) {
+<span class="fc" id="L43">        Objects.requireNonNull(comparator, &quot;comparator is null&quot;);</span>
+<span class="fc" id="L44">        return new Empty&lt;&gt;(comparator);</span>
+    }
+
+    static &lt;T extends Comparable&lt;? super T&gt;&gt; RedBlackTree&lt;T&gt; of(T value) {
+<span class="fc" id="L48">        return of((Comparator&lt;? super T&gt; &amp; Serializable) T::compareTo, value);</span>
+    }
+
+    static &lt;T&gt; RedBlackTree&lt;T&gt; of(Comparator&lt;? super T&gt; comparator, T value) {
+<span class="fc" id="L52">        Objects.requireNonNull(comparator, &quot;comparator is null&quot;);</span>
+<span class="fc" id="L53">        final Empty&lt;T&gt; empty = new Empty&lt;&gt;(comparator);</span>
+<span class="fc" id="L54">        return new Node&lt;&gt;(BLACK, 1, empty, value, empty, empty);</span>
+    }
+
+    @SuppressWarnings(&quot;varargs&quot;)
+    @SafeVarargs
+    static &lt;T extends Comparable&lt;? super T&gt;&gt; RedBlackTree&lt;T&gt; of(T... values) {
+<span class="fc" id="L60">        Objects.requireNonNull(values, &quot;values is null&quot;);</span>
+<span class="fc" id="L61">        return of((Comparator&lt;? super T&gt; &amp; Serializable) T::compareTo, values);</span>
+    }
+
+    @SafeVarargs
+    static &lt;T&gt; RedBlackTree&lt;T&gt; of(Comparator&lt;? super T&gt; comparator, T... values) {
+<span class="fc" id="L66">        Objects.requireNonNull(comparator, &quot;comparator is null&quot;);</span>
+<span class="fc" id="L67">        Objects.requireNonNull(values, &quot;values is null&quot;);</span>
+<span class="fc" id="L68">        RedBlackTree&lt;T&gt; tree = empty(comparator);</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        for (T value : values) {</span>
+<span class="fc" id="L70">            tree = tree.insert(value);</span>
+        }
+<span class="fc" id="L72">        return tree;</span>
+    }
+
+    static &lt;T extends Comparable&lt;? super T&gt;&gt; RedBlackTree&lt;T&gt; ofAll(Iterable&lt;? extends T&gt; values) {
+<span class="fc" id="L76">        Objects.requireNonNull(values, &quot;values is null&quot;);</span>
+<span class="fc" id="L77">        return ofAll((Comparator&lt;? super T&gt; &amp; Serializable) T::compareTo, values);</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    static &lt;T&gt; RedBlackTree&lt;T&gt; ofAll(Comparator&lt;? super T&gt; comparator, Iterable&lt;? extends T&gt; values) {
+<span class="fc" id="L82">        Objects.requireNonNull(comparator, &quot;comparator is null&quot;);</span>
+<span class="fc" id="L83">        Objects.requireNonNull(values, &quot;values is null&quot;);</span>
+        // function equality is not computable =&gt; same object check
+<span class="pc bpc" id="L85" title="3 of 4 branches missed.">        if (values instanceof RedBlackTree &amp;&amp; ((RedBlackTree&lt;T&gt;) values).comparator() == comparator) {</span>
+<span class="nc" id="L86">            return (RedBlackTree&lt;T&gt;) values;</span>
+        } else {
+<span class="fc" id="L88">            RedBlackTree&lt;T&gt; tree = empty(comparator);</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">            for (T value : values) {</span>
+<span class="fc" id="L90">                tree = tree.insert(value);</span>
+<span class="fc" id="L91">            }</span>
+<span class="fc" id="L92">            return tree;</span>
+        }
+    }
+
+    /**
+     * Inserts a new value into this tree.
+     *
+     * @param value A value.
+     * @return A new tree if this tree does not contain the given value, otherwise the same tree instance.
+     */
+    default RedBlackTree&lt;T&gt; insert(T value) {
+<span class="fc" id="L103">        return Node.insert(this, value).color(BLACK);</span>
+    }
+
+    /**
+     * Clears this RedBlackTree.
+     *
+     * @return An empty ReadBlackTree
+     */
+    RedBlackTree&lt;T&gt; clear();
+
+    /**
+     * Return the {@link Color} of this Red/Black Tree node.
+     * &lt;p&gt;
+     * An empty node is {@code BLACK} by definition.
+     *
+     * @return Either {@code RED} or {@code BLACK}.
+     */
+    Color color();
+
+    /**
+     * Returns the underlying {@link java.util.Comparator} of this RedBlackTree.
+     *
+     * @return The comparator.
+     */
+    Comparator&lt;T&gt; comparator();
+
+    /**
+     * Checks, if this {@code RedBlackTree} contains the given {@code value}.
+     *
+     * @param value A value.
+     * @return true, if this tree contains the value, false otherwise.
+     */
+    boolean contains(T value);
+
+    /**
+     * Deletes a value from this RedBlackTree.
+     *
+     * @param value A value
+     * @return A new RedBlackTree if the value is present, otherwise this.
+     */
+    default RedBlackTree&lt;T&gt; delete(T value) {
+<span class="fc" id="L144">        final RedBlackTree&lt;T&gt; tree = Node.delete(this, value)._1;</span>
+<span class="fc" id="L145">        return Node.color(tree, BLACK);</span>
+    }
+
+    default RedBlackTree&lt;T&gt; difference(RedBlackTree&lt;T&gt; tree) {
+<span class="fc" id="L149">        Objects.requireNonNull(tree, &quot;tree is null&quot;);</span>
+<span class="fc bfc" id="L150" title="All 4 branches covered.">        if (isEmpty() || tree.isEmpty()) {</span>
+<span class="fc" id="L151">            return this;</span>
+        } else {
+<span class="fc" id="L153">            final Node&lt;T&gt; that = (Node&lt;T&gt;) tree;</span>
+<span class="fc" id="L154">            final Tuple2&lt;RedBlackTree&lt;T&gt;, RedBlackTree&lt;T&gt;&gt; split = Node.split(this, that.value);</span>
+<span class="fc" id="L155">            return Node.merge(split._1.difference(that.left), split._2.difference(that.right));</span>
+        }
+    }
+
+    /**
+     * Finds the value stored in this tree, if exists, by applying the underlying comparator to the tree elements and
+     * the given element.
+     * &lt;p&gt;
+     * Especially the value returned may differ from the given value, even if the underlying comparator states that
+     * both are equal.
+     *
+     * @param value A value
+     * @return Some value, if this tree contains a value equal to the given value according to the underlying comparator. Otherwise None.
+     */
+    Option&lt;T&gt; find(T value);
+
+    default RedBlackTree&lt;T&gt; intersection(RedBlackTree&lt;T&gt; tree) {
+<span class="fc" id="L172">        Objects.requireNonNull(tree, &quot;tree is null&quot;);</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L174">            return this;</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">        } else if (tree.isEmpty()) {</span>
+<span class="fc" id="L176">            return tree;</span>
+        } else {
+<span class="fc" id="L178">            final Node&lt;T&gt; that = (Node&lt;T&gt;) tree;</span>
+<span class="fc" id="L179">            final Tuple2&lt;RedBlackTree&lt;T&gt;, RedBlackTree&lt;T&gt;&gt; split = Node.split(this, that.value);</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">            if (contains(that.value)) {</span>
+<span class="fc" id="L181">                return Node.join(split._1.intersection(that.left), that.value, split._2.intersection(that.right));</span>
+            } else {
+<span class="fc" id="L183">                return Node.merge(split._1.intersection(that.left), split._2.intersection(that.right));</span>
+            }
+        }
+    }
+
+    /**
+     * Checks if this {@code RedBlackTree} is empty, i.e. an instance of {@code Leaf}.
+     *
+     * @return true, if it is empty, false otherwise.
+     */
+    boolean isEmpty();
+
+    /**
+     * Returns the left child if this is a non-empty node, otherwise throws.
+     *
+     * @return The left child.
+     * @throws UnsupportedOperationException if this RedBlackTree is empty
+     */
+    RedBlackTree&lt;T&gt; left();
+
+    /**
+     * Returns the maximum element of this tree according to the underlying comparator.
+     *
+     * @return Some element, if this is not empty, otherwise None
+     */
+    default Option&lt;T&gt; max() {
+<span class="fc bfc" id="L209" title="All 2 branches covered.">        return isEmpty() ? Option.none() : Option.some(Node.maximum((Node&lt;T&gt;) this));</span>
+    }
+
+    /**
+     * Returns the minimum element of this tree according to the underlying comparator.
+     *
+     * @return Some element, if this is not empty, otherwise None
+     */
+    default Option&lt;T&gt; min() {
+<span class="fc bfc" id="L218" title="All 2 branches covered.">        return isEmpty() ? Option.none() : Option.some(Node.minimum((Node&lt;T&gt;) this));</span>
+    }
+
+    /**
+     * Returns the right child if this is a non-empty node, otherwise throws.
+     *
+     * @return The right child.
+     * @throws UnsupportedOperationException if this RedBlackTree is empty
+     */
+    RedBlackTree&lt;T&gt; right();
+
+    /**
+     * Returns the size of this tree.
+     *
+     * @return the number of nodes of this tree and 0 if this is the empty tree
+     */
+    int size();
+
+    /**
+     * Adds all of the elements of the given {@code tree} to this tree, if not already present.
+     *
+     * @param tree The RedBlackTree to form the union with.
+     * @return A new RedBlackTree that contains all distinct elements of this and the given {@code tree}.
+     */
+    default RedBlackTree&lt;T&gt; union(RedBlackTree&lt;T&gt; tree) {
+<span class="fc" id="L243">        Objects.requireNonNull(tree, &quot;tree is null&quot;);</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">        if (tree.isEmpty()) {</span>
+<span class="fc" id="L245">            return this;</span>
+        } else {
+<span class="fc" id="L247">            final Node&lt;T&gt; that = (Node&lt;T&gt;) tree;</span>
+<span class="fc bfc" id="L248" title="All 2 branches covered.">            if (isEmpty()) {</span>
+<span class="fc" id="L249">                return that.color(BLACK);</span>
+            } else {
+<span class="fc" id="L251">                final Tuple2&lt;RedBlackTree&lt;T&gt;, RedBlackTree&lt;T&gt;&gt; split = Node.split(this, that.value);</span>
+<span class="fc" id="L252">                return Node.join(split._1.union(that.left), that.value, split._2.union(that.right));</span>
+            }
+        }
+    }
+
+    /**
+     * Returns the value of the current tree node or throws if this is empty.
+     *
+     * @return The value.
+     * @throws NoSuchElementException if this is the empty node.
+     */
+    T value();
+
+    /**
+     * Returns an Iterator that iterates elements in the order induced by the underlying Comparator.
+     * &lt;p&gt;
+     * Internally an in-order traversal of the RedBlackTree is performed.
+     * &lt;p&gt;
+     * Example:
+     *
+     * &lt;pre&gt;&lt;code&gt;
+     *       4
+     *      / \
+     *     2   6
+     *    / \ / \
+     *   1  3 5  7
+     * &lt;/code&gt;&lt;/pre&gt;
+     *
+     * Iteration order: 1, 2, 3, 4, 5, 6, 7
+     * &lt;p&gt;
+     * See also &lt;a href=&quot;http://n00tc0d3r.blogspot.de/2013/08/implement-iterator-for-binarytree-i-in.html&quot;&gt;Implement Iterator for BinaryTree I (In-order)&lt;/a&gt;.
+     */
+    @Override
+    default Iterator&lt;T&gt; iterator() {
+<span class="fc bfc" id="L286" title="All 2 branches covered.">        if (isEmpty()) {</span>
+<span class="fc" id="L287">            return Iterator.empty();</span>
+        } else {
+<span class="fc" id="L289">            final Node&lt;T&gt; that = (Node&lt;T&gt;) this;</span>
+<span class="fc" id="L290">            return new AbstractIterator&lt;T&gt;() {</span>
+
+<span class="fc" id="L292">                Stack&lt;Node&lt;T&gt;&gt; stack = pushLeftChildren(Stack.empty(), that);</span>
+
+                @Override
+                public boolean hasNext() {
+<span class="fc bfc" id="L296" title="All 2 branches covered.">                    return !stack.isEmpty();</span>
+                }
+
+                @Override
+                public T getNext() {
+<span class="fc" id="L301">                    final Tuple2&lt;Node&lt;T&gt;, ? extends Stack&lt;Node&lt;T&gt;&gt;&gt; result = stack.pop2();</span>
+<span class="fc" id="L302">                    final Node&lt;T&gt; node = result._1;</span>
+<span class="fc bfc" id="L303" title="All 2 branches covered.">                    stack = node.right.isEmpty() ? result._2 : pushLeftChildren(result._2, (Node&lt;T&gt;) node.right);</span>
+<span class="fc" id="L304">                    return result._1.value;</span>
+                }
+
+                private Stack&lt;Node&lt;T&gt;&gt; pushLeftChildren(Stack&lt;Node&lt;T&gt;&gt; initialStack, Node&lt;T&gt; that) {
+<span class="fc" id="L308">                    Stack&lt;Node&lt;T&gt;&gt; stack = initialStack;</span>
+<span class="fc" id="L309">                    RedBlackTree&lt;T&gt; tree = that;</span>
+<span class="fc bfc" id="L310" title="All 2 branches covered.">                    while (!tree.isEmpty()) {</span>
+<span class="fc" id="L311">                        final Node&lt;T&gt; node = (Node&lt;T&gt;) tree;</span>
+<span class="fc" id="L312">                        stack = stack.push(node);</span>
+<span class="fc" id="L313">                        tree = node.left;</span>
+<span class="fc" id="L314">                    }</span>
+<span class="fc" id="L315">                    return stack;</span>
+                }
+            };
+        }
+    }
+
+    /**
+     * Compares color, value and sub-trees. The comparator is not compared because function equality is not computable.
+     *
+     * @return The hash code of this tree.
+     */
+    @Override
+    boolean equals(Object o);
+
+    /**
+     * Computes the hash code of this tree based on color, value and sub-trees. The comparator is not taken into account.
+     *
+     * @return The hash code of this tree.
+     */
+    @Override
+    int hashCode();
+
+    /**
+     * Returns a Lisp like representation of this tree.
+     *
+     * @return This Tree as Lisp like String.
+     */
+    @Override
+    String toString();
+
+<span class="pc" id="L345">    enum Color {</span>
+
+<span class="fc" id="L347">        RED, BLACK;</span>
+
+        @Override
+        public String toString() {
+<span class="fc bfc" id="L351" title="All 2 branches covered.">            return (this == RED) ? &quot;R&quot; : &quot;B&quot;;</span>
+        }
+    }
+}
+
+interface RedBlackTreeModule {
+
+    /**
+     * A non-empty tree node.
+     *
+     * @param &lt;T&gt; Component type
+     */
+    final class Node&lt;T&gt; implements RedBlackTree&lt;T&gt;, Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        final Color color;
+        final int blackHeight;
+        final RedBlackTree&lt;T&gt; left;
+        final T value;
+        final RedBlackTree&lt;T&gt; right;
+        final Empty&lt;T&gt; empty;
+        final int size;
+
+        private final int hashCode;
+
+        // This is no public API! The RedBlackTree takes care of passing the correct Comparator.
+<span class="fc" id="L378">        Node(Color color, int blackHeight, RedBlackTree&lt;T&gt; left, T value, RedBlackTree&lt;T&gt; right, Empty&lt;T&gt; empty) {</span>
+<span class="fc" id="L379">            this.color = color;</span>
+<span class="fc" id="L380">            this.blackHeight = blackHeight;</span>
+<span class="fc" id="L381">            this.left = left;</span>
+<span class="fc" id="L382">            this.value = value;</span>
+<span class="fc" id="L383">            this.right = right;</span>
+<span class="fc" id="L384">            this.empty = empty;</span>
+<span class="fc" id="L385">            this.hashCode = 31 * 31 * Objects.hashCode(this.value) + 31 * Objects.hashCode(this.left) + Objects.hashCode(this.right);</span>
+<span class="fc" id="L386">            this.size = left.size() + right.size() + 1;</span>
+<span class="fc" id="L387">        }</span>
+
+        @Override
+        public Empty&lt;T&gt; clear() {
+<span class="fc" id="L391">            return empty;</span>
+        }
+
+        @Override
+        public Color color() {
+<span class="fc" id="L396">            return color;</span>
+        }
+
+        @Override
+        public Comparator&lt;T&gt; comparator() {
+<span class="fc" id="L401">            return empty.comparator;</span>
+        }
+
+        @Override
+        public boolean contains(T value) {
+<span class="fc" id="L406">            final int result = empty.comparator.compare(value, this.value);</span>
+<span class="fc bfc" id="L407" title="All 2 branches covered.">            if (result &lt; 0) {</span>
+<span class="fc" id="L408">                return left.contains(value);</span>
+<span class="fc bfc" id="L409" title="All 2 branches covered.">            } else if (result &gt; 0) {</span>
+<span class="fc" id="L410">                return right.contains(value);</span>
+            } else {
+<span class="fc" id="L412">                return true;</span>
+            }
+        }
+
+        @Override
+        public Option&lt;T&gt; find(T value) {
+<span class="fc" id="L418">            final int result = empty.comparator.compare(value, this.value);</span>
+<span class="fc bfc" id="L419" title="All 2 branches covered.">            if (result &lt; 0) {</span>
+<span class="fc" id="L420">                return left.find(value);</span>
+<span class="fc bfc" id="L421" title="All 2 branches covered.">            } else if (result &gt; 0) {</span>
+<span class="fc" id="L422">                return right.find(value);</span>
+            } else {
+<span class="fc" id="L424">                return Option.some(this.value);</span>
+            }
+        }
+
+        @Override
+        public boolean isEmpty() {
+<span class="fc" id="L430">            return false;</span>
+        }
+
+        @Override
+        public RedBlackTree&lt;T&gt; left() {
+<span class="fc" id="L435">            return left;</span>
+        }
+
+        @Override
+        public RedBlackTree&lt;T&gt; right() {
+<span class="fc" id="L440">            return right;</span>
+        }
+
+        @Override
+        public int size() {
+<span class="fc" id="L445">            return size;</span>
+        }
+
+        @Override
+        public T value() {
+<span class="fc" id="L450">            return value;</span>
+        }
+
+        @Override
+        public boolean equals(Object o) {
+<span class="fc bfc" id="L455" title="All 2 branches covered.">            if (o == this) {</span>
+<span class="fc" id="L456">                return true;</span>
+<span class="pc bpc" id="L457" title="1 of 2 branches missed.">            } else if (o instanceof Node) {</span>
+<span class="fc" id="L458">                final Node&lt;?&gt; that = (Node&lt;?&gt;) o;</span>
+<span class="fc" id="L459">                final Iterator&lt;?&gt; iter1 = this.iterator();</span>
+<span class="fc" id="L460">                final Iterator&lt;?&gt; iter2 = that.iterator();</span>
+<span class="fc bfc" id="L461" title="All 4 branches covered.">                while (iter1.hasNext() &amp;&amp; iter2.hasNext()) {</span>
+<span class="fc bfc" id="L462" title="All 2 branches covered.">                    if (!Objects.equals(iter1.next(), iter2.next())) {</span>
+<span class="fc" id="L463">                        return false;</span>
+                    }
+                }
+<span class="fc bfc" id="L466" title="All 2 branches covered.">                return iter1.hasNext() == iter2.hasNext();</span>
+            } else {
+<span class="nc" id="L468">                return false;</span>
+            }
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L474">            return hashCode;</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="fc bfc" id="L479" title="All 2 branches covered.">            return isLeaf() ? &quot;(&quot; + color + &quot;:&quot; + value + &quot;)&quot; : toLispString(this);</span>
+        }
+
+        private static String toLispString(RedBlackTree&lt;?&gt; tree) {
+<span class="pc bpc" id="L483" title="1 of 2 branches missed.">            if (tree.isEmpty()) {</span>
+<span class="nc" id="L484">                return &quot;&quot;;</span>
+            } else {
+<span class="fc" id="L486">                final Node&lt;?&gt; node = (Node&lt;?&gt;) tree;</span>
+<span class="fc" id="L487">                final String value = node.color + &quot;:&quot; + node.value;</span>
+<span class="fc bfc" id="L488" title="All 2 branches covered.">                if (node.isLeaf()) {</span>
+<span class="fc" id="L489">                    return value;</span>
+                } else {
+<span class="fc bfc" id="L491" title="All 2 branches covered.">                    final String left = node.left.isEmpty() ? &quot;&quot; : &quot; &quot; + toLispString(node.left);</span>
+<span class="fc bfc" id="L492" title="All 2 branches covered.">                    final String right = node.right.isEmpty() ? &quot;&quot; : &quot; &quot; + toLispString(node.right);</span>
+<span class="fc" id="L493">                    return &quot;(&quot; + value + left + right + &quot;)&quot;;</span>
+                }
+            }
+        }
+
+        private boolean isLeaf() {
+<span class="fc bfc" id="L499" title="All 4 branches covered.">            return left.isEmpty() &amp;&amp; right.isEmpty();</span>
+        }
+
+        Node&lt;T&gt; color(Color color) {
+<span class="fc bfc" id="L503" title="All 2 branches covered.">            return (this.color == color) ? this : new Node&lt;&gt;(color, blackHeight, left, value, right, empty);</span>
+        }
+
+        static &lt;T&gt; RedBlackTree&lt;T&gt; color(RedBlackTree&lt;T&gt; tree, Color color) {
+<span class="fc bfc" id="L507" title="All 2 branches covered.">            return tree.isEmpty() ? tree : ((Node&lt;T&gt;) tree).color(color);</span>
+        }
+
+        private static &lt;T&gt; Node&lt;T&gt; balanceLeft(Color color, int blackHeight, RedBlackTree&lt;T&gt; left, T value,
+                                               RedBlackTree&lt;T&gt; right, Empty&lt;T&gt; empty) {
+<span class="fc bfc" id="L512" title="All 2 branches covered.">            if (color == BLACK) {</span>
+<span class="pc bpc" id="L513" title="1 of 2 branches missed.">                if (!left.isEmpty()) {</span>
+<span class="fc" id="L514">                    final Node&lt;T&gt; ln = (Node&lt;T&gt;) left;</span>
+<span class="fc bfc" id="L515" title="All 2 branches covered.">                    if (ln.color == RED) {</span>
+<span class="fc bfc" id="L516" title="All 2 branches covered.">                        if (!ln.left.isEmpty()) {</span>
+<span class="fc" id="L517">                            final Node&lt;T&gt; lln = (Node&lt;T&gt;) ln.left;</span>
+<span class="fc bfc" id="L518" title="All 2 branches covered.">                            if (lln.color == RED) {</span>
+<span class="fc" id="L519">                                final Node&lt;T&gt; newLeft = new Node&lt;&gt;(BLACK, blackHeight, lln.left, lln.value, lln.right,</span>
+                                        empty);
+<span class="fc" id="L521">                                final Node&lt;T&gt; newRight = new Node&lt;&gt;(BLACK, blackHeight, ln.right, value, right, empty);</span>
+<span class="fc" id="L522">                                return new Node&lt;&gt;(RED, blackHeight + 1, newLeft, ln.value, newRight, empty);</span>
+                            }
+                        }
+<span class="fc bfc" id="L525" title="All 2 branches covered.">                        if (!ln.right.isEmpty()) {</span>
+<span class="fc" id="L526">                            final Node&lt;T&gt; lrn = (Node&lt;T&gt;) ln.right;</span>
+<span class="fc bfc" id="L527" title="All 2 branches covered.">                            if (lrn.color == RED) {</span>
+<span class="fc" id="L528">                                final Node&lt;T&gt; newLeft = new Node&lt;&gt;(BLACK, blackHeight, ln.left, ln.value, lrn.left,</span>
+                                        empty);
+<span class="fc" id="L530">                                final Node&lt;T&gt; newRight = new Node&lt;&gt;(BLACK, blackHeight, lrn.right, value, right, empty);</span>
+<span class="fc" id="L531">                                return new Node&lt;&gt;(RED, blackHeight + 1, newLeft, lrn.value, newRight, empty);</span>
+                            }
+                        }
+                    }
+                }
+            }
+<span class="fc" id="L537">            return new Node&lt;&gt;(color, blackHeight, left, value, right, empty);</span>
+        }
+
+        private static &lt;T&gt; Node&lt;T&gt; balanceRight(Color color, int blackHeight, RedBlackTree&lt;T&gt; left, T value,
+                                                RedBlackTree&lt;T&gt; right, Empty&lt;T&gt; empty) {
+<span class="fc bfc" id="L542" title="All 2 branches covered.">            if (color == BLACK) {</span>
+<span class="pc bpc" id="L543" title="1 of 2 branches missed.">                if (!right.isEmpty()) {</span>
+<span class="fc" id="L544">                    final Node&lt;T&gt; rn = (Node&lt;T&gt;) right;</span>
+<span class="fc bfc" id="L545" title="All 2 branches covered.">                    if (rn.color == RED) {</span>
+<span class="fc bfc" id="L546" title="All 2 branches covered.">                        if (!rn.right.isEmpty()) {</span>
+<span class="fc" id="L547">                            final Node&lt;T&gt; rrn = (Node&lt;T&gt;) rn.right;</span>
+<span class="fc bfc" id="L548" title="All 2 branches covered.">                            if (rrn.color == RED) {</span>
+<span class="fc" id="L549">                                final Node&lt;T&gt; newLeft = new Node&lt;&gt;(BLACK, blackHeight, left, value, rn.left, empty);</span>
+<span class="fc" id="L550">                                final Node&lt;T&gt; newRight = new Node&lt;&gt;(BLACK, blackHeight, rrn.left, rrn.value, rrn.right,</span>
+                                        empty);
+<span class="fc" id="L552">                                return new Node&lt;&gt;(RED, blackHeight + 1, newLeft, rn.value, newRight, empty);</span>
+                            }
+                        }
+<span class="fc bfc" id="L555" title="All 2 branches covered.">                        if (!rn.left.isEmpty()) {</span>
+<span class="fc" id="L556">                            final Node&lt;T&gt; rln = (Node&lt;T&gt;) rn.left;</span>
+<span class="fc bfc" id="L557" title="All 2 branches covered.">                            if (rln.color == RED) {</span>
+<span class="fc" id="L558">                                final Node&lt;T&gt; newLeft = new Node&lt;&gt;(BLACK, blackHeight, left, value, rln.left, empty);</span>
+<span class="fc" id="L559">                                final Node&lt;T&gt; newRight = new Node&lt;&gt;(BLACK, blackHeight, rln.right, rn.value, rn.right,</span>
+                                        empty);
+<span class="fc" id="L561">                                return new Node&lt;&gt;(RED, blackHeight + 1, newLeft, rln.value, newRight, empty);</span>
+                            }
+                        }
+                    }
+                }
+            }
+<span class="fc" id="L567">            return new Node&lt;&gt;(color, blackHeight, left, value, right, empty);</span>
+        }
+
+        private static &lt;T&gt; Tuple2&lt;? extends RedBlackTree&lt;T&gt;, Boolean&gt; blackify(RedBlackTree&lt;T&gt; tree) {
+<span class="fc bfc" id="L571" title="All 2 branches covered.">            if (tree instanceof Node) {</span>
+<span class="fc" id="L572">                final Node&lt;T&gt; node = (Node&lt;T&gt;) tree;</span>
+<span class="pc bpc" id="L573" title="1 of 2 branches missed.">                if (node.color == RED) {</span>
+<span class="fc" id="L574">                    return Tuple.of(node.color(BLACK), false);</span>
+                }
+            }
+<span class="fc" id="L577">            return Tuple.of(tree, true);</span>
+        }
+
+        static &lt;T&gt; Tuple2&lt;? extends RedBlackTree&lt;T&gt;, Boolean&gt; delete(RedBlackTree&lt;T&gt; tree, T value) {
+<span class="fc bfc" id="L581" title="All 2 branches covered.">            if (tree.isEmpty()) {</span>
+<span class="fc" id="L582">                return Tuple.of(tree, false);</span>
+            } else {
+<span class="fc" id="L584">                final Node&lt;T&gt; node = (Node&lt;T&gt;) tree;</span>
+<span class="fc" id="L585">                final int comparison = node.comparator().compare(value, node.value);</span>
+<span class="fc bfc" id="L586" title="All 2 branches covered.">                if (comparison &lt; 0) {</span>
+<span class="fc" id="L587">                    final Tuple2&lt;? extends RedBlackTree&lt;T&gt;, Boolean&gt; deleted = delete(node.left, value);</span>
+<span class="fc" id="L588">                    final RedBlackTree&lt;T&gt; l = deleted._1;</span>
+<span class="fc" id="L589">                    final boolean d = deleted._2;</span>
+<span class="fc bfc" id="L590" title="All 2 branches covered.">                    if (d) {</span>
+<span class="fc" id="L591">                        return Node.unbalancedRight(node.color, node.blackHeight - 1, l, node.value, node.right,</span>
+                                node.empty);
+                    } else {
+<span class="fc" id="L594">                        final Node&lt;T&gt; newNode = new Node&lt;&gt;(node.color, node.blackHeight, l, node.value, node.right,</span>
+                                node.empty);
+<span class="fc" id="L596">                        return Tuple.of(newNode, false);</span>
+                    }
+<span class="fc bfc" id="L598" title="All 2 branches covered.">                } else if (comparison &gt; 0) {</span>
+<span class="fc" id="L599">                    final Tuple2&lt;? extends RedBlackTree&lt;T&gt;, Boolean&gt; deleted = delete(node.right, value);</span>
+<span class="fc" id="L600">                    final RedBlackTree&lt;T&gt; r = deleted._1;</span>
+<span class="fc" id="L601">                    final boolean d = deleted._2;</span>
+<span class="fc bfc" id="L602" title="All 2 branches covered.">                    if (d) {</span>
+<span class="fc" id="L603">                        return Node.unbalancedLeft(node.color, node.blackHeight - 1, node.left, node.value, r,</span>
+                                node.empty);
+                    } else {
+<span class="fc" id="L606">                        final Node&lt;T&gt; newNode = new Node&lt;&gt;(node.color, node.blackHeight, node.left, node.value, r,</span>
+                                node.empty);
+<span class="fc" id="L608">                        return Tuple.of(newNode, false);</span>
+                    }
+                } else {
+<span class="fc bfc" id="L611" title="All 2 branches covered.">                    if (node.right.isEmpty()) {</span>
+<span class="fc bfc" id="L612" title="All 2 branches covered.">                        if (node.color == BLACK) {</span>
+<span class="fc" id="L613">                            return blackify(node.left);</span>
+                        } else {
+<span class="fc" id="L615">                            return Tuple.of(node.left, false);</span>
+                        }
+                    } else {
+<span class="fc" id="L618">                        final Node&lt;T&gt; nodeRight = (Node&lt;T&gt;) node.right;</span>
+<span class="fc" id="L619">                        final Tuple3&lt;? extends RedBlackTree&lt;T&gt;, Boolean, T&gt; newRight = deleteMin(nodeRight);</span>
+<span class="fc" id="L620">                        final RedBlackTree&lt;T&gt; r = newRight._1;</span>
+<span class="fc" id="L621">                        final boolean d = newRight._2;</span>
+<span class="fc" id="L622">                        final T m = newRight._3;</span>
+<span class="fc bfc" id="L623" title="All 2 branches covered.">                        if (d) {</span>
+<span class="fc" id="L624">                            return Node.unbalancedLeft(node.color, node.blackHeight - 1, node.left, m, r, node.empty);</span>
+                        } else {
+<span class="fc" id="L626">                            final RedBlackTree&lt;T&gt; newNode = new Node&lt;&gt;(node.color, node.blackHeight, node.left, m, r,</span>
+                                    node.empty);
+<span class="fc" id="L628">                            return Tuple.of(newNode, false);</span>
+                        }
+                    }
+                }
+            }
+        }
+
+        private static &lt;T&gt; Tuple3&lt;? extends RedBlackTree&lt;T&gt;, Boolean, T&gt; deleteMin(Node&lt;T&gt; node) {
+<span class="fc bfc" id="L636" title="All 2 branches covered.">            if (node.left.isEmpty()) {</span>
+<span class="fc bfc" id="L637" title="All 2 branches covered.">                if (node.color == BLACK) {</span>
+<span class="fc bfc" id="L638" title="All 2 branches covered.">                    if (node.right.isEmpty()) {</span>
+<span class="fc" id="L639">                        return Tuple.of(node.empty, true, node.value);</span>
+                    } else {
+<span class="fc" id="L641">                        final Node&lt;T&gt; rightNode = (Node&lt;T&gt;) node.right;</span>
+<span class="fc" id="L642">                        return Tuple.of(rightNode.color(BLACK), false, node.value);</span>
+                    }
+                } else {
+<span class="fc" id="L645">                    return Tuple.of(node.right, false, node.value);</span>
+                }
+            } else {
+<span class="fc" id="L648">                final Node&lt;T&gt; nodeLeft = (Node&lt;T&gt;) node.left;</span>
+<span class="fc" id="L649">                final Tuple3&lt;? extends RedBlackTree&lt;T&gt;, Boolean, T&gt; newNode = deleteMin(nodeLeft);</span>
+<span class="fc" id="L650">                final RedBlackTree&lt;T&gt; l = newNode._1;</span>
+<span class="fc" id="L651">                final boolean d = newNode._2;</span>
+<span class="fc" id="L652">                final T m = newNode._3;</span>
+<span class="fc bfc" id="L653" title="All 2 branches covered.">                if (d) {</span>
+<span class="fc" id="L654">                    final Tuple2&lt;Node&lt;T&gt;, Boolean&gt; tD = Node.unbalancedRight(node.color, node.blackHeight - 1, l,</span>
+                            node.value, node.right, node.empty);
+<span class="fc" id="L656">                    return Tuple.of(tD._1, tD._2, m);</span>
+                } else {
+<span class="fc" id="L658">                    final Node&lt;T&gt; tD = new Node&lt;&gt;(node.color, node.blackHeight, l, node.value, node.right, node.empty);</span>
+<span class="fc" id="L659">                    return Tuple.of(tD, false, m);</span>
+                }
+            }
+        }
+
+        static &lt;T&gt; Node&lt;T&gt; insert(RedBlackTree&lt;T&gt; tree, T value) {
+<span class="fc bfc" id="L665" title="All 2 branches covered.">            if (tree.isEmpty()) {</span>
+<span class="fc" id="L666">                final Empty&lt;T&gt; empty = (Empty&lt;T&gt;) tree;</span>
+<span class="fc" id="L667">                return new Node&lt;&gt;(RED, 1, empty, value, empty, empty);</span>
+            } else {
+<span class="fc" id="L669">                final Node&lt;T&gt; node = (Node&lt;T&gt;) tree;</span>
+<span class="fc" id="L670">                final int comparison = node.comparator().compare(value, node.value);</span>
+<span class="fc bfc" id="L671" title="All 2 branches covered.">                if (comparison &lt; 0) {</span>
+<span class="fc" id="L672">                    final Node&lt;T&gt; newLeft = insert(node.left, value);</span>
+<span class="pc bpc" id="L673" title="1 of 2 branches missed.">                    return (newLeft == node.left)</span>
+                            ? node
+<span class="fc" id="L675">                            : Node.balanceLeft(node.color, node.blackHeight, newLeft, node.value, node.right,</span>
+                            node.empty);
+<span class="fc bfc" id="L677" title="All 2 branches covered.">                } else if (comparison &gt; 0) {</span>
+<span class="fc" id="L678">                    final Node&lt;T&gt; newRight = insert(node.right, value);</span>
+<span class="pc bpc" id="L679" title="1 of 2 branches missed.">                    return (newRight == node.right)</span>
+                            ? node
+<span class="fc" id="L681">                            : Node.balanceRight(node.color, node.blackHeight, node.left, node.value, newRight,</span>
+                            node.empty);
+                } else {
+                    // DEV-NOTE: Even if there is no _comparison_ difference, the object may not be _equal_.
+                    //           To save an equals() call, which may be expensive, we return a new instance.
+<span class="fc" id="L686">                    return new Node&lt;&gt;(node.color, node.blackHeight, node.left, value, node.right, node.empty);</span>
+                }
+            }
+        }
+
+        private static boolean isRed(RedBlackTree&lt;?&gt; tree) {
+<span class="fc bfc" id="L692" title="All 4 branches covered.">            return !tree.isEmpty() &amp;&amp; ((Node&lt;?&gt;) tree).color == RED;</span>
+        }
+
+        static &lt;T&gt; RedBlackTree&lt;T&gt; join(RedBlackTree&lt;T&gt; t1, T value, RedBlackTree&lt;T&gt; t2) {
+<span class="fc bfc" id="L696" title="All 2 branches covered.">            if (t1.isEmpty()) {</span>
+<span class="fc" id="L697">                return t2.insert(value);</span>
+<span class="fc bfc" id="L698" title="All 2 branches covered.">            } else if (t2.isEmpty()) {</span>
+<span class="fc" id="L699">                return t1.insert(value);</span>
+            } else {
+<span class="fc" id="L701">                final Node&lt;T&gt; n1 = (Node&lt;T&gt;) t1;</span>
+<span class="fc" id="L702">                final Node&lt;T&gt; n2 = (Node&lt;T&gt;) t2;</span>
+<span class="fc" id="L703">                final int comparison = n1.blackHeight - n2.blackHeight;</span>
+<span class="fc bfc" id="L704" title="All 2 branches covered.">                if (comparison &lt; 0) {</span>
+<span class="fc" id="L705">                    return Node.joinLT(n1, value, n2, n1.blackHeight).color(BLACK);</span>
+<span class="fc bfc" id="L706" title="All 2 branches covered.">                } else if (comparison &gt; 0) {</span>
+<span class="fc" id="L707">                    return Node.joinGT(n1, value, n2, n2.blackHeight).color(BLACK);</span>
+                } else {
+<span class="fc" id="L709">                    return new Node&lt;&gt;(BLACK, n1.blackHeight + 1, n1, value, n2, n1.empty);</span>
+                }
+            }
+        }
+
+        private static &lt;T&gt; Node&lt;T&gt; joinGT(Node&lt;T&gt; n1, T value, Node&lt;T&gt; n2, int h2) {
+<span class="fc bfc" id="L715" title="All 2 branches covered.">            if (n1.blackHeight == h2) {</span>
+<span class="fc" id="L716">                return new Node&lt;&gt;(RED, h2 + 1, n1, value, n2, n1.empty);</span>
+            } else {
+<span class="fc" id="L718">                final Node&lt;T&gt; node = joinGT((Node&lt;T&gt;) n1.right, value, n2, h2);</span>
+<span class="fc" id="L719">                return Node.balanceRight(n1.color, n1.blackHeight, n1.left, n1.value, node, n2.empty);</span>
+            }
+        }
+
+        private static &lt;T&gt; Node&lt;T&gt; joinLT(Node&lt;T&gt; n1, T value, Node&lt;T&gt; n2, int h1) {
+<span class="fc bfc" id="L724" title="All 2 branches covered.">            if (n2.blackHeight == h1) {</span>
+<span class="fc" id="L725">                return new Node&lt;&gt;(RED, h1 + 1, n1, value, n2, n1.empty);</span>
+            } else {
+<span class="fc" id="L727">                final Node&lt;T&gt; node = joinLT(n1, value, (Node&lt;T&gt;) n2.left, h1);</span>
+<span class="fc" id="L728">                return Node.balanceLeft(n2.color, n2.blackHeight, node, n2.value, n2.right, n2.empty);</span>
+            }
+        }
+
+        static &lt;T&gt; RedBlackTree&lt;T&gt; merge(RedBlackTree&lt;T&gt; t1, RedBlackTree&lt;T&gt; t2) {
+<span class="fc bfc" id="L733" title="All 2 branches covered.">            if (t1.isEmpty()) {</span>
+<span class="fc" id="L734">                return t2;</span>
+<span class="fc bfc" id="L735" title="All 2 branches covered.">            } else if (t2.isEmpty()) {</span>
+<span class="fc" id="L736">                return t1;</span>
+            } else {
+<span class="fc" id="L738">                final Node&lt;T&gt; n1 = (Node&lt;T&gt;) t1;</span>
+<span class="fc" id="L739">                final Node&lt;T&gt; n2 = (Node&lt;T&gt;) t2;</span>
+<span class="fc" id="L740">                final int comparison = n1.blackHeight - n2.blackHeight;</span>
+<span class="fc bfc" id="L741" title="All 2 branches covered.">                if (comparison &lt; 0) {</span>
+<span class="fc" id="L742">                    final Node&lt;T&gt; node = Node.mergeLT(n1, n2, n1.blackHeight);</span>
+<span class="fc" id="L743">                    return Node.color(node, BLACK);</span>
+<span class="fc bfc" id="L744" title="All 2 branches covered.">                } else if (comparison &gt; 0) {</span>
+<span class="fc" id="L745">                    final Node&lt;T&gt; node = Node.mergeGT(n1, n2, n2.blackHeight);</span>
+<span class="fc" id="L746">                    return Node.color(node, BLACK);</span>
+                } else {
+<span class="fc" id="L748">                    final Node&lt;T&gt; node = Node.mergeEQ(n1, n2);</span>
+<span class="fc" id="L749">                    return Node.color(node, BLACK);</span>
+                }
+            }
+        }
+
+        private static &lt;T&gt; Node&lt;T&gt; mergeEQ(Node&lt;T&gt; n1, Node&lt;T&gt; n2) {
+<span class="fc" id="L755">            final T m = Node.minimum(n2);</span>
+<span class="fc" id="L756">            final RedBlackTree&lt;T&gt; t2 = Node.deleteMin(n2)._1;</span>
+<span class="fc bfc" id="L757" title="All 2 branches covered.">            final int h2 = t2.isEmpty() ? 0 : ((Node&lt;T&gt;) t2).blackHeight;</span>
+<span class="fc bfc" id="L758" title="All 2 branches covered.">            if (n1.blackHeight == h2) {</span>
+<span class="fc" id="L759">                return new Node&lt;&gt;(RED, n1.blackHeight + 1, n1, m, t2, n1.empty);</span>
+<span class="pc bpc" id="L760" title="1 of 2 branches missed.">            } else if (isRed(n1.left)) {</span>
+<span class="nc" id="L761">                final Node&lt;T&gt; node = new Node&lt;&gt;(BLACK, n1.blackHeight, n1.right, m, t2, n1.empty);</span>
+<span class="nc" id="L762">                return new Node&lt;&gt;(RED, n1.blackHeight, Node.color(n1.left, BLACK), n1.value, node, n1.empty);</span>
+<span class="fc bfc" id="L763" title="All 2 branches covered.">            } else if (isRed(n1.right)) {</span>
+<span class="fc" id="L764">                final RedBlackTree&lt;T&gt; rl = ((Node&lt;T&gt;) n1.right).left;</span>
+<span class="fc" id="L765">                final T rx = ((Node&lt;T&gt;) n1.right).value;</span>
+<span class="fc" id="L766">                final RedBlackTree&lt;T&gt; rr = ((Node&lt;T&gt;) n1.right).right;</span>
+<span class="fc" id="L767">                final Node&lt;T&gt; left = new Node&lt;&gt;(RED, n1.blackHeight, n1.left, n1.value, rl, n1.empty);</span>
+<span class="fc" id="L768">                final Node&lt;T&gt; right = new Node&lt;&gt;(RED, n1.blackHeight, rr, m, t2, n1.empty);</span>
+<span class="fc" id="L769">                return new Node&lt;&gt;(BLACK, n1.blackHeight, left, rx, right, n1.empty);</span>
+            } else {
+<span class="fc" id="L771">                return new Node&lt;&gt;(BLACK, n1.blackHeight, n1.color(RED), m, t2, n1.empty);</span>
+            }
+        }
+
+        private static &lt;T&gt; Node&lt;T&gt; mergeGT(Node&lt;T&gt; n1, Node&lt;T&gt; n2, int h2) {
+<span class="fc bfc" id="L776" title="All 2 branches covered.">            if (n1.blackHeight == h2) {</span>
+<span class="fc" id="L777">                return Node.mergeEQ(n1, n2);</span>
+            } else {
+<span class="fc" id="L779">                final Node&lt;T&gt; node = Node.mergeGT((Node&lt;T&gt;) n1.right, n2, h2);</span>
+<span class="fc" id="L780">                return Node.balanceRight(n1.color, n1.blackHeight, n1.left, n1.value, node, n1.empty);</span>
+            }
+        }
+
+        private static &lt;T&gt; Node&lt;T&gt; mergeLT(Node&lt;T&gt; n1, Node&lt;T&gt; n2, int h1) {
+<span class="fc bfc" id="L785" title="All 2 branches covered.">            if (n2.blackHeight == h1) {</span>
+<span class="fc" id="L786">                return Node.mergeEQ(n1, n2);</span>
+            } else {
+<span class="fc" id="L788">                final Node&lt;T&gt; node = Node.mergeLT(n1, (Node&lt;T&gt;) n2.left, h1);</span>
+<span class="fc" id="L789">                return Node.balanceLeft(n2.color, n2.blackHeight, node, n2.value, n2.right, n2.empty);</span>
+            }
+        }
+
+        static &lt;T&gt; T maximum(Node&lt;T&gt; node) {
+<span class="fc" id="L794">            Node&lt;T&gt; curr = node;</span>
+<span class="fc bfc" id="L795" title="All 2 branches covered.">            while (!curr.right.isEmpty()) {</span>
+<span class="fc" id="L796">                curr = (Node&lt;T&gt;) curr.right;</span>
+            }
+<span class="fc" id="L798">            return curr.value;</span>
+        }
+
+        static &lt;T&gt; T minimum(Node&lt;T&gt; node) {
+<span class="fc" id="L802">            Node&lt;T&gt; curr = node;</span>
+<span class="fc bfc" id="L803" title="All 2 branches covered.">            while (!curr.left.isEmpty()) {</span>
+<span class="fc" id="L804">                curr = (Node&lt;T&gt;) curr.left;</span>
+            }
+<span class="fc" id="L806">            return curr.value;</span>
+        }
+
+        static &lt;T&gt; Tuple2&lt;RedBlackTree&lt;T&gt;, RedBlackTree&lt;T&gt;&gt; split(RedBlackTree&lt;T&gt; tree, T value) {
+<span class="fc bfc" id="L810" title="All 2 branches covered.">            if (tree.isEmpty()) {</span>
+<span class="fc" id="L811">                return Tuple.of(tree, tree);</span>
+            } else {
+<span class="fc" id="L813">                final Node&lt;T&gt; node = (Node&lt;T&gt;) tree;</span>
+<span class="fc" id="L814">                final int comparison = node.comparator().compare(value, node.value);</span>
+<span class="fc bfc" id="L815" title="All 2 branches covered.">                if (comparison &lt; 0) {</span>
+<span class="fc" id="L816">                    final Tuple2&lt;RedBlackTree&lt;T&gt;, RedBlackTree&lt;T&gt;&gt; split = Node.split(node.left, value);</span>
+<span class="fc" id="L817">                    return Tuple.of(split._1, Node.join(split._2, node.value, Node.color(node.right, BLACK)));</span>
+<span class="fc bfc" id="L818" title="All 2 branches covered.">                } else if (comparison &gt; 0) {</span>
+<span class="fc" id="L819">                    final Tuple2&lt;RedBlackTree&lt;T&gt;, RedBlackTree&lt;T&gt;&gt; split = Node.split(node.right, value);</span>
+<span class="fc" id="L820">                    return Tuple.of(Node.join(Node.color(node.left, BLACK), node.value, split._1), split._2);</span>
+                } else {
+<span class="fc" id="L822">                    return Tuple.of(Node.color(node.left, BLACK), Node.color(node.right, BLACK));</span>
+                }
+            }
+        }
+
+        private static &lt;T&gt; Tuple2&lt;Node&lt;T&gt;, Boolean&gt; unbalancedLeft(Color color, int blackHeight, RedBlackTree&lt;T&gt; left,
+                                                                   T value, RedBlackTree&lt;T&gt; right, Empty&lt;T&gt; empty) {
+<span class="pc bpc" id="L829" title="1 of 2 branches missed.">            if (!left.isEmpty()) {</span>
+<span class="fc" id="L830">                final Node&lt;T&gt; ln = (Node&lt;T&gt;) left;</span>
+<span class="fc bfc" id="L831" title="All 2 branches covered.">                if (ln.color == BLACK) {</span>
+<span class="fc" id="L832">                    final Node&lt;T&gt; newNode = Node.balanceLeft(BLACK, blackHeight, ln.color(RED), value, right, empty);</span>
+<span class="fc bfc" id="L833" title="All 2 branches covered.">                    return Tuple.of(newNode, color == BLACK);</span>
+<span class="pc bpc" id="L834" title="2 of 4 branches missed.">                } else if (color == BLACK &amp;&amp; !ln.right.isEmpty()) {</span>
+<span class="fc" id="L835">                    final Node&lt;T&gt; lrn = (Node&lt;T&gt;) ln.right;</span>
+<span class="pc bpc" id="L836" title="1 of 2 branches missed.">                    if (lrn.color == BLACK) {</span>
+<span class="fc" id="L837">                        final Node&lt;T&gt; newRightNode = Node.balanceLeft(BLACK, blackHeight, lrn.color(RED), value, right,</span>
+                                empty);
+<span class="fc" id="L839">                        final Node&lt;T&gt; newNode = new Node&lt;&gt;(BLACK, ln.blackHeight, ln.left, ln.value, newRightNode,</span>
+                                empty);
+<span class="fc" id="L841">                        return Tuple.of(newNode, false);</span>
+                    }
+                }
+            }
+<span class="nc" id="L845">            throw new IllegalStateException(</span>
+<span class="nc" id="L846">                    String.format(&quot;unbalancedLeft(%s, %s, %s, %s, %s)&quot;, color, blackHeight, left, value, right));</span>
+        }
+
+        private static &lt;T&gt; Tuple2&lt;Node&lt;T&gt;, Boolean&gt; unbalancedRight(Color color, int blackHeight, RedBlackTree&lt;T&gt; left,
+                                                                    T value, RedBlackTree&lt;T&gt; right, Empty&lt;T&gt; empty) {
+<span class="pc bpc" id="L851" title="1 of 2 branches missed.">            if (!right.isEmpty()) {</span>
+<span class="fc" id="L852">                final Node&lt;T&gt; rn = (Node&lt;T&gt;) right;</span>
+<span class="fc bfc" id="L853" title="All 2 branches covered.">                if (rn.color == BLACK) {</span>
+<span class="fc" id="L854">                    final Node&lt;T&gt; newNode = Node.balanceRight(BLACK, blackHeight, left, value, rn.color(RED), empty);</span>
+<span class="fc bfc" id="L855" title="All 2 branches covered.">                    return Tuple.of(newNode, color == BLACK);</span>
+<span class="pc bpc" id="L856" title="2 of 4 branches missed.">                } else if (color == BLACK &amp;&amp; !rn.left.isEmpty()) {</span>
+<span class="fc" id="L857">                    final Node&lt;T&gt; rln = (Node&lt;T&gt;) rn.left;</span>
+<span class="pc bpc" id="L858" title="1 of 2 branches missed.">                    if (rln.color == BLACK) {</span>
+<span class="fc" id="L859">                        final Node&lt;T&gt; newLeftNode = Node.balanceRight(BLACK, blackHeight, left, value, rln.color(RED),</span>
+                                empty);
+<span class="fc" id="L861">                        final Node&lt;T&gt; newNode = new Node&lt;&gt;(BLACK, rn.blackHeight, newLeftNode, rn.value, rn.right,</span>
+                                empty);
+<span class="fc" id="L863">                        return Tuple.of(newNode, false);</span>
+                    }
+                }
+            }
+<span class="nc" id="L867">            throw new IllegalStateException(</span>
+<span class="nc" id="L868">                    String.format(&quot;unbalancedRight(%s, %s, %s, %s, %s)&quot;, color, blackHeight, left, value, right));</span>
+        }
+    }
+
+    /**
+     * The empty tree node. It can't be a singleton because it depends on a {@link Comparator}.
+     *
+     * @param &lt;T&gt; Component type
+     */
+    final class Empty&lt;T&gt; implements RedBlackTree&lt;T&gt;, Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        final Comparator&lt;T&gt; comparator;
+
+        // This is no public API! The RedBlackTree takes care of passing the correct Comparator.
+        @SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L885">        Empty(Comparator&lt;? super T&gt; comparator) {</span>
+<span class="fc" id="L886">            this.comparator = (Comparator&lt;T&gt;) comparator;</span>
+<span class="fc" id="L887">        }</span>
+
+        @Override
+        public Empty&lt;T&gt; clear() {
+<span class="fc" id="L891">            return this;</span>
+        }
+
+        @Override
+        public Color color() {
+<span class="fc" id="L896">            return BLACK;</span>
+        }
+
+        @Override
+        public Comparator&lt;T&gt; comparator() {
+<span class="fc" id="L901">            return comparator;</span>
+        }
+
+        @Override
+        public boolean contains(T value) {
+<span class="fc" id="L906">            return false;</span>
+        }
+
+        @Override
+        public Option&lt;T&gt; find(T value) {
+<span class="fc" id="L911">            return Option.none();</span>
+        }
+
+        @Override
+        public boolean isEmpty() {
+<span class="fc" id="L916">            return true;</span>
+        }
+
+        @Override
+        public RedBlackTree&lt;T&gt; left() {
+<span class="fc" id="L921">            throw new UnsupportedOperationException(&quot;left on empty&quot;);</span>
+        }
+
+        @Override
+        public RedBlackTree&lt;T&gt; right() {
+<span class="fc" id="L926">            throw new UnsupportedOperationException(&quot;right on empty&quot;);</span>
+        }
+
+        @Override
+        public int size() {
+<span class="fc" id="L931">            return 0;</span>
+        }
+
+        @Override
+        public T value() {
+<span class="fc" id="L936">            throw new NoSuchElementException(&quot;value on empty&quot;);</span>
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            // note: it is not possible to compare the comparators because function equality is not computable
+<span class="pc bpc" id="L942" title="1 of 4 branches missed.">            return (o == this) || (o instanceof Empty);</span>
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L947">            return 1;</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="fc" id="L952">            return &quot;()&quot;;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.2.201409121644</span></div></body></html>
