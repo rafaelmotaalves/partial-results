@@ -1,0 +1,6 @@
+me.prettyprint.cassandra.connection.HConnectionManager,sink,200
+me.prettyprint.cassandra.connection.HConnectionManager,sink,267
+me.prettyprint.cassandra.connection.HConnectionManager,sink,268
+me.prettyprint.cassandra.connection.HConnectionManager,source,200
+me.prettyprint.cassandra.connection.HConnectionManager,source,267
+me.prettyprint.cassandra.connection.HConnectionManager,source,268

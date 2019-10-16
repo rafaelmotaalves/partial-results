@@ -1,0 +1,4 @@
+com.metamx.druid.merger.coordinator.http.IndexerCoordinatorNode,sink,213
+com.metamx.druid.merger.coordinator.http.IndexerCoordinatorNode,source,242
+com.metamx.druid.merger.coordinator.http.IndexerCoordinatorNode,source,243
+com.metamx.druid.merger.coordinator.http.IndexerCoordinatorNode,source,223
