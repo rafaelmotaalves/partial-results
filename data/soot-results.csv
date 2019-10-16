@@ -1,0 +1,12 @@
+project;class;method;merge commit;dataflow left right;dataflow right left;reachability left right;reachability right left
+Activiti;class com.xlson.groovycsv.PropertyMapper;execute(ActivityExecution);bf46684ba62f5883673ea8fb0a14aecfe0aedea2;false;false;false;false
+cucumber-jvm;class com.xlson.groovycsv.PropertyMapper;load(String);4505c156b6267c1b760deec570ddbfe047b42aa9;false;false;false;false
+dropwizard;class com.xlson.groovycsv.PropertyMapper;Bootstrap(Application<T>);ddd15a681bf42360337844412cae4aba1556eb88;false;false;false;false
+hector;class com.xlson.groovycsv.PropertyMapper;open();0588608e7a2bdf974c985ff546207104f672bf6c;true;true;true;true
+jsoup;class com.xlson.groovycsv.PropertyMapper;outerHtmlHead(StringBuilder, int, Document.OutputSettings);a44e18aa3c1fcd25a68a5965f9490d8f7d026509;true;true;true;true
+jsoup;class com.xlson.groovycsv.PropertyMapper;execute(Connection.Request, Response);3f7d2c71dbbbb289c684f339874eed8ac2747fa0;false;false;false;false
+jsoup;class com.xlson.groovycsv.PropertyMapper;execute(Connection.Request, Response);a8b6982de98ff76ef254031d7152fff57f6bf941;false;false;false;false
+logback;class com.xlson.groovycsv.PropertyMapper;start();542843fd04a793fb9e0eea0c84d199e66d7c15af;true;true;true;true
+orientdb;class com.xlson.groovycsv.PropertyMapper;startup();a5ce3bcc0a1d196745c575ad6602019f7a6b86f8;false;false;false;false
+retrofit;class com.xlson.groovycsv.PropertyMapper;build();71f622ce51031b152a0be6ad5facfb27a654bf5a;false;false;false;false
+taychion;class com.xlson.groovycsv.PropertyMapper;HdfsFileInputStream(TachyonFS, int, Path, Configuration, int);dafe76c90024a915224264b4862b33f40cb8478c;true;true;true;true
