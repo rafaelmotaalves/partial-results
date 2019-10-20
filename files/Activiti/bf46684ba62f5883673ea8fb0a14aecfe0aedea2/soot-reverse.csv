@@ -1,5 +1,5 @@
-org.activiti.engine.impl.bpmn.behavior.UserTaskActivityBehavior,sink,128
 org.activiti.engine.impl.bpmn.behavior.UserTaskActivityBehavior,sink,112
+org.activiti.engine.impl.bpmn.behavior.UserTaskActivityBehavior,sink,128
 org.activiti.engine.impl.bpmn.behavior.UserTaskActivityBehavior,sink,113
 org.activiti.engine.impl.bpmn.behavior.UserTaskActivityBehavior,sink,114
 org.activiti.engine.impl.bpmn.behavior.UserTaskActivityBehavior,sink,115
